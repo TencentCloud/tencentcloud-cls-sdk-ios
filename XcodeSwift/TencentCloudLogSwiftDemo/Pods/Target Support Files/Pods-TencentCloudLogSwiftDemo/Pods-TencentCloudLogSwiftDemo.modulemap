@@ -1,0 +1,6 @@
+framework module Pods_TencentCloudLogSwiftDemo {
+  umbrella header "Pods-TencentCloudLogSwiftDemo-umbrella.h"
+
+  export *
+  module * { export * }
+}
