@@ -1,0 +1,28 @@
+#ifdef __OBJC__
+#import <UIKit/UIKit.h>
+#else
+#ifndef FOUNDATION_EXPORT
+#if defined(__cplusplus)
+#define FOUNDATION_EXPORT extern "C"
+#else
+#define FOUNDATION_EXPORT extern
+#endif
+#endif
+#endif
+
+#import "Log.h"
+#import "LogProducerClient.h"
+#import "LogProducerConfig.h"
+#import "TencentCloudLogProducer.h"
+#import "TimeUtils.h"
+#import "log_define.h"
+#import "log_adaptor.h"
+#import "log_inner_include.h"
+#import "log_multi_thread.h"
+#import "log_producer_client.h"
+#import "log_error.h"
+#import "log_producer_config.h"
+
+FOUNDATION_EXPORT double TencentCloudLogProducerVersionNumber;
+FOUNDATION_EXPORT const unsigned char TencentCloudLogProducerVersionString[];
+
