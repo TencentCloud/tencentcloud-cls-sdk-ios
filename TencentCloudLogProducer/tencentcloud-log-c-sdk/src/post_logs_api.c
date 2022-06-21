@@ -104,7 +104,7 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
     }
     put(&httpHeader, "Host", (char *)endpoint);
     put(&httpHeader, "Content-Type", "application/x-protobuf");
-    put(&httpHeader, "User-Agent", "tencent-log-sdk-ios v0.1.0");
+    put(&httpHeader, "User-Agent", "tencent-log-sdk-ios v1.0.0");
 
     root_t params = RB_ROOT;
     put(&params, "topic_id", topic);
@@ -171,7 +171,7 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (void *)buffer->data);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, buffer->length);
         curl_easy_setopt(curl, CURLOPT_FILETIME, 1);
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1); //打印调试信息
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 0); //打印调试信息
         sds header = sdsnewEmpty(64);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header);
         CURLcode res = curl_easy_perform(curl);
