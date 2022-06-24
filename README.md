@@ -15,7 +15,7 @@
 
 - 核心上报架构
 
-![image-20220520153540004](/Users/herrylv/Library/Application Support/typora-user-images/image-20220520153540004.png)
+![ios核心架构图](ios_sdk.jpg)
 
 ## oc 配置说明
 
@@ -61,24 +61,23 @@ NSString* accesskeyid = @"your_accesskey_id";
 NSString* accesskeysecret = @"your_accesskey_secret";
 NSString* topic_id = @"your_topic";
 
-    LogProducerConfig *config = [[LogProducerConfig alloc] initWithCoreInfo:[utils endpoint] accessKeyID:[utils accessKeyId] accessKeySecret:[utils accessKeySecret]];
-    [_config SetTopic:utils.topic];
-    [_config SetPackageLogBytes:1024*1024];
-    [_config SetPackageLogCount:1024];
-    [_config SetPackageTimeout:3000];
-    [_config SetMaxBufferLimit:64*1024*1024];
-    [_config SetSendThreadCount:1];
-    [_config SetConnectTimeoutSec:10];
-    [_config SetSendTimeoutSec:10];
-    [_config SetDestroyFlusherWaitSec:1];
-    [_config SetDestroySenderWaitSec:1];
-    [_config SetCompressType:1];
+    LogProducerConfig *config = [[LogProducerConfig alloc] initWithCoreInfo:[endpoint] accessKeyID:[accesskeyid] accessKeySecret:[accesskeysecret];
+    [config SetTopic:topic_id];
+    [config SetPackageLogBytes:1024*1024];
+    [config SetPackageLogCount:1024];
+    [config SetPackageTimeout:3000];
+    [config SetMaxBufferLimit:64*1024*1024];
+    [config SetSendThreadCount:1];
+    [config SetConnectTimeoutSec:10];
+    [config SetSendTimeoutSec:10];
+    [config SetDestroyFlusherWaitSec:1];
+    [config SetDestroySenderWaitSec:1];
+    [config SetCompressType:1];
 		
 		//callback若传入空则不会回调
-    LogProducerClient *client; = [[LogProducerClient alloc] initWithClsLogProducer:_config callback:log_send_callback];
+    LogProducerClient *client; = [[LogProducerClient alloc] initWithClsLogProducer:config callback:nil];
 		Log* log = [[Log alloc] init];
     [log PutContent:@"cls_key_1" value:@"cls_value_1"];
     [log PutContent:@"cls_key_1" value:@"cls_value_2"];
-		//flush 1代表立即发送，不设置时默认为0
-    LogProducerResult result = [client PostLog:log flush:0];
+    LogProducerResult result = [client PostLog:log];
 ```
