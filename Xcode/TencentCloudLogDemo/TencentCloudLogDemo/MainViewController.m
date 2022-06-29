@@ -3,6 +3,7 @@
 #import "ViewController.h"
 #import "ProducerExampleController.h"
 #import "ProducerExampleDestroyController.h"
+#import "ProducerExampleNetDiaController.h"
 
 @interface MainViewController ()
 
@@ -29,6 +30,7 @@
     [self createButton:@"基本配置" andAction:@selector(gotoGeneralPage) andX: 0 andY: 0];
 
     [self createButton:@"销毁配置" andAction:@selector(gotoDestroyPage) andX: SLCellWidth + SLPadding andY: 0];
+    [self createButton:@"网络探测" andAction:@selector(gotoNetDiaPage) andX: (SLCellWidth + SLPadding) * 2 andY: 0];
     
 }
 
@@ -38,6 +40,10 @@
 
 - (void) gotoDestroyPage {
     [self gotoPageWithPage:[[ProducerExampleDestroyController alloc] init]];
+}
+
+- (void) gotoNetDiaPage {
+    [self gotoPageWithPage:[[ProducerExampleNetDiaController alloc] init]];
 }
 
 - (void) gotoPageWithPage: (ViewController *) controller {
