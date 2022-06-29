@@ -19,6 +19,7 @@
 		996E3F4F28598C7E00982B7E /* ExampleViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4828598C7E00982B7E /* ExampleViewController.m */; };
 		996E3F5028598C7E00982B7E /* UtilInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4928598C7E00982B7E /* UtilInfo.m */; };
 		996E3F5128598C7E00982B7E /* MainViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4C28598C7E00982B7E /* MainViewController.m */; };
+		996E3FA52860210800982B7E /* ProducerExampleNetDiaController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3FA32860210800982B7E /* ProducerExampleNetDiaController.m */; };
 		B356C4E9DDFFB1A77DCDB2A8 /* Pods_TencentCloudLogDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02C857C1E889B15883FAF761 /* Pods_TencentCloudLogDemo.framework */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,8 @@
 		996E3F4B28598C7E00982B7E /* MainViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MainViewController.h; sourceTree = "<group>"; };
 		996E3F4C28598C7E00982B7E /* MainViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainViewController.m; sourceTree = "<group>"; };
 		996E3F5228598C9C00982B7E /* PrefixHeader.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PrefixHeader.pch; sourceTree = "<group>"; };
+		996E3FA32860210800982B7E /* ProducerExampleNetDiaController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProducerExampleNetDiaController.m; sourceTree = "<group>"; };
+		996E3FA42860210800982B7E /* ProducerExampleNetDiaController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProducerExampleNetDiaController.h; sourceTree = "<group>"; };
 		C152E08A9E9828A37344776C /* Pods-TencentCloudLogDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.release.xcconfig"; sourceTree = "<group>"; };
 		E8051E07B9E2F732C1AD21CA /* Pods-TencentCloudLogDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -126,6 +129,8 @@
 		996E3F4328598C7E00982B7E /* Producer */ = {
 			isa = PBXGroup;
 			children = (
+				996E3FA42860210800982B7E /* ProducerExampleNetDiaController.h */,
+				996E3FA32860210800982B7E /* ProducerExampleNetDiaController.m */,
 				996E3F4428598C7E00982B7E /* ProducerExampleDestroyController.m */,
 				996E3F4528598C7E00982B7E /* ProducerExampleController.m */,
 				996E3F4628598C7E00982B7E /* ProducerExampleDestroyController.h */,
@@ -154,6 +159,7 @@
 				996E3F2128598AF600982B7E /* Sources */,
 				996E3F2228598AF600982B7E /* Frameworks */,
 				996E3F2328598AF600982B7E /* Resources */,
+				F93ABE8452B485897935A0A5 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -232,6 +238,23 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		F93ABE8452B485897935A0A5 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -242,6 +265,7 @@
 				996E3F3028598AF600982B7E /* ViewController.m in Sources */,
 				996E3F4D28598C7E00982B7E /* ProducerExampleDestroyController.m in Sources */,
 				996E3F2A28598AF600982B7E /* AppDelegate.m in Sources */,
+				996E3FA52860210800982B7E /* ProducerExampleNetDiaController.m in Sources */,
 				996E3F3B28598AF800982B7E /* main.m in Sources */,
 				996E3F5128598C7E00982B7E /* MainViewController.m in Sources */,
 				996E3F4E28598C7E00982B7E /* ProducerExampleController.m in Sources */,
