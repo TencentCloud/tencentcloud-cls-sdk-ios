@@ -64,7 +64,17 @@ static ProducerExampleDestroyController *selfClzz;
     }else{
         [self UpdateReult:[NSString stringWithFormat:@"addlog result: %ld", result]];
     }
+    
+//    [self searchlog];
+}
 
+- (void) searchlog{
+    LogSearchClient *sclient = [[LogSearchClient alloc] init];
+    NSArray *topics = [NSArray arrayWithObjects:@"topicid",nil];
+    
+    SearchReult r = [sclient SearchLog:@"ap-guangzhou.cls.tencentcs.com" secretid:@"" secretkey:@"" logsetid:@"" topicids:topics starttime:@"" endtime:@"" query:@"" limit:10 context:nil sort:nil];
+    NSLog(@"%@",r.message);
+    [sclient DestroyLogSearch];
 }
 
 - (void) destroy {

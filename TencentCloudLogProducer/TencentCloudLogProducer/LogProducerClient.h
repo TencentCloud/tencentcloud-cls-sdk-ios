@@ -43,6 +43,30 @@ typedef NS_ENUM(NSInteger, LogProducerResult) {
 
 - (LogProducerResult)PostLog:(Log *) log;
 
-- (LogProducerResult)PostLog:(Log *) log flush:(int) flush;
+@end
 
+struct SearchReult
+{
+    NSInteger statusCode;
+    NSString* message;
+    NSString* requestID;
+};
+typedef struct SearchReult SearchReult;
+@interface LogSearchClient : NSObject
+{
+}
+-(SearchReult) SearchLog:(NSString*)region
+                secretid:(NSString*) secretid
+             secretkey:(NSString*) secretkey
+              logsetid:(NSString*) logsetid
+              topicids:(NSArray*) topicids
+             starttime:(NSString*) starttime
+               endtime:(NSString*) endtime
+                 query:(NSString*) query
+                 limit:(NSInteger)limit
+               context:(NSString*)context
+                    sort:(NSString*)sort;
+
+-(id)init;
+-(void) DestroyLogSearch;
 @end
