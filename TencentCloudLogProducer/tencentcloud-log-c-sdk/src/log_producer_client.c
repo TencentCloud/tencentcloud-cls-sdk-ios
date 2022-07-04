@@ -167,13 +167,15 @@ int SearchLogCheckParam(const char *region,const char *secretid, const char* sec
     if(strlen(region) == 0 || strlen(secretid) == 0 ||strlen(secretkey) == 0||strlen(logsetid) == 0||topicids == NULL ||topicidslens <= 0||strlen(starttime) == 0||strlen(endtime) == 0 ||limit == 0){
         return -1;
     }
-    char *tmpsort = (char*)malloc(strlen(sort)+1);
-    memset(tmpsort,0,strlen(sort)+1);
-    strlowr(sort,tmpsort);
-    if(sort != NULL && (strncmp(tmpsort,"asc",3) != 0)&&(strncmp(tmpsort,"desc",4) != 0)){
-        return -1;
+    if(sort != NULL){
+        char *tmpsort = (char*)malloc(strlen(sort)+1);
+        memset(tmpsort,0,strlen(sort)+1);
+        strlowr(sort,tmpsort);
+        if((strncmp(tmpsort,"asc",3) != 0)&&(strncmp(tmpsort,"desc",4) != 0)){
+            return -1;
+        }
+        free(tmpsort);
     }
-    free(tmpsort);
     return 0;
 }
 
