@@ -61,9 +61,9 @@ void post_log_result_destroy(post_result *result)
     
     if (result != NULL)
     {
-        if (result->errorMessage != NULL)
+        if (result->message != NULL)
         {
-            sdsfree(result->errorMessage);
+            sdsfree(result->message);
         }
         if (result->requestID != NULL)
         {
@@ -212,7 +212,7 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
         }
 
         // body will be NULL or a error string(net error or request error)
-        result->errorMessage = body;
+        result->message = body;
 
         curl_slist_free_all(headers); /* free the list again */
         sdsfree(queryString);
@@ -243,3 +243,117 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
 
     return result;
 }
+
+void SearchLogApi(const char *endpoint,root_t httpHeader,root_t params,get_result* result){
+    sds queryString = sdsnewEmpty(1024);
+    GetQueryString(params, queryString);
+
+
+    struct curl_slist *headers = NULL;
+    map_t *node;
+    for (node = map_first(&httpHeader); node; node = map_next(&(node->node)))
+    {
+        char p[1024];
+        memset(p, 0, 1024);
+        strcat(p, node->key);
+        strcat(p, ":");
+        strcat(p, node->val);
+        headers = curl_slist_append(headers, p);
+    }
+
+    sds queryUrl = sdsnewEmpty(64);
+    queryUrl = sdscat(queryUrl, endpoint);
+    queryUrl = sdscat(queryUrl, "/searchlog");
+    if (strlen(queryString) != 0)
+    {
+        queryUrl = sdscat(queryUrl, "?");
+        queryUrl = sdscat(queryUrl, queryString);
+    }
+    CURL *curl = curl_easy_init();
+    if (curl != NULL)
+    {
+
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_URL, queryUrl);
+        curl_easy_setopt(curl, CURLOPT_HTTPGET, 1);
+        
+        sds header = sdsnewEmpty(64);
+        sds body = NULL;
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
+        
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15);
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+        curl_easy_setopt(curl, CURLOPT_FILETIME, 1);
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 0); //打印调试信息
+        
+        CURLcode res = curl_easy_perform(curl);
+        long http_code;
+        if (res == CURLE_OK)
+        {
+            if ((res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code)) != CURLE_OK)
+            {
+                result->statusCode = -2;
+            }
+            else
+            {
+                result->statusCode = http_code;
+            }
+        }
+        else
+        {
+            if (body == NULL)
+            {
+                body = sdsnew(curl_easy_strerror(res));
+            }
+            else
+            {
+                body = sdscpy(body, curl_easy_strerror(res));
+            }
+            result->statusCode = -1 * (int)res;
+        }
+        if (sdslen(header) > 0)
+        {
+            result->requestID = header;
+        }
+        else
+        {
+            sdsfree(header);
+            header = NULL;
+        }
+
+       // body will be NULL or a error string(net error or request error)
+        result->message = body;
+
+
+        curl_slist_free_all(headers); /* free the list again */
+        sdsfree(queryString);
+        sdsfree(queryUrl);
+        curl_easy_cleanup(curl);
+
+        //释放map_t headers
+        map_t *nodeFree = NULL;
+        for (nodeFree = map_first(&httpHeader); nodeFree; nodeFree = map_first(&httpHeader))
+        {
+            if (nodeFree)
+            {
+                rb_erase(&nodeFree->node, &httpHeader);
+                map_free(nodeFree);
+            }
+        }
+
+        //释放map_t headers
+        for (nodeFree = map_first(&params); nodeFree; nodeFree = map_first(&params))
+        {
+            if (nodeFree)
+            {
+                rb_erase(&nodeFree->node, &params);
+                map_free(nodeFree);
+            }
+        }
+    }
+    
+}
+
