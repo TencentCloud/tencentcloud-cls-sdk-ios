@@ -164,7 +164,7 @@ int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param,
     if (producermgr->callbackfunc != NULL)
     {
         int callback_result = send_result == LOG_SEND_OK ? LOG_PRODUCER_OK : (LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - LOG_SEND_NETWORK_ERROR);
-        producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result->requestID, result->errorMessage, send_param->log_buf->data, producermgr->user_param);
+        producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result->requestID, result->message, send_param->log_buf->data, producermgr->user_param);
     }
     switch (send_result)
     {
@@ -194,7 +194,7 @@ int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param,
                      (int)send_param->log_buf->length,
                      (int)send_param->log_buf->raw_length,
                      result->statusCode,
-                     result->errorMessage);
+                     result->message);
         error_info->retryCount++;
         return error_info->last_sleep_ms;
     default:
@@ -212,7 +212,7 @@ int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param,
                       (int)send_param->log_buf->raw_length,
                       (int)producermgr->totalBufferSize,
                       result->statusCode,
-                      result->errorMessage);
+                      result->message);
     }
     else
     {
@@ -222,7 +222,7 @@ int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param,
                      (int)send_param->log_buf->raw_length,
                      (int)producermgr->totalBufferSize,
                      result->statusCode,
-                     result->errorMessage);
+                     result->message);
     }
 
     return 0;
@@ -261,7 +261,7 @@ int32_t ErrorResult(post_result *result)
     {
         return LOG_SEND_SERVER_ERROR;
     }
-    if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL)
+    if (result->message != NULL && strstr(result->message, LOGE_TIME_EXPIRED) != NULL)
     {
         return LOG_SEND_TIME_ERROR;
     }
