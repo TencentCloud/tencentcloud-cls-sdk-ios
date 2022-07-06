@@ -5,11 +5,11 @@
 #import "LogProducerConfig.h"
 #import "Log.h"
 #import "TimeUtils.h"
+#import "sds.h"
 
 
 
 @interface LogProducerClient ()
-
 @end
 
 @implementation LogProducerClient
@@ -108,3 +108,54 @@
 
 @end
 
+
+
+@implementation LogSearchClient
+-(SearchReult) SearchLog:(NSString*)region secretid:(NSString*) secretid
+             secretkey:(NSString*) secretkey
+              logsetid:(NSString*) logsetid
+              topicids:(NSArray*) topicids
+             starttime:(NSString*) starttime
+               endtime:(NSString*) endtime
+                 query:(NSString*) query
+                 limit:(NSInteger)limit
+               context:(NSString*)context
+                  sort:(NSString*)sort
+{
+    SearchReult result;
+    char **topics = (char**)malloc(sizeof(char*)*128);
+    for(int i = 0; i < topicids.count; i++){
+        topics[i] = [topicids[i] UTF8String];
+    }
+    get_result* r = (get_result*)malloc(sizeof(get_result));
+    memset(r, 0, sizeof(get_result));
+    ClsSearchLog([region UTF8String],[secretid UTF8String] ,[secretkey UTF8String],[logsetid UTF8String],topics,topicids.count,[starttime UTF8String],[endtime UTF8String],[query UTF8String],limit,[context UTF8String],[sort UTF8String],r);
+    
+    free(topics);
+    result.statusCode = r->statusCode;
+    result.message = r->message ? [NSString stringWithUTF8String:r->message] : nil;
+    result.requestID = r->requestID ? [NSString stringWithUTF8String:r->requestID] : nil;
+    if (r != NULL)
+    {
+        if (r->message != NULL)
+        {
+            sdsfree(r->message);
+        }
+        if (r->requestID != NULL)
+        {
+            sdsfree(r->requestID);
+        }
+        free(r);
+    }
+    return result;
+}
+
+-(id)init{
+    self = [super init];
+    ClsLogSearchLogInit();
+    return self;
+}
+-(void) DestroyLogSearch{
+    ClsLogSearchLogDestroy();
+}
+@end

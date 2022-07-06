@@ -31,5 +31,7 @@ post_result *PostLogsWithLz4(const char *endpoint,
 
 void post_log_result_destroy(post_result *result);
 void GetQueryString(const root_t parameterList, sds queryString);
+
+void SearchLogApi(const char *endpoint,root_t httpHeader,root_t params,get_result* result);
 CLS_LOG_CPP_END
 #endif
