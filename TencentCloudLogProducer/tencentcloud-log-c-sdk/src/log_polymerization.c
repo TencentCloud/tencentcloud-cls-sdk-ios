@@ -343,10 +343,14 @@ lz4_content *SerializeWithNolz4(log_group_builder *bder)
     log_buffer *log = &(bder->grp->logs);
     int log_count =bder->grp->logs_count;
     Cls__Log **pcls_log = (Cls__Log **)malloc(sizeof(Cls__Log *) * bder->grp->logs_count);
-    for(int i = 0; i < bder->grp->logs_count; ++i){
+    uint8_t *data = log->buffer;
+    for (int i = 0; i < bder->grp->logs_count; ++i)
+    {
         pcls_log[i] = (Cls__Log *)malloc(sizeof(Cls__Log));
-        pcls_log[i] = cls__log__unpack(NULL, (log->buf_index)[i], log->buffer);
-        if(pcls_log[i] == NULL){
+        pcls_log[i] = cls__log__unpack(NULL, (log->buf_index)[i], data);
+        data += (log->buf_index)[i];
+        if (pcls_log[i] == NULL)
+        {
             return NULL;
         }
     }
@@ -386,10 +390,14 @@ lz4_content *SerializeWithlz4(log_group_builder *bder)
     log_buffer *log = &(bder->grp->logs);
     int log_count =bder->grp->logs_count;
     Cls__Log **pcls_log = (Cls__Log **)malloc(sizeof(Cls__Log *) * bder->grp->logs_count);
-    for(int i = 0; i < bder->grp->logs_count; ++i){
+    uint8_t *data = log->buffer;
+    for (int i = 0; i < bder->grp->logs_count; ++i)
+    {
         pcls_log[i] = (Cls__Log *)malloc(sizeof(Cls__Log));
-        pcls_log[i] = cls__log__unpack(NULL, (log->buf_index)[i], log->buffer);
-        if(pcls_log[i] == NULL){
+        pcls_log[i] = cls__log__unpack(NULL, (log->buf_index)[i], data);
+        data += (log->buf_index)[i];
+        if (pcls_log[i] == NULL)
+        {
             return NULL;
         }
     }
