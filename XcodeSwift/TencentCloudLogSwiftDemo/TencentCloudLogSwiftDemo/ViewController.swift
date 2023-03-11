@@ -74,7 +74,7 @@ class ViewController: UIViewController {
     
     @IBAction func SendLog(_ sender: UIButton) {
         let log = getOneLog()
-        let res = client?.post(log, flush: 1)
+        let res = client?.post(log)
         if(res?.rawValue == 0){
             AlertInfo(str: "消息已经发送，参考回调通知")
         }else if(res?.rawValue == 1){
