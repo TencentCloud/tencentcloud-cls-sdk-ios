@@ -33,17 +33,34 @@
 
 - (NSString *)description {
     if (_code == 0 || _code == kCLSRequestStoped) {
-        return [NSString stringWithFormat:@"tcp connect success min/avg/max = %.3f/%.3f/%.3fms", _minTime, _avgTime, _maxTime];
+        NSDictionary *result = @{
+                               @"method":@"TCPPing",
+                               @"ip":_ip,
+                               @"host":_domain,
+                               @"port":[NSString stringWithFormat:@"%d", _port],
+                               @"max":[NSString stringWithFormat:@"%.3f", _maxTime],
+                               @"min":[NSString stringWithFormat:@"%.3f", _minTime],
+                               @"avg":[NSString stringWithFormat:@"%.3f", _avgTime],
+//                               @"size":[NSString stringWithFormat:@"%d", _size],
+                               @"stddev":[NSString stringWithFormat:@"%.3f", _stddev],
+                               @"loss":[NSString stringWithFormat:@"%.3f", (double)_loss * 100 / (_count)],
+                               @"count":[NSString stringWithFormat:@"%d", (int)(_count)],
+                               @"responseNum":[NSString stringWithFormat:@"%d", (int)(_count - _loss)]
+                               };
+        NSData *data = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:nil];
+        return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     }
     return [NSString stringWithFormat:@"tcp connect failed"];
 }
 
 - (instancetype)init:(NSInteger)code
                   ip:(NSString *)ip
+                  domain:(NSString *)domain
                  max:(NSTimeInterval)maxTime
                  min:(NSTimeInterval)minTime
                  avg:(NSTimeInterval)avgTime
                 loss:(NSInteger)loss
+                port:(NSInteger)port
                count:(NSInteger)count
            totalTime:(NSTimeInterval)totalTime
               stddev:(NSTimeInterval)stddev {
@@ -57,6 +74,8 @@
         _count = count;
         _totalTime = totalTime;
         _stddev = stddev;
+        _domain = domain;
+        _port = port;
     }
     return self;
 }
@@ -114,9 +133,9 @@
             [self.output write:@"Problem accessing the DNS"];
             if (_complete != nil) {
                 dispatch_async(dispatch_get_main_queue(), ^(void) {
-                    _complete([self buildResult:-1006 ip:nil durations:nil loss:0 count:0 totalTime:0]);
+                    _complete([self buildResult:-1006 ip:nil domain:_host durations:nil loss:0 port:_port count:0 totalTime:0]);
                 });
-                [_sender report:[self buildResult:-1006 ip:nil durations:nil loss:0 count:0 totalTime:0].description method:@"tcpPing" domain:_host];
+                [_sender report:[self buildResult:-1006 ip:nil domain:_host durations:nil loss:0 port:_port count:0 totalTime:0].description method:@"TCPPing" domain:_host];
             }
             return;
         }
@@ -152,18 +171,20 @@
         }
         __block NSDate *startDate = begin;
         dispatch_async(dispatch_get_main_queue(), ^(void) {
-            _complete([self buildResult:code ip:ip durations:intervals loss:loss count:index totalTime:[[NSDate date] timeIntervalSinceDate:startDate] * 1000]);
+            _complete([self buildResult:code ip:ip domain:_host durations:intervals loss:loss port:_port count:index totalTime:[[NSDate date] timeIntervalSinceDate:startDate] * 1000]);
             free(intervals);
         });
     }
-    [_sender report:[self buildResult:r ip:ip durations:intervals loss:loss count:index totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"tcpPing" domain:_host];
+    [_sender report:[self buildResult:r ip:ip domain:_host durations:intervals loss:loss port:_port count:index totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"tcpPing" domain:_host];
     
 }
 
 - (CLSTcpPingResult *)buildResult:(NSInteger)code
                                ip:(NSString *)ip
+                               domain:(NSString *)domain
                         durations:(NSTimeInterval *)durations
                              loss:(NSInteger)loss
+                             port:(NSInteger)port
                             count:(NSInteger)count
                         totalTime:(NSTimeInterval)time {
     if (code != 0 && code != kCLSRequestStoped) {
@@ -186,7 +207,7 @@
     NSTimeInterval avg = sum / count;
     NSTimeInterval avg2 = sum2 / count;
     NSTimeInterval stddev = sqrt(avg2 - avg * avg);
-    return [[CLSTcpPingResult alloc] init:code ip:ip max:max min:min avg:avg loss:loss count:count totalTime:time stddev:stddev];
+    return [[CLSTcpPingResult alloc] init:code ip:ip domain:domain max:max min:min avg:avg loss:loss port:port count:count totalTime:time stddev:stddev];
 }
 /*
 - (int)connect:(struct sockaddr_in *)addr {
@@ -269,7 +290,7 @@
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete
                sender: (baseSender *)sender{
-    return [CLSTcpPing start:host port:80 count:3 output:output complete:complete sender:sender];
+    return [CLSTcpPing start:host port:80 count:50 output:output complete:complete sender:sender];
 }
 
 + (instancetype)start:(NSString *)host

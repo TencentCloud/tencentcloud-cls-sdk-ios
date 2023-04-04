@@ -14,10 +14,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (readonly) NSInteger code;
 @property (readonly) NSString* err_msg;
 @property (readonly) NSString* ip;
+@property (readonly) NSString* domain;
 @property (readonly) NSTimeInterval maxTime;
 @property (readonly) NSTimeInterval minTime;
 @property (readonly) NSTimeInterval avgTime;
 @property (readonly) NSInteger loss;
+@property (readonly) NSInteger port;
 @property (readonly) NSInteger count;
 @property (readonly) NSTimeInterval totalTime;
 @property (readonly) NSTimeInterval stddev;

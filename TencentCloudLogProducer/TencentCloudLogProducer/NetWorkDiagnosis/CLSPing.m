@@ -22,9 +22,37 @@ const int kCLSInvalidPingResponse = -22001;
 
 @implementation CLSPingResult
 
+struct Result{
+    NSString *method;
+    NSString *hostIP;
+    NSString *host;
+    NSInteger port;
+    NSTimeInterval max;
+    NSTimeInterval min;
+    NSTimeInterval avg;
+    NSTimeInterval stddev;
+    double loss;
+    NSInteger count;
+};
+
 - (NSString *)description {
+    struct Result result;
     if (_code == 0 || _code == kCLSRequestStoped) {
-        return [NSString stringWithFormat:@"%d packets transmitted, %ld packets received, %f packet loss time %fms\n round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms", (int)(_count + _loss), (long)_count, (double)_loss * 100 / (_count + _loss), _totalTime, _minRtt, _avgRtt, _maxRtt, _stddev];
+        NSDictionary *result = @{
+                               @"method":@"PING",
+                               @"ip":_ip,
+                               @"host":_domain,
+                               @"max":[NSString stringWithFormat:@"%.3f", _maxRtt],
+                               @"min":[NSString stringWithFormat:@"%.3f", _minRtt],
+                               @"avg":[NSString stringWithFormat:@"%.3f", _avgRtt],
+                               @"stddev":[NSString stringWithFormat:@"%.3f", _stddev],
+                               @"size":[NSString stringWithFormat:@"%d", _size],
+                               @"loss":[NSString stringWithFormat:@"%.3f", (double)_loss * 100 / (_count)],
+                               @"count":[NSString stringWithFormat:@"%d", (int)(_count)],
+                               @"responseNum":[NSString stringWithFormat:@"%d", (int)(_count - _loss)]
+                               };
+        NSData *data = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:nil];
+        return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     }
     return [NSString stringWithFormat:@"ping failed %@", _err_msg];
 }
@@ -32,6 +60,7 @@ const int kCLSInvalidPingResponse = -22001;
 - (instancetype)init:(NSInteger)code
              err_msg:(NSString*)err_msg
                   ip:(NSString *)ip
+                  domain:(NSString *)domain
                 size:(NSUInteger)size
                  max:(NSTimeInterval)maxRtt
                  min:(NSTimeInterval)minRtt
@@ -44,6 +73,7 @@ const int kCLSInvalidPingResponse = -22001;
         _code = code;
         _err_msg = err_msg;
         _ip = ip;
+        _domain = domain;
         _size = size;
         _minRtt = minRtt;
         _avgRtt = avgRtt;
@@ -257,12 +287,13 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
 
 - (CLSPingResult *)buildResult:(NSInteger)code
                             ip:(NSString *)ip
+                            domain:(NSString *)domain
                      durations:(NSTimeInterval *)durations
                          count:(NSInteger)count
                           loss:(NSInteger)loss
                      totalTime:(NSTimeInterval)time {
     if (code != 0 && code != kCLSRequestStoped) {
-        return [[CLSPingResult alloc] init:code err_msg:@"timeout" ip:ip size:_size max:0 min:0 avg:0 loss:1 count:1 totalTime:time stddev:0];
+        return [[CLSPingResult alloc] init:code err_msg:@"timeout" ip:ip domain:domain size:_size max:0 min:0 avg:0 loss:1 count:1 totalTime:time stddev:0];
     }
     NSTimeInterval max = 0;
     NSTimeInterval min = 10000000;
@@ -281,7 +312,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     NSTimeInterval avg = sum / count;
     NSTimeInterval avg2 = sum2 / count;
     NSTimeInterval stddev = sqrt(avg2 - avg * avg);
-    return [[CLSPingResult alloc] init:code err_msg:@"ping success" ip:ip size:_size max:max min:min avg:avg loss:loss count:count totalTime:time stddev:stddev];
+    return [[CLSPingResult alloc] init:code err_msg:@"ping success" ip:ip domain:domain size:_size max:max min:min avg:avg loss:loss count:count totalTime:time stddev:stddev];
 }
 
 - (void)run{
@@ -295,7 +326,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_len = sizeof(addr);
     addr.sin_family = AF_INET;
-//    addr.sin_port = htons(30002);
+    addr.sin_port = htons(30002);
     addr.sin_addr.s_addr = inet_addr(hostaddr);
 
     if (addr.sin_addr.s_addr == INADDR_NONE) { //无效的地址
@@ -304,10 +335,10 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
             [self.output write:@"host illegal exit"];
             if (_complete != nil) {
                 [CLSQueue async_run_main:^(void) {
-                    CLSPingResult *result = [[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0];
+                    CLSPingResult *result = [[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil domain:_host size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0];
                     _complete(result);
                 }];
-                [_sender report:[[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0].description method:@"ping" domain:_host];
+                [_sender report:[[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil domain:_host size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0].description method:@"ping" domain:_host];
             }
             return;
         }
@@ -353,6 +384,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
         }
 
         CLSPingResult *result = [self buildResult:code ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)]
+                                           domain:_host
                                         durations:durations
                                             count:index - loss
                                              loss:loss
@@ -365,10 +397,11 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     
     //发送数据到cls
     [_sender report:[self buildResult:r ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)]
+                               domain:_host
                             durations:durations
                                 count:index - loss
                                  loss:loss
-                            totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"ping" domain:_host];
+                            totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"PING" domain:_host];
     free(durations);
 }
 
