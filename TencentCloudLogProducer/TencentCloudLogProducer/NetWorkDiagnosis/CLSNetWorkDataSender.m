@@ -55,21 +55,22 @@
         [scheme setApp_id:[scheme.app_id substringWithRange:NSMakeRange(0, atRange.location)]];
     }
     
-    [scheme setDomain: domain];
+//    [scheme setDomain: domain];
     [scheme setResult: data];
+    [scheme setMethod: method];
 
-    NSMutableDictionary *reserves = [NSMutableDictionary dictionary];
-    [reserves setObject:[method uppercaseString] forKey:@"method"];
+//    NSMutableDictionary *reserves = [NSMutableDictionary dictionary];
+//    [reserves setObject:[method uppercaseString] forKey:@"method"];
 
     // put ext fields to reserves
-    if (_networkconfig.ext) {
-        for (NSString *key in _networkconfig.ext) {
-            [reserves setObject:_networkconfig.ext[key] forKey:key];
-        }
-    }
+//    if (_networkconfig.ext) {
+//        for (NSString *key in _networkconfig.ext) {
+//            [reserves setObject:_networkconfig.ext[key] forKey:key];
+//        }
+//    }
     
-    NSData *json = [NSJSONSerialization dataWithJSONObject:reserves options:0 error:nil];
-    scheme.reserves = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
+//    NSData *json = [NSJSONSerialization dataWithJSONObject:reserves options:0 error:nil];
+//    scheme.reserves = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
     
     __block Log *log = [[Log alloc] init];
     // ignore ext fields

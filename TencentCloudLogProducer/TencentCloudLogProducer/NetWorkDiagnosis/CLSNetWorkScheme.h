@@ -32,7 +32,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) NSString * local_time;
 @property(nonatomic, strong) NSString * local_timestamp;
 @property(nonatomic, strong) NSString * result;
-@property(nonatomic, strong) NSString * domain;
+@property(nonatomic, strong) NSString * app_version;
+@property(nonatomic, strong) NSString * utdid;
+@property(nonatomic, strong) NSString * method;
 @property(nonatomic, strong) NSMutableDictionary * ext;
 
 + (CLSNetWorkScheme *) createDefault;

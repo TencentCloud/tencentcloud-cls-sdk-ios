@@ -113,7 +113,7 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
     char c_signature[1024];
     signature(accesskeyId, accessKey, "POST", operation, params, httpHeader, 300, c_signature);
     put(&httpHeader, "Authorization", c_signature);
-
+    put(&httpHeader, "x-cls-add-source", "1");
     if(token != NULL){
         put(&httpHeader, "X-Cls-Token", token);
     }

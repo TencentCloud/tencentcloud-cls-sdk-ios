@@ -72,6 +72,12 @@ unsigned int time_func() {
     SetTopic(self->config, topicChar);
 }
 
+- (void)SetSource:(NSString *) source
+{
+    const char *sourceChar=[source UTF8String];
+    SetSource(self->config, sourceChar);
+}
+
 - (void)SetPackageLogBytes:(int) num
 {
     SetPackageLogBytes(self->config, num);

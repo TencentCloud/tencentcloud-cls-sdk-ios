@@ -17,6 +17,7 @@ extern const int kCLSInvalidPingResponse;
 @property (readonly) NSInteger code;
 @property (readonly) NSString* err_msg;
 @property (readonly) NSString* ip;
+@property (readonly) NSString* domain;
 @property (readonly) NSUInteger size;
 @property (readonly) NSTimeInterval maxRtt;
 @property (readonly) NSTimeInterval minRtt;
@@ -29,6 +30,7 @@ extern const int kCLSInvalidPingResponse;
 - (instancetype)init:(NSInteger)code
                 err_msg:(NSString*)err_msg
                   ip:(NSString *)ip
+              domain:(NSString *)domain
                 size:(NSUInteger)size
                  max:(NSTimeInterval)maxRtt
                  min:(NSTimeInterval)minRtt
