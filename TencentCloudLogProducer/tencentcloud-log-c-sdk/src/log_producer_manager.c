@@ -6,6 +6,7 @@
 #include "cls_log.h"
 #include "md5.h"
 #include "sds.h"
+#include "utils.h"
 #include <sys/time.h>
 
 // change from 100ms to 1000s, reduce wake up when app switch to back
@@ -128,7 +129,7 @@ void *log_producer_flush_thread(void *param)
                 {
                     AddTopic(builder, config->topic, strlen(config->topic));
                 }
-                if (producermgr->source != NULL)
+                if (config->source != NULL)
                 {
                     AddSource(builder, producermgr->source, strlen(producermgr->source));
                 }

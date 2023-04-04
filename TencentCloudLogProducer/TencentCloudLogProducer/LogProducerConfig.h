@@ -22,6 +22,8 @@
 
 - (void)SetTopic:(NSString *) topic;
 
+- (void)SetSource:(NSString *) source;
+
 - (void)SetPackageLogBytes:(int) num;
 
 - (void)SetPackageLogCount:(int) num;
