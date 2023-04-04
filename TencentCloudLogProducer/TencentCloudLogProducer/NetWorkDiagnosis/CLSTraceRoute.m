@@ -23,6 +23,8 @@
 @interface CLSTraceRouteRecord : NSObject
 @property (readonly) NSInteger hop;
 @property NSString* ip;
+@property NSString* targetIp;
+@property NSString* domain;
 @property NSTimeInterval* durations; //ms
 @property (readonly) NSInteger count; //ms
 @end
@@ -30,32 +32,59 @@
 @implementation CLSTraceRouteRecord
 
 - (instancetype)init:(NSInteger)hop
+              domain:(NSString*)domain
+            targetIp:(NSString*)targetIp
                count:(NSInteger)count {
     if (self = [super init]) {
         _ip = nil;
         _hop = hop;
+        _domain = domain;
         _durations = (NSTimeInterval*)calloc(count, sizeof(NSTimeInterval));
         _count = count;
+        _targetIp = targetIp;
     }
     return self;
 }
 
-- (NSString*)description {
-    NSMutableString* ttlRecord = [[NSMutableString alloc] initWithCapacity:20];
-    [ttlRecord appendFormat:@"%ld\t", (long)_hop];
-    if (_ip == nil) {
-        [ttlRecord appendFormat:@" \t"];
-    } else {
-        [ttlRecord appendFormat:@"%@\t", _ip];
+- (NSDictionary*)buildDirectRecord{
+    NSError *error = nil;
+//    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:_contentString options:NSJSONWritingPrettyPrinted error:&error];
+    NSString *ip = @" ";
+    if (_ip != nil){
+        ip = _ip;
     }
+    bool is_final_route = false;
+    NSInteger realCount = 0;
+    NSInteger loss = 0;
+    double avg = 0;
+    double totalDelay = 0;
     for (int i = 0; i < _count; i++) {
         if (_durations[i] <= 0) {
-            [ttlRecord appendFormat:@"*\t"];
+            loss++;
+            continue;
         } else {
-            [ttlRecord appendFormat:@"%.3f ms\t", _durations[i] * 1000];
+            realCount++;
+            totalDelay += _durations[i];
         }
     }
-    return ttlRecord;
+    double lossRate = loss/_count*100;
+    if (_targetIp == ip){
+        is_final_route = true;
+    }
+    NSDictionary *result = @{
+        @"targetIp":_targetIp,
+       @"routeIp":ip,
+       @"hop":[NSString stringWithFormat:@"%d", (int)(_hop)],
+        @"avg_delay":[NSString stringWithFormat:@"%.3f", avg],
+        @"loss":[NSString stringWithFormat:@"%.3f",lossRate],
+        @"is_final_route":@(is_final_route)
+       };
+    return result;
+}
+
+- (NSString*)description {
+        NSData *data = [NSJSONSerialization dataWithJSONObject:[self buildDirectRecord] options:NSJSONWritingPrettyPrinted error:nil];
+        return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 }
 
 - (void)dealloc {
@@ -80,12 +109,15 @@
 
 @interface CLSTraceRoute ()
 @property (readonly) NSString* host;
+@property (readonly) NSString* targetIp;
+@property (readonly) NSString* commandStatus;
 @property (nonatomic, strong) id<CLSOutputDelegate> output;
 @property (readonly) CLSTraceRouteCompleteHandler complete;
 @property(nonatomic, strong) baseSender *sender;
+
 @property (readonly) NSInteger maxTtl;
 @property (atomic) NSInteger stopped;
-@property (nonatomic, strong) NSMutableString* contentString;
+@property (nonatomic, strong) NSMutableArray* contentString;
 
 @end
 
@@ -102,8 +134,10 @@
         _complete = complete;
         _maxTtl = maxTtl;
         _stopped = NO;
-        _contentString = [[NSMutableString alloc] init];
+        _contentString = [[NSMutableArray alloc] init];
         _sender = sender;
+        _targetIp = @"";
+        _commandStatus = @"fail";
     }
     return self;
 }
@@ -121,7 +155,7 @@ static const int TraceMaxAttempts = 3;
     static char cmsg[] = "clslog diag\n";
     char buff[100];
 
-    CLSTraceRouteRecord* record = [[CLSTraceRouteRecord alloc] init:ttl count:TraceMaxAttempts];
+    CLSTraceRouteRecord* record = [[CLSTraceRouteRecord alloc] init:ttl domain:_host targetIp:_targetIp count:TraceMaxAttempts];
     for (int try = 0; try < TraceMaxAttempts; try ++) {
         NSDate* startTime = [NSDate date];
         ssize_t sent = sendto(sendSock, cmsg, sizeof(cmsg), 0, (struct sockaddr*)addr, sizeof(struct sockaddr));
@@ -161,7 +195,7 @@ static const int TraceMaxAttempts = 3;
         }
     }
     [_output write:[NSString stringWithFormat:@"%@\n", record]];
-    [_contentString appendString:[NSString stringWithFormat:@"%@\n", record]];
+    [_contentString addObject:[record buildDirectRecord]];
 
     return err;
 }
@@ -193,6 +227,9 @@ static const int TraceMaxAttempts = 3;
         }
         addr.sin_addr = *(struct in_addr*)host->h_addr;
         [self.output write:[NSString stringWithFormat:@"traceroute to ip %s ...\n", inet_ntoa(addr.sin_addr)]];
+        _targetIp = [NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)];
+    }else{
+        _targetIp =_host;
     }
 
     int recv_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
@@ -223,7 +260,9 @@ static const int TraceMaxAttempts = 3;
     } while (++ttl <= _maxTtl && !_stopped && ip != addr.sin_addr.s_addr);
     close(send_sock);
     close(recv_sock);
-
+    if (ip == addr.sin_addr.s_addr){
+        _commandStatus = @"success";
+    }
     NSInteger code = 0;
     if (_stopped) {
         code = kCLSRequestStoped;
@@ -232,14 +271,27 @@ static const int TraceMaxAttempts = 3;
         CLSTraceRouteResult* result = [[CLSTraceRouteResult alloc] init:code ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)] content:_contentString];
         _complete(result);
     }];
-    [_sender report:[[CLSTraceRouteResult alloc] init:code ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)] content:_contentString].content method:@"traceRoute" domain:_host];
+
+    [_sender report:[self buildResult]method:@"traceRoute" domain:_host];
+}
+
+- (NSDictionary*)buildResult{
+    NSDictionary *result = @{
+        @"host":_host,
+       @"host_ip":_targetIp,
+       @"command_status":_commandStatus,
+        @"traceroute_node_results":_contentString
+       };
+    NSError *error = nil;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&error];
+    return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] ;
 }
 
 + (instancetype)start:(NSString*)host
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTraceRouteCompleteHandler)complete
                sender: (baseSender *)sender{
-    return [CLSTraceRoute start:host output:output complete:complete sender:sender maxTtl:30];
+    return [CLSTraceRoute start:host output:output complete:complete sender:sender maxTtl:64];
 }
 
 + (instancetype)start:(NSString*)host

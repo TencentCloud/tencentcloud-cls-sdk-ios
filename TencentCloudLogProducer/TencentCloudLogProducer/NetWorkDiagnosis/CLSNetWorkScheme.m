@@ -72,7 +72,8 @@
     scheme.carrier = [scheme returnDashIfNull:[CLSUtils getCarrier]];
     scheme.access = [scheme returnDashIfNull:[CLSUtils getNetworkTypeName]];
     scheme.access_subtype = [scheme returnDashIfNull:[CLSUtils getNetworkSubTypeName]];
-
+    scheme.app_version = @"-";
+    scheme.utdid = @"-";
     return scheme;
 }
 
@@ -111,7 +112,7 @@
     [self putIfNotNull:fields andKey:@"logon_type" andValue: [self logon_type]];
     [self putIfNotNull:fields andKey:@"user_id" andValue: [self user_id]];
     [self putIfNotNull:fields andKey:@"long_login_user_id" andValue: [self long_login_user_id]];
-    [self putIfNotNull:fields andKey:@"device_model" andValue: [self device_model]];
+    [self putIfNotNull:fields andKey:@"brand" andValue: [self device_model]];
     [self putIfNotNull:fields andKey:@"os" andValue: [self os]];
     [self putIfNotNull:fields andKey:@"os_version" andValue: [self os_version]];
     [self putIfNotNull:fields andKey:@"carrier" andValue: [self carrier]];
@@ -122,7 +123,9 @@
     [self putIfNotNull:fields andKey:@"local_time" andValue: [self local_time]];
     [self putIfNotNull:fields andKey:@"local_timestamp" andValue: [self local_timestamp]];
     [self putIfNotNull:fields andKey:@"result" andValue: [self result]];
-    [self putIfNotNull:fields andKey:@"domain" andValue: [self domain]];
+    [self putIfNotNull:fields andKey:@"app_version" andValue: [self app_version]];
+    [self putIfNotNull:fields andKey:@"utdid" andValue: [self utdid]];
+    [self putIfNotNull:fields andKey:@"method" andValue: [self method]];
     
     // ignore ext fields
     if (ignore) {
