@@ -67,4 +67,8 @@
     [CLSTraceRoute start:host output:output complete:complete sender:_sender maxTtl:maxTtl];
 }
 
+// httping
+- (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate{
+    [CLSHttp start:url output:output complete:complate sender:_sender];
+}
 @end
