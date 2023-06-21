@@ -13,4 +13,5 @@
 #import "CLSNetworkDiagnosisPlugin.h"
 #import "CLSPing.h"
 #import "CLSTcpPing.h"
+#import "CLSHttping.h"
 #import "CLSTraceRoute.h"

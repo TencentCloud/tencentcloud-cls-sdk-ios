@@ -9,6 +9,7 @@
 #import "CLSConfig.h"
 #import "baseSender.h"
 #import "CLSPing.h"
+#import "CLSHttping.h"
 #import "CLSProtocols.h"
 #import "CLSTcpPing.h"
 #import "CLSTraceRoute.h"
@@ -30,6 +31,10 @@ NS_ASSUME_NONNULL_BEGIN
 //traceroute
 - (void)traceRoute:(NSString*)host output:(id<CLSOutputDelegate>)output complete:(CLSTraceRouteCompleteHandler)complete;
 - (void)traceRoute:(NSString*)host output:(id<CLSOutputDelegate>)output complete:(CLSTraceRouteCompleteHandler)complete maxTtl:(NSInteger)maxTtl;
+
+//httping
+- (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate;
+
 @end
 
 NS_ASSUME_NONNULL_END

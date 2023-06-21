@@ -32,6 +32,7 @@
 #import "CLSNetworkDiagnosisPlugin.h"
 #import "CLSNetWorkScheme.h"
 #import "CLSPing.h"
+#import "CLSHttping.h"
 #import "CLSProtocols.h"
 #import "CLSQueue.h"
 #import "CLSSystemCapabilities.h"

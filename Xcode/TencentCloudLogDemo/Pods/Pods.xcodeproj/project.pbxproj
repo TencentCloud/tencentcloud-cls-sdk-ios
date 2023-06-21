@@ -82,6 +82,10 @@
 		994A87EE2872ED9F004AF951 /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 994A87EC2872ED9F004AF951 /* utils.h */; };
 		994A87EF2872ED9F004AF951 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 994A87ED2872ED9F004AF951 /* utils.c */; };
 		99915979A6E8C2AD11C5FB76D629266D /* basePlugin.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A054E4B684E0CC5FED30EC8EEBA1C8B /* basePlugin.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		99EFBCC22A3AB50200E65BEB /* CLSHttping.m in Sources */ = {isa = PBXBuildFile; fileRef = 99EFBCC12A3AB50100E65BEB /* CLSHttping.m */; };
+		99EFBCC32A3AB81E00E65BEB /* CLSHttping.h in Sources */ = {isa = PBXBuildFile; fileRef = 99EFBCC02A3AB4E900E65BEB /* CLSHttping.h */; };
+		99EFBCC42A3AB87C00E65BEB /* CLSHttping.h in Headers */ = {isa = PBXBuildFile; fileRef = 99EFBCC02A3AB4E900E65BEB /* CLSHttping.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		99EFBCC52A3AB89B00E65BEB /* CLSHttping.m in Headers */ = {isa = PBXBuildFile; fileRef = 99EFBCC12A3AB50100E65BEB /* CLSHttping.m */; settings = {ATTRIBUTES = (Public, ); }; };
 		9A1C622250F812306DA6A714ACF5D337 /* LogProducerClient.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D53CB6D04A9B6A5183F5A1062DCD427 /* LogProducerClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9F2881CF039FC2B9FB045913EBCA8632 /* TencentCloudLogProducer.h in Headers */ = {isa = PBXBuildFile; fileRef = 36BAFBAF233F718C14F4BD453008A6F2 /* TencentCloudLogProducer.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A2E260741923AC66B336EF20AB62776B /* log_define.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AC2F2D3AA3EA76106385F4CD6F3A103 /* log_define.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -254,7 +258,7 @@
 		5A78EC3C24D0EBCE04809C8D6B49251A /* mprintf.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = mprintf.h; sourceTree = "<group>"; };
 		5D29FD0590F7E5A6AADB3FFE11D1AF5C /* Reachability.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		5E9FF6E530AA7F518288A2EECE10B07D /* opensslconf.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = opensslconf.h; path = GMFrameworks/openssl.framework/Headers/opensslconf.h; sourceTree = "<group>"; };
-		6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = TencentCloudLogProducer; path = TencentCloudLogProducer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TencentCloudLogProducer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		607F258BFCC0C58EDFDC76136952EC19 /* urlapi.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = urlapi.h; sourceTree = "<group>"; };
 		63E65598EA4F6788B398DC1A4EB1E6A9 /* sm2.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = sm2.h; path = GMFrameworks/openssl.framework/Headers/sm2.h; sourceTree = "<group>"; };
 		650103BFE77B3B1061F7E1D5CE9962F5 /* bn.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = bn.h; path = GMFrameworks/openssl.framework/Headers/bn.h; sourceTree = "<group>"; };
@@ -311,6 +315,8 @@
 		994A87EC2872ED9F004AF951 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
 		994A87ED2872ED9F004AF951 /* utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utils.c; sourceTree = "<group>"; };
 		99CF9BA842D9FF351084CA6E91F9054F /* CLSAdapter.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = CLSAdapter.m; sourceTree = "<group>"; };
+		99EFBCC02A3AB4E900E65BEB /* CLSHttping.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CLSHttping.h; sourceTree = "<group>"; };
+		99EFBCC12A3AB50100E65BEB /* CLSHttping.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CLSHttping.m; sourceTree = "<group>"; };
 		9A2E5D4D9494C66723D29837BA9DA3B1 /* md2.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = md2.h; path = GMFrameworks/openssl.framework/Headers/md2.h; sourceTree = "<group>"; };
 		9CD52F48CA08DA96BE70C0EDD9B276C3 /* Reachability.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
 		9D940727FF8FB9C785EB98E56350EF41 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
@@ -510,6 +516,8 @@
 				0047DC00BD493522027D4904659C260B /* CLSTraceRoute.m */,
 				AFA431664CB1C70B7AD649B3FBD9E21D /* CLSUtils.h */,
 				39C40ED1A631476E323EEBC43A86CCFD /* CLSUtils.m */,
+				99EFBCC02A3AB4E900E65BEB /* CLSHttping.h */,
+				99EFBCC12A3AB50100E65BEB /* CLSHttping.m */,
 			);
 			name = NetWorkDiagnosis;
 			sourceTree = "<group>";
@@ -723,7 +731,7 @@
 			children = (
 				16193564D868A898E90A85316FEA2C9E /* Pods-TencentCloudLogDemo */,
 				400FF55D0451E7A8F33A3D0D3E11C1B9 /* Reachability */,
-				6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer */,
+				6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -908,6 +916,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99EFBCC42A3AB87C00E65BEB /* CLSHttping.h in Headers */,
+				99EFBCC52A3AB89B00E65BEB /* CLSHttping.m in Headers */,
 				99915979A6E8C2AD11C5FB76D629266D /* basePlugin.h in Headers */,
 				C52742047D27AD79C7EC5EBDEF0E308E /* baseSender.h in Headers */,
 				6D7E4C09E1EFA080DC68BB111248C112 /* cls_log.h in Headers */,
@@ -986,7 +996,7 @@
 			);
 			name = TencentCloudLogProducer;
 			productName = TencentCloudLogProducer;
-			productReference = 6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer */;
+			productReference = 6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		8E33B2BF1257C71A577488EEB8C80F8D /* Pods-TencentCloudLogDemo */ = {
@@ -1087,6 +1097,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99EFBCC32A3AB81E00E65BEB /* CLSHttping.h in Sources */,
 				43D6B8CCD69E1B1A166993697E2C1428 /* basePlugin.m in Sources */,
 				3A0E0F3FB464E2D430FEFCC7DDAC5258 /* baseSender.m in Sources */,
 				21BC84C5E0388AE6AECAFE29DF577474 /* cls_log.c in Sources */,
@@ -1121,6 +1132,7 @@
 				B2C9700657127A2B647A8C89C664FA7C /* protobuf-c.c in Sources */,
 				FE9D2314DCE2F21B9696B5C4007F50D5 /* rbtree.c in Sources */,
 				6F3A8AF487708D769E94ADDCF07CB011 /* sds.c in Sources */,
+				99EFBCC22A3AB50200E65BEB /* CLSHttping.m in Sources */,
 				7632AA44BE4BDC49AA5EF30B4BCE1753 /* sha1.c in Sources */,
 				5144EF3C1EEDCBD4F22FB7640378CA9F /* signature.c in Sources */,
 				1DE2F376AC57FFEC8B47146F2F94F488 /* TencentCloudLogProducer-dummy.m in Sources */,
