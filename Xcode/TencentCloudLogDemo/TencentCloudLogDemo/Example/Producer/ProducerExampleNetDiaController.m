@@ -78,7 +78,7 @@
     [clsAdapter initWithCLSConfig:config];
     
     
-    [_contentString appendString:[NSString stringWithFormat:@"endpoint:%@\n", config.endpoint]];
+//    [_contentString appendString:[NSString stringWithFormat:@"endpoint:%@\n", config.endpoint]];
     //ping
 //    [[CLSNetworkDiagnosis sharedInstance] ping:@"ap-guangzhou.cbs.tencentcs.com" size:0 output:[[CLSWriter alloc] init] complete:^(CLSPingResult *result){
 //
@@ -92,8 +92,15 @@
 //    }];
     
     //traceroute
-    [[CLSNetworkDiagnosis sharedInstance] traceRoute:@"ap-guangzhou.cls.tencentcs.com" output:[[CLSWriter alloc] init] complete:^(CLSTraceRouteResult *result){
-        [_contentString appendString:[NSString stringWithFormat:@"traceResult:%@\n", result.content]];
+//    [[CLSNetworkDiagnosis sharedInstance] traceRoute:@"ap-guangzhou.cls.tencentcs.com" output:[[CLSWriter alloc] init] complete:^(CLSTraceRouteResult *result){
+//        [_contentString appendString:[NSString stringWithFormat:@"traceResult:%@\n", result.content]];
+//        [self UpdateReult:_contentString];
+//    }];
+    
+    //httping
+    [[CLSNetworkDiagnosis sharedInstance] httping:@"https://ap-guangzhou.cls.tencentcs.com/ping" output:[[CLSWriter alloc] init] complate:^(CLSHttpResult *result){
+        NSLog(result.description);
+        [_contentString appendString:[NSString stringWithFormat:@"httpResult:%@\n",result.description]];
         [self UpdateReult:_contentString];
     }];
 }
