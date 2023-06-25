@@ -1,9 +1,9 @@
 PODS:
-  - GMOpenSSL (2.2.6)
+  - GMOpenSSL (2.2.9)
   - Reachability (3.2)
-  - TencentCloudLogProducer/Core (1.0.0):
+  - TencentCloudLogProducer/Core (1.0.4):
     - GMOpenSSL (~> 2.2.6)
-  - TencentCloudLogProducer/NetWorkDiagnosis (1.0.0):
+  - TencentCloudLogProducer/NetWorkDiagnosis (1.0.4):
     - Reachability (~> 3.2)
     - TencentCloudLogProducer/Core
 
@@ -21,9 +21,9 @@ EXTERNAL SOURCES:
     :path: "../../"
 
 SPEC CHECKSUMS:
-  GMOpenSSL: 9a58d4bbae233579275605fb65f7d92fb01f3c06
+  GMOpenSSL: d6d119ff8f00d4e03c2cdf733fb61e98e22da9c7
   Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
-  TencentCloudLogProducer: c92c98c8c68adde6c28edbdaa1ab54b409cfdbeb
+  TencentCloudLogProducer: 01edbcc255adf0b42a48e3957a82abe890c92ea8
 
 PODFILE CHECKSUM: 08eb0903ad8062c9e40619e96643e3b6d8eef6d2
 
