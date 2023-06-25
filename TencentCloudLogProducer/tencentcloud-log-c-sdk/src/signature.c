@@ -5,6 +5,7 @@
 #include "rbtree.h"
 #include "unistd.h"
 #include "map.h"
+#include <CommonCrypto/CommonHMAC.h>
 
 void _sha1(const void *data, size_t len,char *c_sha1)
 {
@@ -21,23 +22,33 @@ void _sha1(const void *data, size_t len,char *c_sha1)
     }
 }
 
+//void _hmac_sha1(const char *key, const void *data, size_t len, char *c_hmacsha1)
+//{
+//    unsigned char digest[EVP_MAX_MD_SIZE];
+//    memset(digest, 0, EVP_MAX_MD_SIZE);
+//    unsigned digest_len;
+//    HMAC_CTX *ctx = HMAC_CTX_new();
+//	HMAC_CTX_reset(ctx);
+//    HMAC_Init_ex(ctx, key, strlen(key), EVP_sha1(), NULL);
+//    HMAC_Update(ctx, (unsigned char *)data, len);
+//    HMAC_Final(ctx, digest, &digest_len);
+//    HMAC_CTX_free(ctx);
+//    unsigned i = 0;
+//    for (; i != digest_len; ++i)
+//    {
+//        sprintf(&c_hmacsha1[i * 2], "%02x", (unsigned int)digest[i]);
+//    }
+//}
+
 void _hmac_sha1(const char *key, const void *data, size_t len, char *c_hmacsha1)
 {
-    unsigned char digest[EVP_MAX_MD_SIZE];
-    memset(digest, 0, EVP_MAX_MD_SIZE);
-    unsigned digest_len;
-    HMAC_CTX *ctx = HMAC_CTX_new();
-	HMAC_CTX_reset(ctx);
-    HMAC_Init_ex(ctx, key, strlen(key), EVP_sha1(), NULL);
-    HMAC_Update(ctx, (unsigned char *)data, len);
-    HMAC_Final(ctx, digest, &digest_len);
-    HMAC_CTX_free(ctx);
-    unsigned i = 0;
-    for (; i != digest_len; ++i)
-    {
-        sprintf(&c_hmacsha1[i * 2], "%02x", (unsigned int)digest[i]);
+    unsigned char result[CC_SHA1_DIGEST_LENGTH];
+    CCHmac(kCCHmacAlgSHA1, key, strlen(key), data, strlen(data), result);
+    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
+        sprintf(&c_hmacsha1[i * 2], "%02x", (unsigned int)result[i]);
     }
 }
+
 
 void urlencode(const char *s,unsigned char *c_url)
 {
