@@ -289,9 +289,7 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 * @param output   输出 callback
 * @param callback 回调 callback
 */
-- (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate{
-    [CLSHttp start:url output:output complete:complate sender:_sender];
-}
+- (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate;
 ```
 
 
