@@ -94,7 +94,7 @@ void GetQueryString(const root_t parameterList,
 }
 
 
-post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, const char *accessKey, const char *topic,lz4_content *buffer, const char *token, log_post_option *option)
+void PostLogsWithLz4(const char *endpoint, const char *accesskeyId, const char *accessKey, const char *topic,lz4_content *buffer, const char *token, log_post_option *option, post_result *rst)
 {
     const char *operation = "/structuredlog";
     root_t httpHeader = RB_ROOT;
@@ -141,8 +141,6 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
         queryUrl = sdscat(queryUrl, queryString);
     }
     CURL *curl = curl_easy_init();
-    post_result *result = (post_result *)malloc(sizeof(post_result));
-    memset(result, 0, sizeof(post_result));
     if (curl != NULL)
     {
 
@@ -180,11 +178,11 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
         {
             if ((res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code)) != CURLE_OK)
             {
-                result->statusCode = -2;
+                rst->statusCode = -2;
             }
             else
             {
-                result->statusCode = http_code;
+                rst->statusCode = http_code;
             }
         }
         else
@@ -197,26 +195,28 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
             {
                 body = sdscpy(body, curl_easy_strerror(res));
             }
-            result->statusCode = -1 * (int)res;
+            rst->statusCode = -1 * (int)res;
         }
         // header and body 's pointer may be modified in callback (size > 256)
 
         if (sdslen(header) > 0)
         {
-            result->requestID = header;
-        }
-        else
-        {
-            sdsfree(header);
-            header = NULL;
+            strncpy(rst->requestID, header, sdslen(header));
         }
 
         // body will be NULL or a error string(net error or request error)
-        result->message = body;
+        if ((body != NULL) && (sdslen(body) != 0)){
+            strncpy(rst->message, body, sdslen(body));
+        }
+        
 
         curl_slist_free_all(headers); /* free the list again */
         sdsfree(queryString);
         sdsfree(queryUrl);
+        sdsfree(header);
+        header = NULL;
+        sdsfree(body);
+        body = NULL;
         curl_easy_cleanup(curl);
 
         //释放map_t headers
@@ -240,11 +240,9 @@ post_result *PostLogsWithLz4(const char *endpoint, const char *accesskeyId, cons
             }
         }
     }
-
-    return result;
 }
 
-void SearchLogApi(const char *endpoint,root_t httpHeader,root_t params,get_result* result){
+void SearchLogApi(const char *endpoint,root_t httpHeader,root_t params,get_result *result){
     sds queryString = sdsnewEmpty(1024);
     GetQueryString(params, queryString);
 
@@ -316,21 +314,23 @@ void SearchLogApi(const char *endpoint,root_t httpHeader,root_t params,get_resul
         }
         if (sdslen(header) > 0)
         {
-            result->requestID = header;
-        }
-        else
-        {
-            sdsfree(header);
-            header = NULL;
+            strncpy(result->requestID, header, sdslen(header));
         }
 
        // body will be NULL or a error string(net error or request error)
-        result->message = body;
-
+        if ((body != NULL) && (sdslen(body) != 0)){
+            result->message = (char*)malloc(strlen(body)+1);
+            memset(result->message,0,strlen(body)+1);
+            strncpy(result->message, body, sdslen(body));
+        }
 
         curl_slist_free_all(headers); /* free the list again */
         sdsfree(queryString);
         sdsfree(queryUrl);
+        sdsfree(header);
+        header = NULL;
+        sdsfree(body);
+        body = NULL;
         curl_easy_cleanup(curl);
 
         //释放map_t headers

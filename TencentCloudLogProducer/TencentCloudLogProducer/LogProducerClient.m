@@ -127,26 +127,15 @@
     for(int i = 0; i < topicids.count; i++){
         topics[i] = [topicids[i] UTF8String];
     }
-    get_result* r = (get_result*)malloc(sizeof(get_result));
-    memset(r, 0, sizeof(get_result));
-    ClsSearchLog([region UTF8String],[secretid UTF8String] ,[secretkey UTF8String],[logsetid UTF8String],topics,topicids.count,[starttime UTF8String],[endtime UTF8String],[query UTF8String],limit,[context UTF8String],[sort UTF8String],r);
+    get_result r;
+    memset(r.requestID, 0, 128);
+    ClsSearchLog([region UTF8String],[secretid UTF8String] ,[secretkey UTF8String],[logsetid UTF8String],topics,topicids.count,[starttime UTF8String],[endtime UTF8String],[query UTF8String],limit,[context UTF8String],[sort UTF8String],&r);
     
     free(topics);
-    result.statusCode = r->statusCode;
-    result.message = r->message ? [NSString stringWithUTF8String:r->message] : nil;
-    result.requestID = r->requestID ? [NSString stringWithUTF8String:r->requestID] : nil;
-    if (r != NULL)
-    {
-        if (r->message != NULL)
-        {
-            sdsfree(r->message);
-        }
-        if (r->requestID != NULL)
-        {
-            sdsfree(r->requestID);
-        }
-        free(r);
-    }
+    result.statusCode = r.statusCode;
+    result.message = r.message ? [NSString stringWithUTF8String:r.message] : nil;
+    result.requestID = r.requestID ? [NSString stringWithUTF8String:r.requestID] : nil;
+    free(r.message);
     return result;
 }
 
