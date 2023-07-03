@@ -22,16 +22,17 @@ typedef struct _log_post_option log_post_option;
 int cls_log_init(int32_t log_global_flag);
 void cls_log_destroy();
 
-post_result *PostLogsWithLz4(const char *endpoint,
+void PostLogsWithLz4(const char *endpoint,
                                        const char *accesskeyId,
                                        const char *accessKey, const char *topic,
                                        lz4_content *buffer,
                                        const char *token,
-                                       log_post_option *option);
+                                       log_post_option *option,
+                                       post_result *rst);
 
 void post_log_result_destroy(post_result *result);
 void GetQueryString(const root_t parameterList, sds queryString);
 
-void SearchLogApi(const char *endpoint,root_t httpHeader,root_t params,get_result* result);
+void SearchLogApi(const char *endpoint,root_t httpHeader,root_t params,get_result *result);
 CLS_LOG_CPP_END
 #endif
