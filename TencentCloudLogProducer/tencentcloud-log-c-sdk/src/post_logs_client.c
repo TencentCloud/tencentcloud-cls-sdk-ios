@@ -42,7 +42,7 @@ typedef struct
     int32_t retryCount;
 } send_error_info;
 
-int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param, post_result *result, send_error_info *error_info);
+int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param, post_result result, send_error_info *error_info);
 
 void *SendThread(void *param)
 {
@@ -121,13 +121,17 @@ void *SendProcess(void *param)
         sds topic = NULL;
         sds token = NULL;
         GetBaseInfo(config, &accessKeyId, &accessKey, &topic,&token);
-        post_result *rst = PostLogsWithLz4(config->endpoint, accessKeyId, accessKey, topic, send_buf,token, &option);
+        post_result rst;
+        rst.statusCode = 0;
+        memset(rst.message, 0, 256);
+        memset(rst.requestID, 0, 128);
+        PostLogsWithLz4(config->endpoint, accessKeyId, accessKey, topic, send_buf,token, &option, &rst);
         sdsfree(accessKeyId);
         sdsfree(accessKey);
         sdsfree(topic);
         sdsfree(token);
         int32_t sleepMs = AfterProcess(config,send_param, rst, &error_info);
-        post_log_result_destroy(rst);
+//        post_log_result_destroy(rst);
 
         // tmp buffer, free
         if (send_buf != send_param->log_buf)
@@ -157,14 +161,14 @@ void *SendProcess(void *param)
     return NULL;
 }
 
-int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param, post_result *result, send_error_info *error_info)
+int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param, post_result result, send_error_info *error_info)
 {
     int32_t send_result = ErrorResult(result);
     ProducerManager *producermgr = (ProducerManager *)send_param->producermgr;
     if (producermgr->callbackfunc != NULL)
     {
         int callback_result = send_result == LOG_SEND_OK ? LOG_PRODUCER_OK : (LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - LOG_SEND_NETWORK_ERROR);
-        producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result->requestID, result->message, send_param->log_buf->data, producermgr->user_param);
+        producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result.requestID, result.message, send_param->log_buf->data, producermgr->user_param);
     }
     switch (send_result)
     {
@@ -193,8 +197,8 @@ int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param,
                      send_param->producerconf->topic,
                      (int)send_param->log_buf->length,
                      (int)send_param->log_buf->raw_length,
-                     result->statusCode,
-                     result->message);
+                     result.statusCode,
+                     result.message);
         error_info->retryCount++;
         return error_info->last_sleep_ms;
     default:
@@ -211,8 +215,8 @@ int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param,
                       (int)send_param->log_buf->length,
                       (int)send_param->log_buf->raw_length,
                       (int)producermgr->totalBufferSize,
-                      result->statusCode,
-                      result->message);
+                      result.statusCode,
+                      result.message);
     }
     else
     {
@@ -221,8 +225,8 @@ int32_t AfterProcess(ProducerConfig *config,log_producer_send_param *send_param,
                      (int)send_param->log_buf->length,
                      (int)send_param->log_buf->raw_length,
                      (int)producermgr->totalBufferSize,
-                     result->statusCode,
-                     result->message);
+                     result.statusCode,
+                     result.message);
     }
 
     return 0;
@@ -235,33 +239,33 @@ int SendData(log_producer_send_param *send_param)
     return LOG_PRODUCER_OK;
 }
 
-int32_t ErrorResult(post_result *result)
+int32_t ErrorResult(post_result result)
 {
-    if (result->statusCode / 100 == 2)
+    if (result.statusCode / 100 == 2)
     {
         return LOG_SEND_OK;
     }
-    if (result->statusCode <= 0)
+    if (result.statusCode <= 0)
     {
         return LOG_SEND_NETWORK_ERROR;
     }
-    if (result->statusCode == 405)
+    if (result.statusCode == 405)
     {
         return LOG_SEND_PARAMETERS_ERROR;
     }
-    if (result->statusCode == 403)
+    if (result.statusCode == 403)
     {
         return LOG_SEND_QUOTA_EXCEED;
     }
-    if (result->statusCode == 401 || result->statusCode == 404)
+    if (result.statusCode == 401 || result.statusCode == 404)
     {
         return LOG_SEND_UNAUTHORIZED;
     }
-    if (result->statusCode >= 500 || result->requestID == NULL)
+    if (result.statusCode >= 500 || strlen(result.requestID) == 0)
     {
         return LOG_SEND_SERVER_ERROR;
     }
-    if (result->message != NULL && strstr(result->message, LOGE_TIME_EXPIRED) != NULL)
+    if (result.message != NULL && strstr(result.message, LOGE_TIME_EXPIRED) != NULL)
     {
         return LOG_SEND_TIME_ERROR;
     }
