@@ -280,6 +280,20 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 - (void)traceRoute:(NSString*)host output:(id<CLSOutputDelegate>)output complete:(CLSTraceRouteCompleteHandler)complete maxTtl:(NSInteger)maxTtl;
 ```
 
+#### httping方法
+
+```objective-c
+/**
+*
+* @param url 如：https://ap-guangzhou.cls.tencentcs.com/ping
+* @param output   输出 callback
+* @param callback 回调 callback
+*/
+- (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate;
+```
+
+
+
 ## 日志检索
 
 - ##### 接口api文档参考官网：https://cloud.tencent.com/document/product/614/16875
