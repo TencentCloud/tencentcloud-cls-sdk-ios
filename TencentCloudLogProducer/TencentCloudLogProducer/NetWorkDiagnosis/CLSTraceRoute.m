@@ -267,10 +267,13 @@ static const int TraceMaxAttempts = 3;
     if (_stopped) {
         code = kCLSRequestStoped;
     }
-    [CLSQueue async_run_main:^(void) {
-        CLSTraceRouteResult* result = [[CLSTraceRouteResult alloc] init:code ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)] content:_contentString];
-        _complete(result);
-    }];
+    if (_complete != nil){
+        [CLSQueue async_run_main:^(void) {
+            CLSTraceRouteResult* result = [[CLSTraceRouteResult alloc] init:code ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)] content:_contentString];
+            _complete(result);
+        }];
+    }
+
 
     [_sender report:[self buildResult]method:@"traceRoute" domain:_host];
 }
