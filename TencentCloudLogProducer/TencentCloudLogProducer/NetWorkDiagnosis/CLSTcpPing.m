@@ -20,10 +20,12 @@
 
 - (instancetype)init:(NSInteger)code
                   ip:(NSString *)ip
+                  domain:(NSString *)domain
                  max:(NSTimeInterval)maxTime
                  min:(NSTimeInterval)minTime
                  avg:(NSTimeInterval)avgTime
                 loss:(NSInteger)loss
+                port:(NSInteger)port
                count:(NSInteger)count
            totalTime:(NSTimeInterval)totalTime
               stddev:(NSTimeInterval)stddev;
@@ -188,7 +190,7 @@
                             count:(NSInteger)count
                         totalTime:(NSTimeInterval)time {
     if (code != 0 && code != kCLSRequestStoped) {
-        return [[CLSTcpPingResult alloc] init:code ip:ip max:0 min:0 avg:0 loss:1 count:1 totalTime:time stddev:0];
+        return [[CLSTcpPingResult alloc] init:code ip:ip domain:domain max:0 min:0 avg:0 loss:1 port:port count:1 totalTime:time stddev:0];
     }
     NSTimeInterval max = 0;
     NSTimeInterval min = 10000000;
