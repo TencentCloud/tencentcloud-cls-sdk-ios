@@ -28,7 +28,7 @@
 ### Podfile
 
 ```objective-c
-pod 'TencentCloudLogProducer/Core'
+pod 'TencentCloudLogProducer/Core', '1.0.5'
 ```
 
 ### 配置
