@@ -17,13 +17,19 @@
 struct result
 {
     int statusCode;
-    char * message;
-    char * requestID;
+    char message[256];
+    char requestID[128];
 };
 //内部api使用的错误
 typedef struct result post_result;
 
-typedef struct result get_result;
+struct SearchResult{
+    int statusCode;
+    char *message;
+    char requestID[128];
+};
+
+typedef struct SearchResult get_result;
 
 
 #endif

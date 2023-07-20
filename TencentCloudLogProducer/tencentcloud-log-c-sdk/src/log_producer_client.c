@@ -121,7 +121,7 @@ PostClsLog(clslogproducerclient *client,
 }
 
 //search log
-int ClsSearchLog(const char *region,const char *secretid, const char* secretkey,const char* logsetid,const char **topicids,const int topicidslens,const char* starttime,const char* endtime,const char* query,size_t limit,const char* context,const char* sort,get_result* result){
+int ClsSearchLog(const char *region,const char *secretid, const char* secretkey,const char* logsetid,const char **topicids,const int topicidslens,const char* starttime,const char* endtime,const char* query,size_t limit,const char* context,const char* sort,get_result *result){
     //参数校验
     int iRet = SearchLogCheckParam(region,secretid, secretkey,logsetid,topicids, topicidslens, starttime, endtime,query, limit,sort);
     if(iRet != 0){

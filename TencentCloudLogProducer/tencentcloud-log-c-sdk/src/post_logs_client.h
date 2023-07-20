@@ -42,7 +42,7 @@ extern void *SendProcess(void *send_param);
 extern int
 SendData(log_producer_send_param *send_param);
 
-extern int32_t ErrorResult(post_result *result);
+extern int32_t ErrorResult(post_result result);
 
 extern log_producer_send_param *
 ConstructSendParam(ProducerConfig *producerconf,
