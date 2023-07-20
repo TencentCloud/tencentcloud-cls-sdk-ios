@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name         = "TencentCloudLogProducer"
-  s.version      = "1.0.4-signature"
+  s.version      = "1.0.5"
   s.summary      = "TencentCloudLogProducer ios"
   s.description  = <<-DESC
   log service ios producer.
@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
   s.homepage     = 'https://cloud.tencent.com/'
   s.license      = { :type => 'MIT', :file => 'LICENSE' }
   s.author             = { "herrylv" => "herrylv@tencent.com" }
-  s.source       = { :git => "https://github.com/TencentCloud/tencentcloud-cls-sdk-ios.git", :branch => 'feature-support-sign-commoncrypto' }
+  s.source       = { :git => "https://github.com/TencentCloud/tencentcloud-cls-sdk-ios.git", :tag => s.version.to_s  }
   s.social_media_url = 'http://t.cn/AiRpol8C'
   s.ios.deployment_target = '9.0'
   s.default_subspec = 'Core'
