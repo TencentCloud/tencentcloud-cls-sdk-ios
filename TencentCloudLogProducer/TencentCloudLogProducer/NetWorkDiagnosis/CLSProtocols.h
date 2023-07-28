@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "CLSUtils.h"
 
+
 @protocol CLSStopDelegate <NSObject>
 
 - (void)stop;
