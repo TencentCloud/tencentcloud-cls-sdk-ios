@@ -46,16 +46,16 @@
 - (void)ping:(NSString*)host size:(NSUInteger)size output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete{
     [CLSPing start:host size:size output:output complete:complete sender:_sender];
 }
-- (void)ping:(NSString*)host size:(NSUInteger)size output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete count:(NSInteger)count{
-    [CLSPing start:host size:size output:output complete:complete sender:_sender count:count];
+- (void)ping:(NSString*)host size:(NSUInteger)size task_timeout:(NSUInteger)task_timeout output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete count:(NSInteger)count{
+    [CLSPing start:host size:size task_timeout:task_timeout output:output complete:complete sender:_sender count:count];
 }
 
 //tcpPing
 - (void)tcpPing:(NSString*)host output:(id<CLSOutputDelegate>)output complete:(CLSTcpPingCompleteHandler)complete{
     [CLSTcpPing start:host output:output complete:complete sender:_sender];
 }
-- (void)tcpPing:(NSString*)host port:(NSUInteger)port count:(NSInteger)count output:(id<CLSOutputDelegate>)output complete:(CLSTcpPingCompleteHandler)complete{
-    [CLSTcpPing start:host port:port count:count output:output complete:complete sender:_sender];
+- (void)tcpPing:(NSString*)host port:(NSUInteger)port task_timeout:(NSUInteger)task_timeout count:(NSInteger)count output:(id<CLSOutputDelegate>)output complete:(CLSTcpPingCompleteHandler)complete{
+    [CLSTcpPing start:host port:port task_timeout:task_timeout count:count output:output complete:complete sender:_sender];
 }
 //
 //traceroute
