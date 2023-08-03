@@ -218,11 +218,12 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 /**
 * @param host   目标 host，如 cloud.tencent.com
 * @param size   数据包大小
+* @param task_timeout 任务超时。毫秒单位
 * @param output   输出 callback
 * @param callback 回调 callback
 * @param count 探测次数
 */
-- (void)ping:(NSString*)host size:(NSUInteger)size output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete count:(NSInteger)count;
+- (void)ping:(NSString*)host size:(NSUInteger)size task_timeout:(NSUInteger)task_timeout output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete count:(NSInteger)count;
 ```
 
 #### tcpping探测方法
@@ -244,11 +245,12 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 /**
 * @param host     目标 host，如：cloud.tencent.com
 * @param port     端口号
+* @param task_timeout 任务超时。毫秒单位
 * @param count.   探测次数
 * @param output   输出 callback                
 * @param callback 回调 callback
 */
-- (void)tcpPing:(NSString*)host port:(NSUInteger)port count:(NSInteger)count output:(id<CLSOutputDelegate>)output complete:(CLSTcpPingCompleteHandler)complete;
+- (void)tcpPing:(NSString*)host port:(NSUInteger)port task_timeout:(NSUInteger)task_timeout count:(NSInteger)count output:(id<CLSOutputDelegate>)output complete:(CLSTcpPingCompleteHandler)complete;
 ```
 
 #### traceroute方法
