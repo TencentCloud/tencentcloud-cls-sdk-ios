@@ -80,13 +80,12 @@
     
 //    [_contentString appendString:[NSString stringWithFormat:@"endpoint:%@\n", config.endpoint]];
     //ping
-//    [[CLSNetworkDiagnosis sharedInstance] ping:@"ap-guangzhou.cbs.tencentcs.com" size:0 output:[[CLSWriter alloc] init] complete:^(CLSPingResult *result){
-//
-//        [_contentString appendString:[NSString stringWithFormat:@"pingResult:%@\n", result.description]];
-//        [self UpdateReult:_contentString];
-//    }];
+    [[CLSNetworkDiagnosis sharedInstance] ping:@"ap-guangzhou.cls.tencentcs.com" size:0 output:[[CLSWriter alloc] init] complete:^(CLSPingResult *result){
+        [_contentString appendString:[NSString stringWithFormat:@"pingResult:%@\n", result.description]];
+        [self UpdateReult:_contentString];
+    }];
     //tcpPing
-//    [[CLSNetworkDiagnosis sharedInstance] tcpPing:@"ap-guangzhou.cls.tencentcs.com" port :80 count:10 output:[[CLSWriter alloc] init] complete:^(CLSTcpPingResult *result){
+//    [[CLSNetworkDiagnosis sharedInstance] tcpPing:@"ap-guangzhou.cls.tencentcs.com" port :80 task_timeout:5000 count:10 output:[[CLSWriter alloc] init] complete:^(CLSTcpPingResult *result){
 //        [_contentString appendString:[NSString stringWithFormat:@"tcpPingResult:%@\n", result.description]];
 //        [self UpdateReult:_contentString];
 //    }];
@@ -98,11 +97,11 @@
 //    }];
     
     //httping
-    [[CLSNetworkDiagnosis sharedInstance] httping:@"https://ap-guangzhou.cls.tencentcs.com/ping" output:[[CLSWriter alloc] init] complate:^(CLSHttpResult *result){
-        NSLog(result.description);
-        [_contentString appendString:[NSString stringWithFormat:@"httpResult:%@\n",result.description]];
-        [self UpdateReult:_contentString];
-    }];
+//    [[CLSNetworkDiagnosis sharedInstance] httping:@"https://ap-guangzhou.cls.tencentcs.com/ping" output:[[CLSWriter alloc] init] complate:^(CLSHttpResult *result){
+//        NSLog(result.description);
+//        [_contentString appendString:[NSString stringWithFormat:@"httpResult:%@\n",result.description]];
+//        [self UpdateReult:_contentString];
+//    }];
 }
 
 @end

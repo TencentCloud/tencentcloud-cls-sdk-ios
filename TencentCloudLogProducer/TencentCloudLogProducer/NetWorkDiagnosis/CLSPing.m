@@ -333,7 +333,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
         struct hostent *host = gethostbyname(hostaddr);
         if (host == NULL || host->h_addr == NULL) {
             [self.output write:@"host illegal exit"];
-            if (_complete != nil) {
+            if (_complete != nil && !_stopped) {
                 [CLSQueue async_run_main:^(void) {
                     CLSPingResult *result = [[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil domain:_host size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0];
                     _complete(result);
@@ -376,17 +376,15 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
         }
         close(sock);
     } while (++index < _count && !_stopped);
-
-    if (_complete) {
-        NSInteger code = r;
-        if (_stopped) {
-            code = kCLSRequestStoped;
-        }
-
+    NSInteger code = r;
+    if (_stopped) {
+        code = kCLSRequestStoped;
+    }
+    if (_complete && !_stopped ) {
         CLSPingResult *result = [self buildResult:code ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)]
                                            domain:_host
                                         durations:durations
-                                            count:index - loss
+                                            count:index
                                              loss:loss
                                         totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000];
         [self.output write:result.description];
@@ -396,12 +394,15 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     }
     
     //发送数据到cls
-    [_sender report:[self buildResult:r ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)]
-                               domain:_host
-                            durations:durations
-                                count:index - loss
-                                 loss:loss
-                            totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"PING" domain:_host];
+    if (!_stopped){
+        [_sender report:[self buildResult:r ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)]
+                                   domain:_host
+                                durations:durations
+                                    count:index
+                                     loss:loss
+                                totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"PING" domain:_host];
+    }
+
     free(durations);
 }
 
@@ -427,11 +428,12 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
                sender: (baseSender *)sender{
-    return [CLSPing start:host size:size output:output complete:complete sender:sender  count:10];
+    return [CLSPing start:host size:size task_timeout:60000 output:output complete:complete sender:sender  count:10];
 }
 
 + (instancetype)start:(NSString *)host
                  size:(NSUInteger)size
+         task_timeout:(NSUInteger)task_timeout
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
                sender: (baseSender *)sender
@@ -439,10 +441,22 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     if (host == nil) {
         host = @"";
     }
+    
     CLSPing *ping = [[CLSPing alloc] init:host size:size output:output complete:complete count:count sender:sender];
-    [CLSQueue async_run_serial:^{
-        [ping run];
-    }];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+        dispatch_semaphore_t mySemaphore = dispatch_semaphore_create(0);
+        dispatch_time_t t_out = dispatch_time(DISPATCH_TIME_NOW, task_timeout * NSEC_PER_MSEC);
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+            [ping run];
+            dispatch_semaphore_signal(mySemaphore);
+        });
+        if (dispatch_semaphore_wait(mySemaphore, t_out) != 0) {
+            [ping stop];
+            if (complete != nil){
+                complete([ping buildResult:kCLSTaskTimeOut ip:@"" domain:@"" durations:0 count:0 loss:0 totalTime:0]);
+            }
+        }
+    });
     return ping;
 }
 
