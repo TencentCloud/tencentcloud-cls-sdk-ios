@@ -43,7 +43,6 @@
                                @"max":[NSString stringWithFormat:@"%.3f", _maxTime],
                                @"min":[NSString stringWithFormat:@"%.3f", _minTime],
                                @"avg":[NSString stringWithFormat:@"%.3f", _avgTime],
-//                               @"size":[NSString stringWithFormat:@"%d", _size],
                                @"stddev":[NSString stringWithFormat:@"%.3f", _stddev],
                                @"loss":[NSString stringWithFormat:@"%.3f", (double)_loss * 100 / (_count)],
                                @"count":[NSString stringWithFormat:@"%d", (int)(_count)],
@@ -133,7 +132,7 @@
         struct hostent *host = gethostbyname(hostaddr);
         if (host == NULL || host->h_addr == NULL) {
             [self.output write:@"Problem accessing the DNS"];
-            if (_complete != nil) {
+            if (_complete != nil && !_stopped) {
                 dispatch_async(dispatch_get_main_queue(), ^(void) {
                     _complete([self buildResult:-1006 ip:nil domain:_host durations:nil loss:0 port:_port count:0 totalTime:0]);
                 });
@@ -165,20 +164,20 @@
             [NSThread sleepForTimeInterval:0.1];
         }
     } while (++index < _count && !_stopped );
-
-    if (_complete) {
-        NSInteger code = r;
-        if (_stopped) {
-            code = kCLSRequestStoped;
-        }
+    NSInteger code = r;
+    if (_stopped) {
+        code = kCLSRequestStoped;
+    }
+    if (_complete && !_stopped) {
         __block NSDate *startDate = begin;
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             _complete([self buildResult:code ip:ip domain:_host durations:intervals loss:loss port:_port count:index totalTime:[[NSDate date] timeIntervalSinceDate:startDate] * 1000]);
             free(intervals);
         });
     }
-    [_sender report:[self buildResult:r ip:ip domain:_host durations:intervals loss:loss port:_port count:index totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"tcpPing" domain:_host];
-    
+    if (!_stopped){
+        [_sender report:[self buildResult:code ip:ip domain:_host durations:intervals loss:loss port:_port count:index totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"tcpPing" domain:_host];
+    }
 }
 
 - (CLSTcpPingResult *)buildResult:(NSInteger)code
@@ -292,11 +291,12 @@
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete
                sender: (baseSender *)sender{
-    return [CLSTcpPing start:host port:80 count:50 output:output complete:complete sender:sender];
+    return [CLSTcpPing start:host port:80 task_timeout:10000 count:50 output:output complete:complete sender:sender];
 }
 
 + (instancetype)start:(NSString *)host
                  port:(NSUInteger)port
+              task_timeout:(NSUInteger)task_timeout
                 count:(NSInteger)count
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete
@@ -309,7 +309,18 @@
                                        count:count
                                       sender:sender];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        [t run];
+        dispatch_semaphore_t mySemaphore = dispatch_semaphore_create(0);
+        dispatch_time_t t_out = dispatch_time(DISPATCH_TIME_NOW, task_timeout * NSEC_PER_MSEC);
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+            [t run];
+            dispatch_semaphore_signal(mySemaphore);
+        });
+        if (dispatch_semaphore_wait(mySemaphore, t_out) != 0) {
+            [t stop];
+            if (complete != nil){
+                complete([t buildResult:kCLSTaskTimeOut ip:@"" domain:@"" durations:0 loss:0 port:0 count:0 totalTime:0]);
+            }
+        }
     });
     return t;
 }

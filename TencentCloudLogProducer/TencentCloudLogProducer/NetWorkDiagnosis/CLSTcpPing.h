@@ -9,6 +9,7 @@
 #import "CLSProtocols.h"
 #import "baseSender.h"
 NS_ASSUME_NONNULL_BEGIN
+
 @interface CLSTcpPingResult : NSObject
 
 @property (readonly) NSInteger code;
@@ -39,6 +40,7 @@ typedef void (^CLSTcpPingCompleteHandler)(CLSTcpPingResult*);
 
 + (instancetype)start:(NSString*)host
                  port:(NSUInteger)port
+         task_timeout:(NSUInteger)task_timeout
                 count:(NSInteger)count
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete

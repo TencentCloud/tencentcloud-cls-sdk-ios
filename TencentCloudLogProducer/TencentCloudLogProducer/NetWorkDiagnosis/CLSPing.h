@@ -54,6 +54,7 @@ typedef void (^CLSPingCompleteHandler)(CLSPingResult*);
 
 + (instancetype)start:(NSString*)host
                  size:(NSUInteger)size
+         task_timeout:(NSUInteger)task_timeout
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
                sender: (baseSender *)sender
