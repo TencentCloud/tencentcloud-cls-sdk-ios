@@ -206,6 +206,8 @@ void PostLogsWithLz4(const char *endpoint, const char *accesskeyId, const char *
 
         // body will be NULL or a error string(net error or request error)
         if ((body != NULL) && (sdslen(body) != 0)){
+            rst->message = (char*)malloc(strlen(body)+1);
+            memset(rst->message,0,strlen(body)+1);
             strncpy(rst->message, body, sdslen(body));
         }
         
