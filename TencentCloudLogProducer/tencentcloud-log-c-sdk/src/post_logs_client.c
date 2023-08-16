@@ -130,7 +130,11 @@ void *SendProcess(void *param)
         sdsfree(topic);
         sdsfree(token);
         int32_t sleepMs = AfterProcess(config,send_param, rst, &error_info);
-        free(rst.message);
+        if (rst.message != NULL){
+            free(rst.message);
+            rst.message = NULL;
+        }
+        
 
         // tmp buffer, free
         if (send_buf != send_param->log_buf)
