@@ -17,7 +17,7 @@
 struct result
 {
     int statusCode;
-    char message[256];
+    char *message;
     char requestID[128];
 };
 //内部api使用的错误
