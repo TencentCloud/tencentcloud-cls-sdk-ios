@@ -123,7 +123,6 @@ void *SendProcess(void *param)
         GetBaseInfo(config, &accessKeyId, &accessKey, &topic,&token);
         post_result rst;
         rst.statusCode = 0;
-        memset(rst.message, 0, 256);
         memset(rst.requestID, 0, 128);
         PostLogsWithLz4(config->endpoint, accessKeyId, accessKey, topic, send_buf,token, &option, &rst);
         sdsfree(accessKeyId);
@@ -131,7 +130,11 @@ void *SendProcess(void *param)
         sdsfree(topic);
         sdsfree(token);
         int32_t sleepMs = AfterProcess(config,send_param, rst, &error_info);
-//        post_log_result_destroy(rst);
+        if (rst.message != NULL){
+            free(rst.message);
+            rst.message = NULL;
+        }
+        
 
         // tmp buffer, free
         if (send_buf != send_param->log_buf)
