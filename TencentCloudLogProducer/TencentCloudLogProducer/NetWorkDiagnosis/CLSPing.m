@@ -223,6 +223,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     uint16_t receivedChecksum = icmpPtr->checksum;
     icmpPtr->checksum = 0;
     uint16_t calculatedChecksum = in_cksum(icmpPtr, len - ((char *)icmpPtr - buffer));
+    NSLog(@"======================:OSSwapBigToHostInt16(icmpPtr->identifier):%d|identifier:%d|identify:%d",identifier,OSSwapBigToHostInt16(icmpPtr->identifier),OSSwapBigToHostInt16(icmpPtr->identifier) == identifier);
 
     return receivedChecksum == calculatedChecksum &&
            icmpPtr->type == kCLSICMPTypeEchoReply &&
@@ -254,6 +255,8 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
        sock:(int)sock
         ttl:(int *)ttlOut
        size:(int *)size {
+    
+    NSLog(@"begin:identifier:%d",identifier);
     ICMPPacket *packet = build_packet(seq, identifier);
     int err = 0;
     err = [self sendPacket:packet sock:sock target:addr];
@@ -269,6 +272,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
 
     ssize_t bytesRead = recvfrom(sock, buffer, kCLSPacketBufferSize, 0,
                                  (struct sockaddr *)&ret_addr, &addrLen);
+    NSLog(@"end:identifier:%d",identifier);
     if (bytesRead < 0) {
         err = errno;
     } else if (bytesRead == 0) {
@@ -428,8 +432,37 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
                sender: (baseSender *)sender{
-    return [CLSPing start:host size:size task_timeout:60000 output:output complete:complete sender:sender  count:10];
+    return [CLSPing start:host size:size task_timeout:10000 output:output complete:complete sender:sender  count:10];
 }
+
+//+ (instancetype)start:(NSString *)host
+//                 size:(NSUInteger)size
+//         task_timeout:(NSUInteger)task_timeout
+//               output:(id<CLSOutputDelegate>)output
+//             complete:(CLSPingCompleteHandler)complete
+//               sender: (baseSender *)sender
+//                count:(NSInteger)count {
+//    if (host == nil) {
+//        host = @"";
+//    }
+//
+//    CLSPing *ping = [[CLSPing alloc] init:host size:size output:output complete:complete count:count sender:sender];
+//    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+//        dispatch_semaphore_t mySemaphore = dispatch_semaphore_create(0);
+//        dispatch_time_t t_out = dispatch_time(DISPATCH_TIME_NOW, task_timeout * NSEC_PER_MSEC);
+//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+//            [ping run];
+//            dispatch_semaphore_signal(mySemaphore);
+//        });
+//        if (dispatch_semaphore_wait(mySemaphore, t_out) != 0) {
+//            [ping stop];
+//            if (complete != nil){
+//                complete([ping buildResult:kCLSTaskTimeOut ip:@"" domain:@"" durations:0 count:0 loss:0 totalTime:0]);
+//            }
+//        }
+//    });
+//    return ping;
+//}
 
 + (instancetype)start:(NSString *)host
                  size:(NSUInteger)size
@@ -441,23 +474,24 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     if (host == nil) {
         host = @"";
     }
-    
     CLSPing *ping = [[CLSPing alloc] init:host size:size output:output complete:complete count:count sender:sender];
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        dispatch_semaphore_t mySemaphore = dispatch_semaphore_create(0);
-        dispatch_time_t t_out = dispatch_time(DISPATCH_TIME_NOW, task_timeout * NSEC_PER_MSEC);
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-            [ping run];
-            dispatch_semaphore_signal(mySemaphore);
-        });
-        if (dispatch_semaphore_wait(mySemaphore, t_out) != 0) {
-            [ping stop];
-            if (complete != nil){
-                complete([ping buildResult:kCLSTaskTimeOut ip:@"" domain:@"" durations:0 count:0 loss:0 totalTime:0]);
-            }
-        }
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [ping run];
+        dispatch_semaphore_signal(semaphore);
     });
-    return ping;
+    
+    // 等待任务完成或超时
+    dispatch_time_t dispatchTimeout = dispatch_time(DISPATCH_TIME_NOW, task_timeout * NSEC_PER_MSEC);
+    long result = dispatch_semaphore_wait(semaphore, dispatchTimeout);
+    if (result != 0) {
+        [ping stop];
+        if (complete != nil){
+            NSLog(@"do process stop");
+            complete([ping buildResult:kCLSTaskTimeOut ip:@"" domain:@"" durations:0 count:0 loss:0 totalTime:0]);
+        }
+    }
+    return NULL;
 }
 
 - (void)stop {
