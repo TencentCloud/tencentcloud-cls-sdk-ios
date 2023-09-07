@@ -123,6 +123,7 @@ void *SendProcess(void *param)
         GetBaseInfo(config, &accessKeyId, &accessKey, &topic,&token);
         post_result rst;
         rst.statusCode = 0;
+        rst.message = NULL;
         memset(rst.requestID, 0, 128);
         PostLogsWithLz4(config->endpoint, accessKeyId, accessKey, topic, send_buf,token, &option, &rst);
         sdsfree(accessKeyId);
