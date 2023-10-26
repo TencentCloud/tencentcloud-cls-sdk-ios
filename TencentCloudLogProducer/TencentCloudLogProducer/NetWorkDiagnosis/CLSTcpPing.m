@@ -318,7 +318,7 @@
         if (dispatch_semaphore_wait(mySemaphore, t_out) != 0) {
             [t stop];
             if (complete != nil){
-                complete([t buildResult:kCLSTaskTimeOut ip:@"" domain:@"" durations:0 loss:0 port:0 count:0 totalTime:0]);
+                complete([t buildResult:-3 ip:@"" domain:@"" durations:0 loss:0 port:0 count:0 totalTime:0]);
             }
         }
     });

@@ -8,7 +8,7 @@
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
-const int kCLSTaskTimeOut = -3;
+//const int kCLSTaskTimeOut = -3;
 @interface CLSUtils : NSObject
 + (NSString *) getDeviceModelIdentifier;
 + (NSString *) getDeviceModel;

@@ -453,7 +453,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
         if (dispatch_semaphore_wait(mySemaphore, t_out) != 0) {
             [ping stop];
             if (complete != nil){
-                complete([ping buildResult:kCLSTaskTimeOut ip:@"" domain:@"" durations:0 count:0 loss:0 totalTime:0]);
+                complete([ping buildResult:-3 ip:@"" domain:@"" durations:0 count:0 loss:0 totalTime:0]);
             }
         }
     });
