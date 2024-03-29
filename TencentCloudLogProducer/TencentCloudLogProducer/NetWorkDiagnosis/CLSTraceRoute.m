@@ -77,6 +77,7 @@
        @"hop":[NSString stringWithFormat:@"%d", (int)(_hop)],
         @"avg_delay":[NSString stringWithFormat:@"%.3f", avg],
         @"loss":[NSString stringWithFormat:@"%.3f",lossRate],
+        @"dns":[CLSUtils GetDNSServers],
         @"is_final_route":@(is_final_route)
        };
     return result;

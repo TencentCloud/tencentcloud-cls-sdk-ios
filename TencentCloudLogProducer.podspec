@@ -56,5 +56,6 @@ Pod::Spec.new do |s|
       'TencentCloudLogProducer/TencentCloudLogProducer/NetWorkDiagnosis/*.h',
       b.frameworks = "SystemConfiguration"
       b.dependency 'Reachability', '~> 3.2'
+      b.libraries = 'resolv'
   end
 end

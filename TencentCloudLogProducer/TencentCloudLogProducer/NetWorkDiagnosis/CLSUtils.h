@@ -17,6 +17,7 @@ const int kCLSTaskTimeOut = -3;
 + (NSString *) getNetworkTypeName;
 + (NSString *) getNetworkSubTypeName;
 + (NSString *) getCPUArch;
++ (NSArray *) GetDNSServers;
 @end
 
 NS_ASSUME_NONNULL_END

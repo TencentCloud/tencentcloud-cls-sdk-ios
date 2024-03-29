@@ -49,6 +49,7 @@ struct Result{
                                @"size":[NSString stringWithFormat:@"%d", _size],
                                @"loss":[NSString stringWithFormat:@"%.3f", (double)_loss * 100 / (_count)],
                                @"count":[NSString stringWithFormat:@"%d", (int)(_count)],
+                               @"dns":[CLSUtils GetDNSServers],
                                @"responseNum":[NSString stringWithFormat:@"%d", (int)(_count - _loss)]
                                };
         NSData *data = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:nil];
@@ -316,6 +317,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
 }
 
 - (void)run{
+    
     const char *hostaddr = [_host UTF8String];
     if (hostaddr == NULL) {
         hostaddr = "\0";

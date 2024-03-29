@@ -24,6 +24,7 @@
                            @"requestTime":[NSString stringWithFormat:@"%.3f", _requestTime],
                            @"httpcode":[NSString stringWithFormat:@"%d", _response.statusCode],
                            @"contentLength":[NSString stringWithFormat:@"%d", contentLength],
+                           @"dns":[CLSUtils GetDNSServers],
                            @"errorMessage":_errMessage,
                            @"headers":strHeaders
                            };
