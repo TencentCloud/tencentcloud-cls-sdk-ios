@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name         = "TencentCloudLogProducer"
-  s.version      = "1.0.9"
+  s.version      = "1.1.0"
   s.summary      = "TencentCloudLogProducer ios"
   s.description  = <<-DESC
   log service ios producer.
@@ -46,7 +46,7 @@ Pod::Spec.new do |s|
           'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_producer_config.h'
           
           c.dependency 'GMOpenSSL', '~> 2.2.6'
-
+  s.resource_bundles = { s.name => ['TencentCloudLogProducer/TencentCloudLogProducer/PrivacyInfo.xcprivacy'] }
   end
   s.subspec 'NetWorkDiagnosis' do |b|
       b.dependency 'TencentCloudLogProducer/Core'
