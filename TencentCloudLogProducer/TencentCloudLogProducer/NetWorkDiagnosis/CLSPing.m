@@ -49,7 +49,6 @@ struct Result{
                                @"size":[NSString stringWithFormat:@"%d", _size],
                                @"loss":[NSString stringWithFormat:@"%.3f", (double)_loss * 100 / (_count)],
                                @"count":[NSString stringWithFormat:@"%d", (int)(_count)],
-                               @"dns":[CLSUtils GetDNSServers],
                                @"responseNum":[NSString stringWithFormat:@"%d", (int)(_count - _loss)]
                                };
         NSData *data = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:nil];

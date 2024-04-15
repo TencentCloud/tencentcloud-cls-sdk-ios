@@ -36,6 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) NSString * utdid;
 @property(nonatomic, strong) NSString * method;
 @property(nonatomic, strong) NSMutableDictionary * ext;
+@property(nonatomic, strong) NSString * dns;
 
 + (CLSNetWorkScheme *) createDefault;
 + (CLSNetWorkScheme *) createDefaultWithCLSConfig: (CLSConfig *) config;

@@ -450,7 +450,7 @@ const int kCLSRequestStoped = -2;
 //    return loaclDns;
 //}
 
-+ (NSArray<NSString *> *)GetDNSServers {
++ (NSString *)GetDNSServers {
     NSMutableArray<NSString *> *dnsArray = [[NSMutableArray alloc] init];
     res_state res = malloc(sizeof(struct __res_state));
 
@@ -476,10 +476,15 @@ const int kCLSRequestStoped = -2;
         }
     }
 
-    res_ndestroy(res);
-    free(res);
-
-    return dnsArray.copy;
+    if (res != NULL) {
+        res_ndestroy(res);
+        free(res);
+    }
+    if (dnsArray.count > 0) {
+        return [dnsArray componentsJoinedByString:@", "];
+    } else {
+        return @"";
+    }
 }
 
 @end
