@@ -126,6 +126,7 @@
     [self putIfNotNull:fields andKey:@"app_version" andValue: [self app_version]];
     [self putIfNotNull:fields andKey:@"utdid" andValue: [self utdid]];
     [self putIfNotNull:fields andKey:@"method" andValue: [self method]];
+    [self putIfNotNull:fields andKey:@"dns" andValue: [self dns]];
     
     // ignore ext fields
     if (ignore) {
