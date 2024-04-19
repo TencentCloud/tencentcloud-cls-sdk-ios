@@ -7,6 +7,7 @@
 
 #import "CLSNetWorkDataSender.h"
 #import "CLSNetWorkScheme.h"
+#import "CLSUtils.h"
 @implementation CLSNetWorkDataSender
 - (void) initWithCLSConfig: (CLSConfig *)config{
     _networkconfig = config;
@@ -58,6 +59,7 @@
 //    [scheme setDomain: domain];
     [scheme setResult: data];
     [scheme setMethod: method];
+    [scheme setDns:[CLSUtils GetDNSServers]];
 
 //    NSMutableDictionary *reserves = [NSMutableDictionary dictionary];
 //    [reserves setObject:[method uppercaseString] forKey:@"method"];

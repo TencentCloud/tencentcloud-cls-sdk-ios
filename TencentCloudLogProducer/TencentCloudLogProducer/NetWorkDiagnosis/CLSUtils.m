@@ -21,13 +21,16 @@
 #import <CoreTelephony/CTCarrier.h>
 #endif
 
-#import <sys/stat.h>
 #import <dlfcn.h>
 //#import "reachable/Rechable.h"
 #import "Reachability.h"
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <mach/machine.h>
+
+#include <resolv.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 const int kCLSRequestStoped = -2;
 
 
@@ -426,6 +429,62 @@ const int kCLSRequestStoped = -2;
         [cpu appendString:@"ARM64"];
     }
     return cpu;
+}
+
+//+ (NSString *)GetDNSServers { /// 获取本机DNS服务器
+//    NSString *loaclDns = @"-";
+//    res_state res = malloc(sizeof(struct __res_state));
+//    NSMutableArray *dnsArray = [NSMutableArray new];
+//    if (res_ninit(res) == 0) {
+//        for (int i = 0; i < res->nscount; i++ ) {
+//            NSString *s = [NSString stringWithUTF8String:inet_ntoa(res->nsaddr_list[i].sin_addr)];
+//            [dnsArray addObject:s];
+//        }
+//    }
+//    res_ndestroy(res);//！！改了这里
+//    free(res);
+//    NSArray *dnsServers = dnsArray.mutableCopy;
+//    if (dnsServers != nil) {
+//        loaclDns = dnsServers[0];
+//    }
+//    return loaclDns;
+//}
+
++ (NSString *)GetDNSServers {
+    NSMutableArray<NSString *> *dnsArray = [[NSMutableArray alloc] init];
+    res_state res = malloc(sizeof(struct __res_state));
+
+    if (res_ninit(res) == 0) {
+        for (int i = 0; i < res->nscount; i++) {
+            char ipBuffer[INET6_ADDRSTRLEN];
+            
+            // 处理 IPv6 地址
+            if (res->nsaddr_list[i].sin_family == AF_INET6) {
+                const char *ipv6 = inet_ntop(AF_INET6, &(res->nsaddr_list[i].sin_addr), ipBuffer, INET6_ADDRSTRLEN);
+                if (ipv6 != NULL) {
+                    NSString *s = [NSString stringWithUTF8String:ipv6];
+                    [dnsArray addObject:s];
+                }
+            }
+            
+            // 处理 IPv4 地址
+            if (res->nsaddr_list[i].sin_family == AF_INET) {
+                const char *ipv4 = inet_ntoa(res->nsaddr_list[i].sin_addr);
+                NSString *s = [NSString stringWithUTF8String:ipv4];
+                [dnsArray addObject:s];
+            }
+        }
+    }
+
+    if (res != NULL) {
+        res_ndestroy(res);
+        free(res);
+    }
+    if (dnsArray.count > 0) {
+        return [dnsArray componentsJoinedByString:@", "];
+    } else {
+        return @"";
+    }
 }
 
 @end
