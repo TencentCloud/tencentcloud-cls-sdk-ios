@@ -49,7 +49,7 @@
     return LogProducerOK == [client PostLog:log];
 }
 
-- (BOOL) report: (NSString *) data method: (NSString *) method domain: (NSString *) domain{
+- (BOOL) report: (NSString *) data method: (NSString *) method domain: (NSString *) domain customFiled: (NSMutableDictionary*) customFiled{
     CLSNetWorkScheme *scheme = [CLSNetWorkScheme createDefaultWithCLSConfig:_networkconfig];
     if (scheme.app_id && [scheme.app_id containsString:@"@"]) {
         NSRange atRange = [scheme.app_id rangeOfString:@"@"];
@@ -75,11 +75,15 @@
 //    scheme.reserves = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
     
     __block Log *log = [[Log alloc] init];
-    // ignore ext fields
-    [[scheme toDictionaryWithIgnoreExt: YES] enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
+    // not ignore global ext fields
+    [[scheme toDictionaryWithIgnoreExt: NO] enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
         [log PutContent:key value:obj];
     }];
-    
+    if (customFiled != nil && customFiled.count > 0){
+        for (id key in customFiled) {
+            [log PutContent:key value:customFiled[key]];
+        }
+    }
     return [self sendDada:log];
 }
 @end

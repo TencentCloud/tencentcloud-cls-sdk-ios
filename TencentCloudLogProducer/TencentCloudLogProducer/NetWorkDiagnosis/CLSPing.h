@@ -50,7 +50,8 @@ typedef void (^CLSPingCompleteHandler)(CLSPingResult*);
                  size:(NSUInteger)size
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
-               sender: (baseSender *)sender;
+               sender: (baseSender *)sender
+              pingExt: (NSMutableDictionary*) pingExt;
 
 + (instancetype)start:(NSString*)host
                  size:(NSUInteger)size
@@ -58,7 +59,8 @@ typedef void (^CLSPingCompleteHandler)(CLSPingResult*);
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
                sender: (baseSender *)sender
-                count:(NSInteger)count;
+                count:(NSInteger)count
+              pingExt: (NSMutableDictionary*) pingExt;
 
 //@interface CLSPing ()
 @property (readonly) NSString *host;
@@ -68,7 +70,7 @@ typedef void (^CLSPingCompleteHandler)(CLSPingResult*);
 @property(nonatomic, strong) baseSender *sender;
 @property (readonly) NSInteger count;
 @property (atomic) BOOL stopped;
-
+@property(nonatomic, strong) NSMutableDictionary * pingExt;
 @end
 
 NS_ASSUME_NONNULL_END

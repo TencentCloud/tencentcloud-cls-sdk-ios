@@ -71,7 +71,9 @@
     // 自定义参数
     [config setUserId:@"user1"];
     [config setChannel:@"channel1"];
-    [config addCustomWithKey:@"customKey" andValue:@"testValue"];
+    [config addCustomWithKey:@"customKey1" andValue:@"testValue"];
+    [config addCustomWithKey:@"customKey2" andValue:@"testValue"];
+    [config addCustomWithKey:@"customKey3" andValue:@"testValue"];
     
     CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
     [clsAdapter addPlugin:[[CLSNetworkDiagnosisPlugin alloc] init]];
@@ -80,18 +82,21 @@
     
 //    [_contentString appendString:[NSString stringWithFormat:@"endpoint:%@\n", config.endpoint]];
     //ping
-    [[CLSNetworkDiagnosis sharedInstance] ping:@"ap-guangzhou.cls.tencentcs.com" size:0 output:[[CLSWriter alloc] init] complete:^(CLSPingResult *result){
+    NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
+    [dictionary setObject:@"newvalue" forKey:@"newcustomkey"];
+    [[CLSNetworkDiagnosis sharedInstance] ping:@"127.0.0.1" size:0 output:[[CLSWriter alloc] init] complete:^(CLSPingResult *result){
         [_contentString appendString:[NSString stringWithFormat:@"pingResult:%@\n", result.description]];
-        [self UpdateReult:_contentString];
-    }];
+        [self UpdateReult:_contentString];
+    } customFiled:dictionary ];
     //tcpPing
-//    [[CLSNetworkDiagnosis sharedInstance] tcpPing:@"ap-guangzhou.cls.tencentcs.com" port :80 task_timeout:5000 count:10 output:[[CLSWriter alloc] init] complete:^(CLSTcpPingResult *result){
+//    [config addCustomWithKey:@"customKey3" andValue:@"newtestValue"];
+//    [[CLSNetworkDiagnosis sharedInstance] tcpPing:@"127.0.0.1" port :80 task_timeout:5000 count:10 output:[[CLSWriter alloc] init] complete:^(CLSTcpPingResult *result){
 //        [_contentString appendString:[NSString stringWithFormat:@"tcpPingResult:%@\n", result.description]];
 //        [self UpdateReult:_contentString];
 //    }];
     
     //traceroute
-//    [[CLSNetworkDiagnosis sharedInstance] traceRoute:@"ap-guangzhou.cls.tencentcs.com" output:[[CLSWriter alloc] init] complete:^(CLSTraceRouteResult *result){
+//    [[CLSNetworkDiagnosis sharedInstance] traceRoute:@"127.0.0.1" output:[[CLSWriter alloc] init] complete:^(CLSTraceRouteResult *result){
 //        [_contentString appendString:[NSString stringWithFormat:@"traceResult:%@\n", result.content]];
 //        [self UpdateReult:_contentString];
 //    }];
