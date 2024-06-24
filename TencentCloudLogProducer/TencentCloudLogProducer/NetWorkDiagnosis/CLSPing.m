@@ -339,7 +339,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
                     CLSPingResult *result = [[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil domain:_host size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0];
                     _complete(result);
                 }];
-                [_sender report:[[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil domain:_host size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0].description method:@"ping" domain:_host];
+                [_sender report:[[CLSPingResult alloc] init:-1006 err_msg:@"host illegal" ip:nil domain:_host size:_size max:0 min:0 avg:0 loss:0 count:0 totalTime:0 stddev:0].description method:@"ping" domain:_host customFiled:_pingExt];
             }
             return;
         }
@@ -401,7 +401,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
                                 durations:durations
                                     count:index
                                      loss:loss
-                                totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"PING" domain:_host];
+                                totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"PING" domain:_host customFiled:_pingExt];
     }
 
     free(durations);
@@ -412,7 +412,8 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
               output:(id<CLSOutputDelegate>)output
             complete:(CLSPingCompleteHandler)complete
                count:(NSInteger)count
-              sender: (baseSender *)sender{
+              sender: (baseSender *)sender
+             pingExt: (NSMutableDictionary*)pingExt{
     if (self = [super init]) {
         _host = host;
         _size = size;
@@ -420,6 +421,7 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
         _complete = complete;
         _count = count;
         _sender = sender;
+        _pingExt = pingExt;
     }
     return self;
 }
@@ -428,8 +430,9 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
                  size:(NSUInteger)size
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
-               sender: (baseSender *)sender{
-    return [CLSPing start:host size:size task_timeout:60000 output:output complete:complete sender:sender  count:10];
+               sender: (baseSender *)sender
+              pingExt: (NSMutableDictionary*)pingExt{
+    return [CLSPing start:host size:size task_timeout:60000 output:output complete:complete sender:sender  count:10 pingExt:pingExt];
 }
 
 + (instancetype)start:(NSString *)host
@@ -438,14 +441,19 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
                output:(id<CLSOutputDelegate>)output
              complete:(CLSPingCompleteHandler)complete
                sender: (baseSender *)sender
-                count:(NSInteger)count {
+                count:(NSInteger)count
+              pingExt: (NSMutableDictionary*) pingExt{
     if (host == nil) {
         host = @"";
     }
     
-    CLSPing *ping = [[CLSPing alloc] init:host size:size output:output complete:complete count:count sender:sender];
+    CLSPing *ping = [[CLSPing alloc] init:host size:size output:output complete:complete count:count sender:sender pingExt:pingExt];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
         dispatch_semaphore_t mySemaphore = dispatch_semaphore_create(0);
+        if (mySemaphore == NULL){
+            NSLog(@"start dispatch_semaphore_create is NULL");
+            return;
+        }
         dispatch_time_t t_out = dispatch_time(DISPATCH_TIME_NOW, task_timeout * NSEC_PER_MSEC);
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
             [ping run];

@@ -24,13 +24,16 @@ typedef void (^CLSTraceRouteCompleteHandler)(CLSTraceRouteResult*);
 + (instancetype)start:(NSString*)host
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTraceRouteCompleteHandler)complete
-               sender: (baseSender *)sender;;
+               sender: (baseSender *)sender
+        traceRouteExt: (NSMutableDictionary*) traceRouteExt;
 
 + (instancetype)start:(NSString*)host
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTraceRouteCompleteHandler)complete
                sender: (baseSender *)sender
-               maxTtl:(NSInteger)maxTtl;
+               maxTtl:(NSInteger)maxTtl
+        traceRouteExt: (NSMutableDictionary*) traceRouteExt;
+
 @end
 
 NS_ASSUME_NONNULL_END
