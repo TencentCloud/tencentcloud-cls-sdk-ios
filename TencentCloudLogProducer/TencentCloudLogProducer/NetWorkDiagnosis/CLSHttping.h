@@ -45,8 +45,10 @@ typedef void (^CLSHttpCompleteHandler)(CLSHttpResult*);
 + (instancetype)start:(NSString*)url
                output:(id<CLSOutputDelegate>)output
              complete:(CLSHttpCompleteHandler)complete
-               sender: (baseSender *)sender;
+               sender: (baseSender *)sender
+           httpingExt: (NSMutableDictionary*) httpingExt;
 
 @property(nonatomic, strong) baseSender *sender;
+@property(nonatomic, strong) NSMutableDictionary *httpingExt;
 
 @end

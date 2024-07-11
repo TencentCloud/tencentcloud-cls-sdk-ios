@@ -36,7 +36,8 @@ typedef void (^CLSTcpPingCompleteHandler)(CLSTcpPingResult*);
 + (instancetype)start:(NSString*)host
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete
-               sender: (baseSender *)sender;
+               sender: (baseSender *)sender
+           tcpPingExt: (NSMutableDictionary*) tcpPingExt;
 
 + (instancetype)start:(NSString*)host
                  port:(NSUInteger)port
@@ -44,7 +45,8 @@ typedef void (^CLSTcpPingCompleteHandler)(CLSTcpPingResult*);
                 count:(NSInteger)count
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete
-               sender: (baseSender *)sender;
+               sender: (baseSender *)sender
+           tcpPingExt: (NSMutableDictionary*) tcpPingExt;
 
 @end
 

@@ -68,7 +68,10 @@
         }
     }
     double lossRate = loss/_count*100;
-    if (_targetIp == ip){
+    if (realCount != 0){
+        avg = totalDelay/realCount;
+    }
+    if ([_targetIp isEqualToString:ip]){
         is_final_route = true;
     }
     NSDictionary *result = @{
@@ -118,7 +121,7 @@
 @property (readonly) NSInteger maxTtl;
 @property (atomic) NSInteger stopped;
 @property (nonatomic, strong) NSMutableArray* contentString;
-
+@property(nonatomic, strong) NSMutableDictionary * traceRouteExt;
 @end
 
 @implementation CLSTraceRoute
@@ -127,7 +130,8 @@
               output:(id<CLSOutputDelegate>)output
             complete:(CLSTraceRouteCompleteHandler)complete
               sender: (baseSender *)sender
-              maxTtl:(NSInteger)maxTtl {
+              maxTtl:(NSInteger)maxTtl 
+       traceRouteExt: (NSMutableDictionary*)traceRouteExt{
     if (self = [super init]) {
         _host = host == nil ? @"" : host;
         _output = output;
@@ -138,6 +142,7 @@
         _sender = sender;
         _targetIp = @"";
         _commandStatus = @"fail";
+        _traceRouteExt = traceRouteExt;
     }
     return self;
 }
@@ -221,7 +226,7 @@ static const int TraceMaxAttempts = 3;
                     CLSTraceRouteResult* result = [[CLSTraceRouteResult alloc] init:-1006 ip:nil content:@"Problem accessing the DNS"];
                     _complete(result);
                 }];
-                [_sender report:@"Problem accessing the DNS" method:@"traceRoute" domain:_host];
+                [_sender report:@"Problem accessing the DNS" method:@"traceRoute" domain:_host customFiled:_traceRouteExt];
             }
             return;
         }
@@ -240,7 +245,7 @@ static const int TraceMaxAttempts = 3;
                 CLSTraceRouteResult* result = [[CLSTraceRouteResult alloc] init:-1 ip:[NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)] content:nil];
                 _complete(result);
             }];
-            [_sender report:@"fcntl socket error!" method:@"traceRoute" domain:_host];
+            [_sender report:@"fcntl socket error!" method:@"traceRoute" domain:_host customFiled:_traceRouteExt];
         }
         close(recv_sock);
         return;
@@ -275,7 +280,7 @@ static const int TraceMaxAttempts = 3;
     }
 
 
-    [_sender report:[self buildResult]method:@"traceRoute" domain:_host];
+    [_sender report:[self buildResult]method:@"traceRoute" domain:_host customFiled:_traceRouteExt];
 }
 
 - (NSDictionary*)buildResult{
@@ -293,16 +298,18 @@ static const int TraceMaxAttempts = 3;
 + (instancetype)start:(NSString*)host
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTraceRouteCompleteHandler)complete
-               sender: (baseSender *)sender{
-    return [CLSTraceRoute start:host output:output complete:complete sender:sender maxTtl:64];
+               sender: (baseSender *)sender
+        traceRouteExt: (NSMutableDictionary*) traceRouteExt{
+    return [CLSTraceRoute start:host output:output complete:complete sender:sender maxTtl:64 traceRouteExt:traceRouteExt];
 }
 
 + (instancetype)start:(NSString*)host
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTraceRouteCompleteHandler)complete
                sender: (baseSender *)sender
-               maxTtl:(NSInteger)maxTtl {
-    CLSTraceRoute* t = [[CLSTraceRoute alloc] init:host output:output complete:complete sender:sender maxTtl:maxTtl];
+               maxTtl:(NSInteger)maxTtl
+        traceRouteExt: (NSMutableDictionary*) traceRouteExt{
+    CLSTraceRoute* t = [[CLSTraceRoute alloc] init:host output:output complete:complete sender:sender maxTtl:maxTtl traceRouteExt:traceRouteExt];
 
     [CLSQueue async_run_serial:^(void) {
         [t run];
