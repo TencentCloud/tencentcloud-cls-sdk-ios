@@ -71,10 +71,10 @@ NSString* topic_id = @"your_topic";
     [config SetDestroyFlusherWaitSec:1];
     [config SetDestroySenderWaitSec:1];
     [config SetCompressType:1];
-		
-		//callback若传入空则不会回调
+        
+        //callback若传入空则不会回调
     LogProducerClient *client; = [[LogProducerClient alloc] initWithClsLogProducer:config callback:nil];
-		Log* log = [[Log alloc] init];
+        Log* log = [[Log alloc] init];
     [log PutContent:@"cls_key_1" value:@"cls_value_1"];
     [log PutContent:@"cls_key_1" value:@"cls_value_2"];
     LogProducerResult result = [client PostLog:log];
@@ -212,7 +212,7 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 - (void)ping:(NSString*)host size:(NSUInteger)size output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete;
 ```
 
-- 方法二
+- 方法2
 
 ```objective-c
 /**
@@ -224,6 +224,18 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 * @param count 探测次数
 */
 - (void)ping:(NSString*)host size:(NSUInteger)size task_timeout:(NSUInteger)task_timeout output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete count:(NSInteger)count;
+```
+- 方法3
+
+```objective-c
+/**
+* @param host   目标 host，如 cloud.tencent.com
+* @param size   数据包大小
+* @param output   输出 callback
+* @param callback 回调 callback
+* @param customFiled 自定义字段
+*/
+- (void)ping:(NSString*)host size:(NSUInteger)size output:(id<CLSOutputDelegate>)output complete:(CLSPingCompleteHandler)complete customFiled:(NSMutableDictionary*) customFiled;
 ```
 
 #### tcpping探测方法
@@ -252,6 +264,17 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 */
 - (void)tcpPing:(NSString*)host port:(NSUInteger)port task_timeout:(NSUInteger)task_timeout count:(NSInteger)count output:(id<CLSOutputDelegate>)output complete:(CLSTcpPingCompleteHandler)complete;
 ```
+- 方法3
+
+```objective-c
+/**
+* @param host   目标 host，如：cloud.tencent.com
+* @param output   输出 callback                
+* @param callback 回调 callback
+* @param customFiled 自定义字段
+*/
+- (void)tcpPing:(NSString*)host output:(id<CLSOutputDelegate>)output complete:(CLSTcpPingCompleteHandler)complete customFiled:(NSMutableDictionary*) customFiled;
+```
 
 #### traceroute方法
 
@@ -272,7 +295,6 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 
 ```objective-c
 /**
-*
 * @param host 目标 host，如：cloud.tencent.com
 * @param maxTtl 最大存活跳数
 * @param countPerRoute
@@ -281,17 +303,38 @@ CLSAdapter *clsAdapter = [CLSAdapter sharedInstance];
 */
 - (void)traceRoute:(NSString*)host output:(id<CLSOutputDelegate>)output complete:(CLSTraceRouteCompleteHandler)complete maxTtl:(NSInteger)maxTtl;
 ```
-
-#### httping方法
+- 方法3
 
 ```objective-c
 /**
-*
+* @param host 目标 host，如：cloud.tencent.com
+* @param output 输出 callback
+* @param callback 回调 callback
+* @param customFiled 自定义字段
+*/
+- (void)traceRoute:(NSString*)host output:(id<CLSOutputDelegate>)output complete:(CLSTraceRouteCompleteHandler)complete customFiled:(NSMutableDictionary*) customFiled;
+```
+
+#### httping方法
+
+- 方法1
+```objective-c
+/**
 * @param url 如：https://ap-guangzhou.cls.tencentcs.com/ping
 * @param output   输出 callback
 * @param callback 回调 callback
 */
 - (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate;
+```
+- 方法2
+```objective-c
+/**
+* @param url 如：https://ap-guangzhou.cls.tencentcs.com/ping
+* @param output   输出 callback
+* @param callback 回调 callback
+* @param customFiled 自定义字段
+*/
+- (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate customFiled:(NSMutableDictionary*) customFiled;
 ```
 
 
@@ -382,3 +425,4 @@ NSArray *topics = [NSArray arrayWithObjects:@"your topicid",nil];
 //释放资源
 [sclient DestroyLogSearch];
 ```
+
