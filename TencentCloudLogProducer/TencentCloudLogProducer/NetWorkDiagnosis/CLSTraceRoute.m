@@ -68,7 +68,10 @@
         }
     }
     double lossRate = loss/_count*100;
-    if (_targetIp == ip){
+    if (realCount != 0){
+        avg = totalDelay/realCount;
+    }
+    if ([_targetIp isEqualToString:ip]){
         is_final_route = true;
     }
     NSDictionary *result = @{
