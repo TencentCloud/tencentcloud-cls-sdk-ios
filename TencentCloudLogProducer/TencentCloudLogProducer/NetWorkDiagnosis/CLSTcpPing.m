@@ -93,6 +93,7 @@
 @property (readonly) NSInteger interval;
 @property (readonly) NSInteger count;
 @property (atomic) BOOL stopped;
+@property(nonatomic, strong) NSMutableDictionary * tcpPingExt;
 @end
 
 @implementation CLSTcpPing
@@ -102,7 +103,8 @@
               output:(id<CLSOutputDelegate>)output
             complete:(CLSTcpPingCompleteHandler)complete
                count:(NSInteger)count
-              sender: (baseSender *)sender{
+              sender: (baseSender *)sender
+             tcpPingExt: (NSMutableDictionary*)tcpPingExt{
     if (self = [super init]) {
         _host = host == nil ? @"" : host;
         _port = port;
@@ -111,6 +113,7 @@
         _count = count;
         _stopped = NO;
         _sender = sender;
+        _tcpPingExt = tcpPingExt;
     }
     return self;
 }
@@ -136,7 +139,7 @@
                 dispatch_async(dispatch_get_main_queue(), ^(void) {
                     _complete([self buildResult:-1006 ip:nil domain:_host durations:nil loss:0 port:_port count:0 totalTime:0]);
                 });
-                [_sender report:[self buildResult:-1006 ip:nil domain:_host durations:nil loss:0 port:_port count:0 totalTime:0].description method:@"TCPPing" domain:_host];
+                [_sender report:[self buildResult:-1006 ip:nil domain:_host durations:nil loss:0 port:_port count:0 totalTime:0].description method:@"TCPPing" domain:_host customFiled:_tcpPingExt];
             }
             return;
         }
@@ -176,7 +179,7 @@
         });
     }
     if (!_stopped){
-        [_sender report:[self buildResult:code ip:ip domain:_host durations:intervals loss:loss port:_port count:index totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"tcpPing" domain:_host];
+        [_sender report:[self buildResult:code ip:ip domain:_host durations:intervals loss:loss port:_port count:index totalTime:[[NSDate date] timeIntervalSinceDate:begin] * 1000].description method:@"tcpPing" domain:_host customFiled:_tcpPingExt];
     }
 }
 
@@ -290,8 +293,9 @@
 + (instancetype)start:(NSString *)host
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete
-               sender: (baseSender *)sender{
-    return [CLSTcpPing start:host port:80 task_timeout:10000 count:50 output:output complete:complete sender:sender];
+               sender: (baseSender *)sender
+              tcpPingExt: (NSMutableDictionary*) tcpPingExt{
+    return [CLSTcpPing start:host port:80 task_timeout:10000 count:50 output:output complete:complete sender:sender tcpPingExt:tcpPingExt];
 }
 
 + (instancetype)start:(NSString *)host
@@ -300,16 +304,22 @@
                 count:(NSInteger)count
                output:(id<CLSOutputDelegate>)output
              complete:(CLSTcpPingCompleteHandler)complete
-               sender: (baseSender *)sender;
+               sender: (baseSender *)sender
+           tcpPingExt: (NSMutableDictionary*) tcpPingExt;
 {
     CLSTcpPing *t = [[CLSTcpPing alloc] init:host
                                         port:port
                                       output:output
                                     complete:complete
                                        count:count
-                                      sender:sender];
+                                      sender:sender
+                                    tcpPingExt:tcpPingExt];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
         dispatch_semaphore_t mySemaphore = dispatch_semaphore_create(0);
+        if (mySemaphore == NULL){
+            NSLog(@"start dispatch_semaphore_create is NULL");
+            return;
+        }
         dispatch_time_t t_out = dispatch_time(DISPATCH_TIME_NOW, task_timeout * NSEC_PER_MSEC);
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
             [t run];

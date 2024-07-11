@@ -73,12 +73,14 @@ response:(NSHTTPURLResponse *)response
 - (instancetype)init:(NSString *)url
               output:(id<CLSOutputDelegate>)output
             complete:(CLSHttpCompleteHandler)complete
-              sender: (baseSender *)sender{
+              sender: (baseSender *)sender
+          httpingExt: (NSMutableDictionary*) httpingExt{
     if (self = [super init]) {
         _url = url;
         _output = output;
         _complete = complete;
         _sender = sender;
+        _httpingExt = httpingExt;
     }
     return self;
 }
@@ -142,18 +144,19 @@ response:(NSHTTPURLResponse *)response
     if (_complete != nil) {
         _complete(result);
     }
-    [_sender report:result.description method:@"httping" domain:_url];
+    [_sender report:result.description method:@"httping" domain:_url customFiled:_httpingExt];
 }
 
 + (instancetype)start:(NSString *)url
                output:(id<CLSOutputDelegate>)output
              complete:(CLSHttpCompleteHandler)complete
                sender: (baseSender *)sender
+           httpingExt: (NSMutableDictionary*) httpingExt
 {
     if (url == nil) {
         url = @"";
     }
-    CLSHttp *http = [[CLSHttp alloc] init:url output:output complete:complete sender:sender];
+    CLSHttp *http = [[CLSHttp alloc] init:url output:output complete:complete sender:sender httpingExt:httpingExt];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
         [http run];
     });
