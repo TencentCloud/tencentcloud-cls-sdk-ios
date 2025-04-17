@@ -28,6 +28,6 @@ FOUNDATION_EXPORT const unsigned char TencentCloundLogLogProducerVersionString[]
 
 #import "LogProducerClient.h"
 #import "LogProducerConfig.h"
-#import "Log.h"
+#import "TencentCloudLogProducer/Log.h"
 #import "TimeUtils.h"
 

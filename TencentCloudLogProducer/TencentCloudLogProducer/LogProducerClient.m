@@ -3,7 +3,7 @@
 #import <Foundation/Foundation.h>
 #import "LogProducerClient.h"
 #import "LogProducerConfig.h"
-#import "Log.h"
+#import "TencentCloudLogProducer/Log.h"
 #import "TimeUtils.h"
 #import "sds.h"
 

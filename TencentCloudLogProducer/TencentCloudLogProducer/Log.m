@@ -1,7 +1,7 @@
 
 
 #import <Foundation/Foundation.h>
-#import "Log.h"
+#import "TencentCloudLogProducer/Log.h"
 #import "TimeUtils.h"
 
 @interface Log ()

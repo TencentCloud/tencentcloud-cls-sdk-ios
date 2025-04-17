@@ -10,7 +10,7 @@
 #endif
 #endif
 
-#import "Log.h"
+#import "TencentCloudLogProducer/Log.h"
 #import "LogProducerClient.h"
 #import "LogProducerConfig.h"
 #import "TencentCloudLogProducer.h"
