@@ -1,5 +1,6 @@
 
 #import "ProducerExampleDestroyController.h"
+#import "LogProducerClient.h"
 
 @interface ProducerExampleDestroyController ()
 @property(nonatomic, strong) UITextView *statusTextView;
