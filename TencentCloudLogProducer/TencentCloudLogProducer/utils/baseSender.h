@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "CLSConfig.h"
-#import "Log.h"
+#import "TencentCloudLogProducer/Log.h"
 NS_ASSUME_NONNULL_BEGIN
 
 @interface baseSender : NSObject

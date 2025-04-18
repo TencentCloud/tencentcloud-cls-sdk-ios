@@ -8,7 +8,7 @@
 
 #import "log_producer_client.h"
 #import "LogProducerConfig.h"
-#import "Log.h"
+#import "TencentCloudLogProducer/Log.h"
 
 typedef void (^AddLogInterceptor)(Log *log);
 
