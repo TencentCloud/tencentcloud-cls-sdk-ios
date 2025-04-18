@@ -7,6 +7,7 @@
 
 #import "CLSNetWorkDataSender.h"
 #import "CLSNetWorkScheme.h"
+#import "LogProducerClient.h"
 #import "CLSUtils.h"
 @implementation CLSNetWorkDataSender
 - (void) initWithCLSConfig: (CLSConfig *)config{
