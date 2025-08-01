@@ -8,7 +8,7 @@
 
 @interface Log : NSObject
 {
-    @package uint64_t logTime;
+    @package int64_t logTime;
     @package NSMutableDictionary *content;
 }
 
@@ -16,8 +16,8 @@
 
 - (NSMutableDictionary *) getContent;
 
-- (void)SetTime:(unsigned int) logTime;
+- (void)SetTime:(int64_t) logTime;
 
-- (unsigned int) getTime;
+- (int64_t) getTime;
 
 @end
