@@ -34,12 +34,12 @@
     return self->content;
 }
 
-- (void)SetTime:(int64_t) time
+- (void)SetTime:(int64_t) logTime
 {
-    self->logTime = time;
+    self->logTime = logTime;
 }
 
-- (unsigned int)getTime
+- (int64_t)getTime
 {
     return self->logTime;
 }
