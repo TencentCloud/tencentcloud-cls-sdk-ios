@@ -10,22 +10,22 @@
 #endif
 #endif
 
-#import "Log.h"
-#import "LogProducerClient.h"
-#import "LogProducerConfig.h"
+#import "ClsLog.h"
+#import "ClsLogProducerClient.h"
+#import "ClsLogProducerConfig.h"
 #import "TencentCloudLogProducer.h"
-#import "basePlugin.h"
-#import "baseSender.h"
-#import "CLSAdapter.h"
-#import "CLSConfig.h"
-#import "TimeUtils.h"
-#import "log_define.h"
-#import "log_adaptor.h"
-#import "log_inner_include.h"
-#import "log_multi_thread.h"
-#import "log_producer_client.h"
-#import "log_error.h"
-#import "log_producer_config.h"
+#import "baseClsPlugin.h"
+#import "baseClsSender.h"
+#import "ClsAdapter.h"
+#import "ClsConfig.h"
+#import "ClsTimeUtils.h"
+#import "cls_log_define.h"
+#import "cls_log_adaptor.h"
+#import "cls_log_inner_include.h"
+#import "cls_log_multi_thread.h"
+#import "cls_log_producer_client.h"
+#import "cls_log_error.h"
+#import "cls_log_producer_config.h"
 
 FOUNDATION_EXPORT double TencentCloudLogProducerVersionNumber;
 FOUNDATION_EXPORT const unsigned char TencentCloudLogProducerVersionString[];

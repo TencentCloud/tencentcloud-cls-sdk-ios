@@ -2,7 +2,7 @@
 #import "MainViewController.h"
 #import "ViewController.h"
 #import "ProducerExampleController.h"
-#import "ProducerExampleDestroyController.h"
+#import "ClsProducerExampleDestroyController.h"
 #import "ProducerExampleNetDiaController.h"
 
 @interface MainViewController ()

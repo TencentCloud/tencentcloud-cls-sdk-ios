@@ -1,0 +1,36 @@
+//
+//  ClsConfig.h
+//  TencentCloudLogProducer
+//
+//  Created by herrylv on 2022/6/7.
+//
+
+#import <Foundation/Foundation.h>
+
+NS_ASSUME_NONNULL_BEGIN
+//TODO review参数信息
+@interface ClsConfig : NSObject
+@property(nonatomic, assign, getter=debuggable) BOOL debuggable;
+@property(nonatomic, strong) NSString *appVersion;
+@property(nonatomic, strong) NSString *appName;
+
+@property(nonatomic, strong) NSString * endpoint;
+@property(nonatomic, strong) NSString * accessKeyId;
+@property(nonatomic, strong) NSString * accessKeySecret;
+@property(nonatomic, strong) NSString * topicId;
+@property(nonatomic, strong) NSString * pluginAppId;
+
+
+@property(nonatomic, strong) NSString * channel;
+@property(nonatomic, strong) NSString * channelName;
+@property(nonatomic, strong) NSString * userNick;
+@property(nonatomic, strong) NSString * longLoginNick;
+@property(nonatomic, strong) NSString * userId;
+@property(nonatomic, strong) NSString * longLoginUserId;
+@property(nonatomic, strong) NSString * loginType;
+@property(nonatomic, strong) NSMutableDictionary * ext;
+
+- (void) addCustomWithKey: (nullable NSString *)key andValue: (nullable NSString *)value;
+@end
+
+NS_ASSUME_NONNULL_END

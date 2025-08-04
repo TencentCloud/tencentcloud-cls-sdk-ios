@@ -10,7 +10,7 @@ import TencentCloudLogProducer
 class ViewController: UIViewController {
     @IBOutlet weak var showparam: UILabel!
     @IBOutlet weak var resText: UITextView!
-    fileprivate var client:     LogProducerClient!
+    fileprivate var client:     ClsLogProducerClient!
     override func viewDidLoad() {
         super.viewDidLoad()
         let utils = DemoUtils.shared
@@ -33,25 +33,25 @@ class ViewController: UIViewController {
     func initLogProducer() {
         let utils = DemoUtils.shared
         
-        let config = LogProducerConfig(coreInfo:utils.endpoint, accessKeyID:utils.accessKeyId, accessKeySecret:utils.accessKeySecret)!
-        config.setTopic(utils.topic)
-        config.setPackageLogBytes(1024*1024)
-        config.setPackageLogCount(1024)
-        config.setPackageTimeout(3000)
-        config.setMaxBufferLimit(64*1024*1024)
-        config.setSendThreadCount(1)
-        config.setConnectTimeoutSec(10)
-        config.setSendTimeoutSec(10)
-        config.setDestroyFlusherWaitSec(1)
-        config.setDestroySenderWaitSec(1)
-        config.setCompressType(1)
+        let config = ClsLogProducerConfig(clsWithCoreInfo:utils.endpoint, accessKeyID:utils.accessKeyId, accessKeySecret:utils.accessKeySecret)!
+        config.setClsTopic(utils.topic)
+        config.setClsPackageLogBytes(1024*1024)
+        config.setClsPackageLogCount(1024)
+        config.setClsPackageTimeout(3000)
+        config.setClsMaxBufferLimit(64*1024*1024)
+        config.setClsSendThreadCount(1)
+        config.setClsConnectTimeoutSec(10)
+        config.setClsSendTimeoutSec(10)
+        config.setClsDestroyFlusherWaitSec(1)
+        config.setClsDestroySenderWaitSec(1)
+        config.setClsCompressType(1)
         let tv = self.resText;
 
-        let callbackFunc: SendCallBackFunc =  {config_name,result,log_bytes,compressed_bytes,req_id,error_message,raw_buffer,user_param in
-            let res = LogProducerResult(rawValue: Int(result))
+        let callbackFunc: ClsSendCallBackFunc =  {config_name,result,log_bytes,compressed_bytes,req_id,error_message,raw_buffer,user_param in
+            let res = ClsLogProducerResult(rawValue: Int(result))
             let reqId = req_id == nil ? "":String(cString: req_id!)
             let topic_id = config_name == nil ? "":String(cString: config_name!)
-            if(result == LOG_PRODUCER_OK){
+            if(result == CLS_LOG_PRODUCER_OK){
                 let success = "send success, topic :\(topic_id), result : \(result), log bytes : \(log_bytes), compressed bytes : \(compressed_bytes), request id : \(reqId)"
                 print(success)
                 NotificationCenter.default.post(name: Notification.Name(rawValue: "test"), object: success);
@@ -62,7 +62,7 @@ class ViewController: UIViewController {
                 NotificationCenter.default.post(name: Notification.Name(rawValue: "test"), object: fail);
             }
         }
-            self.client = LogProducerClient(clsLogProducer:config, callback:callbackFunc)
+            self.client = ClsLogProducerClient(clsLogProducer:config, callback:callbackFunc)
     }
     
     func AlertInfo(str :String){
@@ -83,22 +83,22 @@ class ViewController: UIViewController {
     }
     @IBAction func DestroyProducer(_ sender: UIButton) {
         AlertInfo(str: "Producer开始销毁")
-        client.destroyLogProducer()
+        client.destroyClsLogProducer()
     }
     
     
-    func getOneLog() -> Log {
-        let log = Log()
-        log.putContent("content_key_1", value:"1abcakjfhksfsfsxyz012345678!@#$%^&*()_+")
-        log.putContent("content_key_2", value:"2abcdefghijklmnopqrstuvwxyz4444444!@#$%^&*()_+")
-        log.putContent("content_key_3", value:"3slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
-        log.putContent("content_key_4", value:"4slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
-        log.putContent("content_key_5", value:"5slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
-        log.putContent("content_key_6", value:"6slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
-        log.putContent("content_key_7", value:"7slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
-        log.putContent("content_key_8", value:"8slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
-        log.putContent("content_key_9", value:"9abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+")
-        log.putContent("content", value:"中文")
+    func getOneLog() -> ClsLog {
+        let log = ClsLog()
+        log.putClsContent("content_key_1", value:"1abcakjfhksfsfsxyz012345678!@#$%^&*()_+")
+        log.putClsContent("content_key_2", value:"2abcdefghijklmnopqrstuvwxyz4444444!@#$%^&*()_+")
+        log.putClsContent("content_key_3", value:"3slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
+        log.putClsContent("content_key_4", value:"4slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
+        log.putClsContent("content_key_5", value:"5slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
+        log.putClsContent("content_key_6", value:"6slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
+        log.putClsContent("content_key_7", value:"7slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
+        log.putClsContent("content_key_8", value:"8slfjhdfjh092834932hjksnfjknskjfnd!@#$%^&*()_+")
+        log.putClsContent("content_key_9", value:"9abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+")
+        log.putClsContent("content", value:"中文")
         return log
     }
 }
