@@ -36,14 +36,14 @@ Pod::Spec.new do |s|
           c.public_header_files =
           'TencentCloudLogProducer/TencentCloudLogProducer/*.h',
           'TencentCloudLogProducer/TencentCloudLogProducer/utils/*.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_define.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_adaptor.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_inner_include.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_multi_thread.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_producer_client.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_error.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/ProducerConfig.h',
-          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/log_producer_config.h'
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_define.h',
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_adaptor.h',
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_inner_include.h',
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_multi_thread.h',
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_producer_client.h',
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_error.h',
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/ClsLogProducerConfig.h',
+          'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_producer_config.h'
           
           c.dependency 'GMOpenSSL', '~> 2.2.6'
   s.resource_bundles = { s.name => ['TencentCloudLogProducer/TencentCloudLogProducer/PrivacyInfo.xcprivacy'] }
