@@ -14,6 +14,7 @@ typedef void (^AddClsLogInterceptor)(ClsLog *log);
 {
     @private clslogproducer* producer;
     @private clslogproducerclient* client;
+    @private ClsLogProducerConfig* logConfig;
     @private BOOL enable;
 }
 
@@ -40,6 +41,8 @@ typedef NS_ENUM(NSInteger, ClsLogProducerResult) {
 - (void)DestroyClsLogProducer;
 
 - (ClsLogProducerResult)PostClsLog:(ClsLog *) log;
+
+- (void) UpdateSecurityToken:(NSString *)securityToken;
 
 @end
 
