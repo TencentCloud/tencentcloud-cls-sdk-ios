@@ -31,10 +31,17 @@
         }else{
             enable = YES;
         }
-        
+        self->logConfig = logProducerConfig;
     }
 
     return self;
+}
+
+- (void) UpdateSecurityToken:(NSString *)securityToken{
+    if ([securityToken length] == 0) {
+        return;
+    }
+    [logConfig ResetClsSecurityToken:securityToken];
 }
 
 - (void)DestroyClsLogProducer
