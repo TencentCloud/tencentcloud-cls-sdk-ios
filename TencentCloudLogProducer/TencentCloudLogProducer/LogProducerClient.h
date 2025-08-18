@@ -16,6 +16,7 @@ typedef void (^AddLogInterceptor)(Log *log);
 {
     @private clslogproducer* producer;
     @private clslogproducerclient* client;
+    @private LogProducerConfig* logConfig;
     @private BOOL enable;
 }
 
@@ -42,6 +43,8 @@ typedef NS_ENUM(NSInteger, LogProducerResult) {
 - (void)DestroyLogProducer;
 
 - (LogProducerResult)PostLog:(Log *) log;
+
+- (void) UpdateSecurityToken:(NSString *)securityToken;
 
 @end
 

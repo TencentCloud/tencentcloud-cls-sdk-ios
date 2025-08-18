@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name         = "TencentCloudLogProducer"
-  s.version      = "1.1.5"
+  s.version      = "1.1.6"
   s.summary      = "TencentCloudLogProducer ios"
   s.description  = <<-DESC
   log service ios producer.
