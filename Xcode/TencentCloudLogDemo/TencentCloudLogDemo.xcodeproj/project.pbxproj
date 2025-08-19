@@ -14,7 +14,7 @@
 		996E3F3528598AF800982B7E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F3428598AF800982B7E /* Assets.xcassets */; };
 		996E3F3828598AF800982B7E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F3628598AF800982B7E /* LaunchScreen.storyboard */; };
 		996E3F3B28598AF800982B7E /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F3A28598AF800982B7E /* main.m */; };
-		996E3F4D28598C7E00982B7E /* ProducerExampleDestroyController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4428598C7E00982B7E /* ProducerExampleDestroyController.m */; };
+		996E3F4D28598C7E00982B7E /* ClsProducerExampleDestroyController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4428598C7E00982B7E /* ClsProducerExampleDestroyController.m */; };
 		996E3F4E28598C7E00982B7E /* ProducerExampleController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4528598C7E00982B7E /* ProducerExampleController.m */; };
 		996E3F4F28598C7E00982B7E /* ExampleViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4828598C7E00982B7E /* ExampleViewController.m */; };
 		996E3F5028598C7E00982B7E /* UtilInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4928598C7E00982B7E /* UtilInfo.m */; };
@@ -38,9 +38,9 @@
 		996E3F3928598AF800982B7E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		996E3F3A28598AF800982B7E /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		996E3F4128598C7E00982B7E /* ExampleViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleViewController.h; sourceTree = "<group>"; };
-		996E3F4428598C7E00982B7E /* ProducerExampleDestroyController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProducerExampleDestroyController.m; sourceTree = "<group>"; };
+		996E3F4428598C7E00982B7E /* ClsProducerExampleDestroyController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClsProducerExampleDestroyController.m; sourceTree = "<group>"; };
 		996E3F4528598C7E00982B7E /* ProducerExampleController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProducerExampleController.m; sourceTree = "<group>"; };
-		996E3F4628598C7E00982B7E /* ProducerExampleDestroyController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProducerExampleDestroyController.h; sourceTree = "<group>"; };
+		996E3F4628598C7E00982B7E /* ClsProducerExampleDestroyController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClsProducerExampleDestroyController.h; sourceTree = "<group>"; };
 		996E3F4728598C7E00982B7E /* ProducerExampleController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProducerExampleController.h; sourceTree = "<group>"; };
 		996E3F4828598C7E00982B7E /* ExampleViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExampleViewController.m; sourceTree = "<group>"; };
 		996E3F4928598C7E00982B7E /* UtilInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UtilInfo.m; sourceTree = "<group>"; };
@@ -131,9 +131,9 @@
 			children = (
 				996E3FA42860210800982B7E /* ProducerExampleNetDiaController.h */,
 				996E3FA32860210800982B7E /* ProducerExampleNetDiaController.m */,
-				996E3F4428598C7E00982B7E /* ProducerExampleDestroyController.m */,
+				996E3F4428598C7E00982B7E /* ClsProducerExampleDestroyController.m */,
 				996E3F4528598C7E00982B7E /* ProducerExampleController.m */,
-				996E3F4628598C7E00982B7E /* ProducerExampleDestroyController.h */,
+				996E3F4628598C7E00982B7E /* ClsProducerExampleDestroyController.h */,
 				996E3F4728598C7E00982B7E /* ProducerExampleController.h */,
 			);
 			path = Producer;
@@ -159,7 +159,7 @@
 				996E3F2128598AF600982B7E /* Sources */,
 				996E3F2228598AF600982B7E /* Frameworks */,
 				996E3F2328598AF600982B7E /* Resources */,
-				F93ABE8452B485897935A0A5 /* [CP] Embed Pods Frameworks */,
+				FCFA3118BEE68EF13534E8E2 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -238,7 +238,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		F93ABE8452B485897935A0A5 /* [CP] Embed Pods Frameworks */ = {
+		FCFA3118BEE68EF13534E8E2 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -263,7 +263,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				996E3F3028598AF600982B7E /* ViewController.m in Sources */,
-				996E3F4D28598C7E00982B7E /* ProducerExampleDestroyController.m in Sources */,
+				996E3F4D28598C7E00982B7E /* ClsProducerExampleDestroyController.m in Sources */,
 				996E3F2A28598AF600982B7E /* AppDelegate.m in Sources */,
 				996E3FA52860210800982B7E /* ProducerExampleNetDiaController.m in Sources */,
 				996E3F3B28598AF800982B7E /* main.m in Sources */,
@@ -429,7 +429,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "herrylv-cls";
+				PRODUCT_BUNDLE_IDENTIFIER = "cls-herrylv";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -459,7 +459,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "herrylv-cls";
+				PRODUCT_BUNDLE_IDENTIFIER = "cls-herrylv";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";

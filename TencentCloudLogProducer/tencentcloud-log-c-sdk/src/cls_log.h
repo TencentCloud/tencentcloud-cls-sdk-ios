@@ -1,5 +1,5 @@
-#ifndef LIBAOS_LOG_H
-#define LIBAOS_LOG_H
+#ifndef CLS_LIBAOS_LOG_H
+#define CLS_LIBAOS_LOG_H
 #include <string.h>
 
 #ifdef __cplusplus
