@@ -1,12 +1,12 @@
 
 
 #import "ProducerExampleController.h"
-#import "LogProducerClient.h"
+#import "TencentCloudLogProducer/ClsLogProducerClient.h"
 
 @interface ProducerExampleController ()
 @property(nonatomic, strong) UITextView *statusTextView;
-@property(nonatomic, strong) LogProducerConfig *config;
-@property(nonatomic, strong) LogProducerClient *client;
+@property(nonatomic, strong) ClsLogProducerConfig *config;
+@property(nonatomic, strong) ClsLogProducerClient *client;
 
 @end
 
@@ -59,12 +59,12 @@ static ProducerExampleController *selfClzz;
 }
 
 - (void) send {
-    LogProducerResult result = [_client PostLog:[self LogData]];
+    ClsLogProducerResult result = [_client PostClsLog:[self LogData]];
     [self UpdateReult:[NSString stringWithFormat:@"addlog result: %ld", result]];
 }
 
 static void log_send_callback(const char * config_name, int result, size_t log_bytes, size_t compressed_bytes, const char * req_id, const char * message, const unsigned char * raw_buffer, void * userparams) {
-    if (result == LOG_PRODUCER_OK) {
+    if (result == ClsLogProducerOK) {
         NSString *success = [NSString stringWithFormat:@"send success, topic : %s, result : %d, log bytes : %d, compressed bytes : %d, request id : %s", config_name, (result), (int)log_bytes, (int)compressed_bytes, req_id];
         CLSLogV("%@", success);
         
@@ -80,36 +80,36 @@ static void log_send_callback(const char * config_name, int result, size_t log_b
 - (void) initLogProducer {
     DemoUtils *utils = [DemoUtils sharedInstance];
 
-    _config = [[LogProducerConfig alloc] initWithCoreInfo:[utils endpoint] accessKeyID:[utils accessKeyId] accessKeySecret:[utils accessKeySecret]];
-    [_config SetTopic:utils.topic];
-    [_config SetPackageLogBytes:1024*1024];
-    [_config SetPackageLogCount:1024];
-    [_config SetPackageTimeout:3000];
-    [_config SetMaxBufferLimit:64*1024*1024];
-    [_config SetSendThreadCount:1];
-    [_config SetConnectTimeoutSec:10];
-    [_config SetSendTimeoutSec:10];
-    [_config SetDestroyFlusherWaitSec:1];
-    [_config SetDestroySenderWaitSec:1];
-    [_config SetCompressType:1];
+    _config = [[ClsLogProducerConfig alloc] initClsWithCoreInfo:[utils endpoint] accessKeyID:[utils accessKeyId] accessKeySecret:[utils accessKeySecret]];
+    [_config SetClsTopic:utils.topic];
+    [_config SetClsPackageLogBytes:1024*1024];
+    [_config SetClsPackageLogCount:1024];
+    [_config SetClsPackageTimeout:3000];
+    [_config SetClsMaxBufferLimit:64*1024*1024];
+    [_config SetClsSendThreadCount:1];
+    [_config SetClsConnectTimeoutSec:10];
+    [_config SetClsSendTimeoutSec:10];
+    [_config SetClsDestroyFlusherWaitSec:1];
+    [_config SetClsDestroySenderWaitSec:1];
+    [_config SetClsCompressType:1];
 
-    _client = [[LogProducerClient alloc] initWithClsLogProducer:_config callback:log_send_callback];
+    _client = [[ClsLogProducerClient alloc] initWithClsLogProducer:_config callback:log_send_callback];
 }
 
 
-- (Log *) LogData {
-    Log* log = [[Log alloc] init];
+- (ClsLog *) LogData {
+    ClsLog* log = [[ClsLog alloc] init];
 
-    [log PutContent:@"content_key_1" value:@"1abcakjfhksfsfsxyz012345678!@#$%^&"];
-    [log PutContent:@"content_key_2" value:@"2abcdefghijklmnopqrstuvwxyz4444444"];
-    [log PutContent:@"content_key_3" value:@"3slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutContent:@"content_key_4" value:@"4slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutContent:@"content_key_5" value:@"5slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutContent:@"content_key_6" value:@"6slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutContent:@"content_key_7" value:@"7slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutContent:@"content_key_8" value:@"8slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutContent:@"content_key_9" value:@"9abcdefghijklmnopqrstuvwxyz0123456789"];
-    [log PutContent:@"content" value:@"中文"];
+    [log PutClsContent:@"content_key_1" value:@"1abcakjfhksfsfsxyz012345678!@#$%^&"];
+    [log PutClsContent:@"content_key_2" value:@"2abcdefghijklmnopqrstuvwxyz4444444"];
+    [log PutClsContent:@"content_key_3" value:@"3slfjhdfjh092834932hjksnfjknskjfnd"];
+    [log PutClsContent:@"content_key_4" value:@"4slfjhdfjh092834932hjksnfjknskjfnd"];
+    [log PutClsContent:@"content_key_5" value:@"5slfjhdfjh092834932hjksnfjknskjfnd"];
+    [log PutClsContent:@"content_key_6" value:@"6slfjhdfjh092834932hjksnfjknskjfnd"];
+    [log PutClsContent:@"content_key_7" value:@"7slfjhdfjh092834932hjksnfjknskjfnd"];
+    [log PutClsContent:@"content_key_8" value:@"8slfjhdfjh092834932hjksnfjknskjfnd"];
+    [log PutClsContent:@"content_key_9" value:@"9abcdefghijklmnopqrstuvwxyz0123456789"];
+    [log PutClsContent:@"content" value:@"中文"];
 
 //    [log SetTime:[[NSDate date] timeIntervalSince1970]*1000];
     return log;
