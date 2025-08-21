@@ -80,6 +80,19 @@ void *SendClsProcess(void *param)
             producermgr->callbackfunc(producermgr->producerconf->topic, CLS_LOG_PRODUCER_INVALID, send_param->log_buf->raw_length, send_param->log_buf->length,
                                                  NULL, "invalid send param, magic num not found", send_param->log_buf->data, producermgr->user_param);
         }
+        if (producermgr && producermgr->send_done_persistent_function != NULL)
+        {
+            producermgr->send_done_persistent_function(producermgr->producerconf->topic,
+                                                 CLS_LOG_PRODUCER_INVALID,
+                                                 send_param->log_buf->raw_length,
+                                                 send_param->log_buf->length,
+                                                 NULL,
+                                                 "invalid send param, magic num not found",
+                                                 send_param->log_buf->data,
+                                                 producermgr->uuid_user_param,
+                                                 send_param->start_uuid,
+                                                 send_param->end_uuid);
+        }
         return NULL;
     }
 
@@ -174,6 +187,22 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
         int callback_result = send_result == CLS_LOG_SEND_OK ? CLS_LOG_PRODUCER_OK : (CLS_LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - CLS_LOG_SEND_NETWORK_ERROR);
         producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result.requestID, result.message, send_param->log_buf->data, producermgr->user_param);
     }
+    if (producermgr->send_done_persistent_function != NULL)
+    {
+        int callback_result = send_result == CLS_LOG_SEND_OK ?
+                                              CLS_LOG_PRODUCER_OK :
+                                              (CLS_LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - CLS_LOG_SEND_NETWORK_ERROR);
+        producermgr->send_done_persistent_function(producermgr->producerconf->topic,
+                                                  callback_result,
+                                                  send_param->log_buf->raw_length,
+                                                  send_param->log_buf->length,
+                                                  result.requestID,
+                                                  result.message,
+                                                  send_param->log_buf->data,
+                                                  producermgr->uuid_user_param,
+                                                  send_param->start_uuid,
+                                                  send_param->end_uuid);
+    }
     switch (send_result)
     {
     case CLS_LOG_SEND_OK:
@@ -231,6 +260,20 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
                      (int)producermgr->totalBufferSize,
                      result.statusCode,
                      result.message);
+    
+        if (producermgr->send_done_persistent_function != NULL)
+        {
+            producermgr->send_done_persistent_function(producermgr->producerconf->topic,
+                                                      CLS_LOG_PRODUCER_DROP_ERROR,
+                                                      send_param->log_buf->raw_length,
+                                                      send_param->log_buf->length,
+                                                      result.requestID,
+                                                      result.message,
+                                                      send_param->log_buf->data,
+                                                      producermgr->uuid_user_param,
+                                                      send_param->start_uuid,
+                                                      send_param->end_uuid);
+        }
     }
 
     return 0;
@@ -290,10 +333,14 @@ cls_log_producer_send_param *ConstructClsSendParam(ClsProducerConfig *producerco
     {
         param->create_time = builder->create_time;
         param->topic = builder->grp->topic;
+        param->start_uuid = builder->start_uuid;
+        param->end_uuid = builder->end_uuid;
     }
     else
     {
         param->create_time = time(NULL);
+        param->start_uuid = builder->start_uuid;
+        param->end_uuid = builder->end_uuid;
     }
     return param;
 }
