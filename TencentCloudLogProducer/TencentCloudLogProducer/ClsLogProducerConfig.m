@@ -160,5 +160,30 @@ unsigned int time_func() {
     resetClsSecurityToken(self->config,[securityToken UTF8String]);
 }
 
+- (void) SetPersistent:(int) persistent{
+    log_producer_config_set_persistent(self->config,persistent);
+}
+
+- (void) SetPersistentFilePath: (NSString *)filePath{
+    if ([filePath length] == 0){return;}
+    log_producer_config_set_persistent_file_path(self->config,[filePath UTF8String]);
+}
+
+- (void) SetPersistentMaxLogCount: (int)max_log_count{
+    log_producer_config_set_persistent_max_log_count(self->config,max_log_count);
+}
+
+- (void) SetPersistentMaxFileSize: (int)file_size{
+    log_producer_config_set_persistent_max_file_size(self->config,file_size);
+}
+
+- (void) SetPersistentMaxFileCount: (int)file_count{
+    log_producer_config_set_persistent_max_file_count(self->config,file_count);
+}
+
+- (void) SetPersistentForceFlush: (int)force{
+    log_producer_config_set_persistent_force_flush(self->config,force);
+}
+
 
 @end

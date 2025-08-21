@@ -157,6 +157,19 @@ void *cls_log_producer_flush_thread(void *param)
                         producermgr->callbackfunc(producermgr->producerconf->topic, CLS_LOG_PRODUCER_DROP_ERROR, builder->loggroup_size, 0,
                                                              NULL, "serialize loggroup to proto buf with lz4 failed", NULL, producermgr->user_param);
                     }
+                    if (producermgr->send_done_persistent_function != NULL)
+                    {
+                        producermgr->send_done_persistent_function(producermgr->producerconf->topic,
+                                                                  CLS_LOG_PRODUCER_INVALID,
+                                                                  builder->loggroup_size,
+                                                                  0,
+                                                                  NULL,
+                                                                  "invalid send param, magic num not found",
+                                                                  NULL,
+                                                                  producermgr->uuid_user_param,
+                                                                  builder->start_uuid,
+                                                                  builder->end_uuid);
+                    }
                 }
                 else
                 {
@@ -385,12 +398,13 @@ void destroy_cls_log_producer_manager(ClsProducerManager *manager)
         }                                                                                      \
         int32_t now_time = time(NULL);                                                         \
         producermgr->builder = GenerateClsLogGroup();                                        \
+        producermgr->builder->start_uuid = uuid;                                       \
         producermgr->firstLogTime = now_time;                                             \
         producermgr->builder->private_value = producermgr;                           \
     }
 
 #define CLS_LOG_PRODUCER_MANAGER_ADD_LOG_END                                                                                                                                                                                                                                                                                             \
-    cls_log_group_builder *builder = producermgr->builder;                                                                                                                                                                                                                                                                          \
+cls_log_group_builder *builder = producermgr->builder;                                                                          builder->end_uuid = uuid;                                                                                                                                                                                                \
     int32_t nowTime = time(NULL);                                                                                                                                                                                                                                                                                                    \
     if (flush == 0 && producermgr->builder->loggroup_size < producermgr->producerconf->logBytesPerPackage && nowTime - producermgr->firstLogTime < producermgr->producerconf->packageTimeoutInMS / 1000 && producermgr->builder->grp->logs_count < producermgr->producerconf->logCountPerPackage) \
     {                                                                                                                                                                                                                                                                                                                                \
@@ -428,4 +442,19 @@ cls_log_producer_manager_add_log(ClsProducerManager *producermgr,
     InnerAddClsLog(producermgr->builder, logtime, pair_count, keys, key_lens, values, val_lens);
 
     CLS_LOG_PRODUCER_MANAGER_ADD_LOG_END;
+}
+
+int
+log_producer_manager_add_log_raw(ClsProducerManager *producermgr,
+                                 char *logBuf, size_t logSize, int flush,
+                                 int64_t uuid)
+{
+    CLS_LOG_PRODUCER_MANAGER_ADD_LOG_BEGIN;
+    
+    add_cls_log_raw(producermgr->builder,logBuf,logSize);
+    
+    CLS_LOG_PRODUCER_MANAGER_ADD_LOG_END;
+    
+    return 0;
+
 }

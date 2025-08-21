@@ -123,6 +123,8 @@ cls_log_group_builder *GenerateClsLogGroup()
     bder->grp = (cls_log_group *)((char *)(bder) + sizeof(cls_log_group_builder));
     bder->loggroup_size = sizeof(cls_log_group) + sizeof(cls_log_group_builder);
     bder->create_time = time(NULL);
+    bder->start_uuid = -1;
+    bder->end_uuid = -1;
     return bder;
 }
 
@@ -190,16 +192,22 @@ void _adjust_cls_buffer(cls_log_buffer *tag, uint32_t new_len)
 
 void add_cls_log_raw(cls_log_group_builder *bder, const char *buffer, size_t size)
 {
-    ++bder->grp->logs_count;
     cls_log_buffer *log = &(bder->grp->logs);
+
     if (log->now_buffer == NULL || log->max_buffer_len < log->now_buffer_len + size)
     {
         _adjust_cls_buffer(log, size);
     }
-    memcpy(log->now_buffer, buffer, size);
+
     bder->loggroup_size += size;
+    uint8_t *buf = (uint8_t *)log->now_buffer;
+    memcpy(buf, buffer, size);
+    buf += size;
+
+    assert(buf - (uint8_t *)log->now_buffer == size);
+    log->buf_index[bder->grp->logs_count++] = size;
     log->now_buffer_len += size;
-    log->now_buffer += size;
+    log->now_buffer = (char *)buf;
 }
 
 void add_cls_log_full(cls_log_group_builder *bder, uint32_t logTime, int32_t pair_count, char **keys, size_t *key_lens, char **values, size_t *val_lens)
@@ -448,6 +456,11 @@ cls_lz4_content *ClsSerializeWithlz4(cls_log_group_builder *bder)
     return pLogbuf;
 }
 
+void clear_log_tag(cls_log_buffer *tag)
+{
+    tag->now_buffer = tag->buffer;
+    tag->now_buffer_len = 0;
+}
 
 
 void ClsFreeLogBuf(cls_lz4_content *pBuf)

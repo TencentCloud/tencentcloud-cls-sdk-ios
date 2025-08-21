@@ -86,6 +86,10 @@ void DestroyClsLogProducerConfig(ClsProducerConfig *pConfig)
     {
         cls_sdsfree(pConfig->source);
     }
+    if (pConfig->persistentFilePath != NULL)
+    {
+        cls_sdsfree(pConfig->persistentFilePath);
+    }
     free(pConfig);
 }
 
@@ -303,5 +307,75 @@ int is_cls_valid(ClsProducerConfig *config)
         cls_error_log("invalid producer config log merge and buffer params");
         return 0;
     }
+    if (config->usePersistent)
+    {
+        if (config->persistentFilePath == NULL || config->maxPersistentFileCount <= 0 || config->maxPersistentLogCount <= 0 || config->maxPersistentFileSize <=0 )
+        {
+            cls_error_log("invalid producer persistent config params");
+            return 0;
+        }
+    }
     return 1;
+}
+
+int log_producer_persistent_config_is_enabled(ClsProducerConfig *config)
+{
+    if (config == NULL)
+    {
+        cls_error_log("invalid producer config");
+        return 0;
+    }
+    if (config->usePersistent == 0)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+void log_producer_config_set_persistent(ClsProducerConfig *config,
+                                        int32_t persistent)
+{
+    if (config == NULL)
+        return;
+    config->usePersistent = persistent;
+}
+
+void log_producer_config_set_persistent_file_path(ClsProducerConfig *config,
+                                                  const char *file_path)
+{
+    if (config == NULL)
+        return;
+    _copy_config_string(file_path, &config->persistentFilePath);
+}
+
+void log_producer_config_set_persistent_max_log_count(ClsProducerConfig *config,
+                                           int32_t max_log_count)
+{
+    if (config == NULL)
+        return;
+    config->maxPersistentLogCount = max_log_count;
+}
+
+void log_producer_config_set_persistent_max_file_size(ClsProducerConfig *config,
+                                                 int32_t file_size)
+{
+    if (config == NULL)
+        return;
+    config->maxPersistentFileSize = file_size;
+}
+
+void log_producer_config_set_persistent_max_file_count(ClsProducerConfig *config,
+                                                  int32_t file_count)
+{
+    if (config == NULL)
+        return;
+    config->maxPersistentFileCount = file_count;
+}
+
+void log_producer_config_set_persistent_force_flush(ClsProducerConfig *config,
+                                                    int32_t force)
+{
+    if (config == NULL)
+        return;
+    config->forceFlushDisk = force;
 }

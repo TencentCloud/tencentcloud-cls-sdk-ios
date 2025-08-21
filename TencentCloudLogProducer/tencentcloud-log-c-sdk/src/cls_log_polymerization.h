@@ -41,6 +41,8 @@ typedef struct {
   size_t loggroup_size;
   void *private_value;
   uint32_t create_time;
+  int64_t start_uuid;
+  int64_t end_uuid;
 } cls_log_group_builder;
 
 extern cls_lz4_content *
@@ -49,11 +51,13 @@ extern cls_lz4_content *
 ClsSerializeWithNolz4(cls_log_group_builder *bder);
 extern void ClsFreeLogBuf(cls_lz4_content *pBuf);
 extern cls_log_group_builder *GenerateClsLogGroup();
+void clear_log_tag(cls_log_buffer *tag);
 extern void cls_log_group_destroy(cls_log_group_builder *bder);
 extern void InnerAddClsLog(cls_log_group_builder *bder, int64_t logTime,
                                int32_t pair_count, char **keys,
                                int32_t *key_lens, char **values,
                                int32_t *val_lens);
+extern void add_cls_log_raw(cls_log_group_builder* bder, const char * buffer, size_t size);
 extern void AddClsSource(cls_log_group_builder *bder, const char *src, size_t len);
 extern void AddClsTopic(cls_log_group_builder *bder, const char *tpc, size_t len);
 extern void AddClsTag(cls_log_group_builder *bder, const char *k, size_t k_len,

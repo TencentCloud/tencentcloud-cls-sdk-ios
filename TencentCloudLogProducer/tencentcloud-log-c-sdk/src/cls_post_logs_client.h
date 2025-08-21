@@ -35,6 +35,8 @@ typedef struct _cls_log_producer_send_param {
   uint32_t magic_num;
   uint32_t create_time;
   char *topic;
+  int64_t start_uuid;
+  int64_t end_uuid;
 } cls_log_producer_send_param;
 
 extern void *SendClsProcess(void *send_param);

@@ -92,6 +92,15 @@ static void log_send_callback(const char * config_name, int result, size_t log_b
     [_config SetClsDestroyFlusherWaitSec:1];
     [_config SetClsDestroySenderWaitSec:1];
     [_config SetClsCompressType:1];
+    
+    //如下支持checkpoint点位落盘机制
+    [_config SetPersistent:1];
+    NSArray  *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *Path = [[paths lastObject] stringByAppendingString:@"/loga.dat"];
+    [_config SetPersistentFilePath:Path];
+    [_config SetPersistentMaxFileCount:10];
+    [_config SetPersistentMaxFileSize:1*1024*1024];
+    [_config SetPersistentMaxLogCount:65536];
 
     _client = [[ClsLogProducerClient alloc] initWithClsLogProducer:_config callback:log_send_callback];
 }

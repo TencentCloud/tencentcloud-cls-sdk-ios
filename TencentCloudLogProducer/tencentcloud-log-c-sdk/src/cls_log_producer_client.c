@@ -3,6 +3,7 @@
 //
 #include "cls_log_producer_client.h"
 #include "cls_log_producer_manager.h"
+#include "cls_log_persistent_manager.h"
 #include "cls_log.h"
 #include "cls_utils.h"
 #include "cls_post_logs_api.h"
@@ -21,7 +22,7 @@ typedef struct
 
     ClsProducerManager *producermgr;
     ClsProducerConfig *producerconf;
-
+    cls_log_recovery_manager * persistent_manager;
 } ClsPrivateProducerClient;
 
 struct clslogproducer
@@ -72,6 +73,25 @@ clslogproducer *ConstructorClsLogProducer(ClsProducerConfig *config, ClsSendCall
     privateclient->producermgr = ConstructorClsProducerManager(config);
     privateclient->producermgr->callbackfunc = callbackfunc;
     privateclient->producermgr->user_param = user_param;
+    
+    privateclient->persistent_manager = create_cls_log_recovery_manager(config);
+    if (privateclient->persistent_manager != NULL)
+    {
+        privateclient->producermgr->uuid_user_param = privateclient->persistent_manager;
+        privateclient->producermgr->send_done_persistent_function = on_cls_log_recovery_manager_send_done_uuid;
+        int recoverRst = log_persistent_manager_recover_cls_log(privateclient->persistent_manager, privateclient->producermgr);
+        if (recoverRst != 0)
+        {
+            cls_error_log("topic %s, recover log persistent manager failed, result %d",
+                          config->topic,
+                          recoverRst);
+        }
+        else
+        {
+            cls_info_log("topic %s, recover log persistent manager success",
+                          config->topic);
+        }
+    }
 
     cls_debug_log("create producer client success, topic : %s", config->topic);
     producerclient->efficient = true;
@@ -90,6 +110,7 @@ void DestructorClsLogProducer(clslogproducer *producer)
     ClsPrivateProducerClient *client_private = (ClsPrivateProducerClient *)client->private_client;
     destroy_cls_log_producer_manager(client_private->producermgr);
     DestroyClsLogProducerConfig(client_private->producerconf);
+    destroy_cls_log_recovery_manager(client_private->persistent_manager);
     free(client_private);
     free(client);
     free(producer);
@@ -117,6 +138,30 @@ PostClsLog(clslogproducerclient *client,
     }
 
     ClsProducerManager *manager = ((ClsPrivateProducerClient *)client->private_client)->producermgr;
+    cls_log_recovery_manager * persistent_manager = ((ClsPrivateProducerClient *)client->private_client)->persistent_manager;
+    if (persistent_manager != NULL && persistent_manager->is_invalid == 0)
+    {
+        pthread_mutex_lock(persistent_manager->lock);
+        InnerAddClsLog(persistent_manager->builder, CLS_LOG_GET_TIME(), pair_count, keys, key_lens, values, value_lens);
+        char * logBuf = persistent_manager->builder->grp->logs.buffer;
+        size_t logSize = persistent_manager->builder->grp->logs.now_buffer_len;
+        clear_log_tag(&(persistent_manager->builder->grp->logs));
+        if (!log_recovery_manager_is_buffer_enough(persistent_manager, logSize) ||
+            manager->totalBufferSize > manager->producerconf->maxBufferBytes)
+        {
+            pthread_mutex_unlock(persistent_manager->lock);
+            return CLS_LOG_PRODUCER_DROP_ERROR;
+        }
+        int rst = log_recovery_manager_save_cls_log(persistent_manager, logBuf, logSize);
+        if (rst != CLS_LOG_PRODUCER_OK)
+        {
+            pthread_mutex_unlock(persistent_manager->lock);
+            return CLS_LOG_PRODUCER_DROP_ERROR;
+        }
+        rst = log_producer_manager_add_log_raw(manager, logBuf, logSize, flush, persistent_manager->checkpoint.now_log_uuid - 1);
+        pthread_mutex_unlock(persistent_manager->lock);
+        return rst;
+    }
     return cls_log_producer_manager_add_log(manager, logtime,pair_count, keys, key_lens, values, value_lens, flush, -1);
 }
 
