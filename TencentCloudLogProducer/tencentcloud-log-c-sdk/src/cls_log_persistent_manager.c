@@ -118,8 +118,7 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
                                               int64_t startId,
                                               int64_t endId)
 {
-    if (result != CLS_LOG_PRODUCER_OK && result != CLS_LOG_PRODUCER_DROP_ERROR && result != CLS_LOG_PRODUCER_INVALID)
-    {
+    if (result >= CLS_HTTP_INTERNAL_SERVER_ERROR || result == CLS_HTTP_TOO_MANY_REQUESTS || result == CLS_HTTP_REQUEST_TIMEOUT || result == CLS_HTTP_FORBIDDEN){
         return;
     }
     cls_log_recovery_manager *manager = (cls_log_recovery_manager *)persistent_manager;

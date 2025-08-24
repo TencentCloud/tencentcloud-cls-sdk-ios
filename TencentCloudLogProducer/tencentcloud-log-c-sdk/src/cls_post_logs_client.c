@@ -189,11 +189,8 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
     }
     if (producermgr->send_done_persistent_function != NULL)
     {
-        int callback_result = send_result == CLS_LOG_SEND_OK ?
-                                              CLS_LOG_PRODUCER_OK :
-                                              (CLS_LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - CLS_LOG_SEND_NETWORK_ERROR);
         producermgr->send_done_persistent_function(producermgr->producerconf->topic,
-                                                  callback_result,
+                                                  result.statusCode,
                                                   send_param->log_buf->raw_length,
                                                   send_param->log_buf->length,
                                                   result.requestID,
@@ -260,20 +257,6 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
                      (int)producermgr->totalBufferSize,
                      result.statusCode,
                      result.message);
-    
-        if (producermgr->send_done_persistent_function != NULL)
-        {
-            producermgr->send_done_persistent_function(producermgr->producerconf->topic,
-                                                      CLS_LOG_PRODUCER_DROP_ERROR,
-                                                      send_param->log_buf->raw_length,
-                                                      send_param->log_buf->length,
-                                                      result.requestID,
-                                                      result.message,
-                                                      send_param->log_buf->data,
-                                                      producermgr->uuid_user_param,
-                                                      send_param->start_uuid,
-                                                      send_param->end_uuid);
-        }
     }
 
     return 0;
