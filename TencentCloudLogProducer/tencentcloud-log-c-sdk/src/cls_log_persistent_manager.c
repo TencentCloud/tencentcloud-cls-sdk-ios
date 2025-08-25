@@ -226,25 +226,27 @@ int log_recovery_manager_save_cls_log(cls_log_recovery_manager *manager,
     const char *logBuf = builder->grp->logs.buffer;
     size_t logSize = builder->grp->logs.now_buffer_len;
     // save binlog
-    const void *buffer[2];
-    size_t bufferSize[2];
+    const void *buffer[3];
+    size_t bufferSize[3];
     cls_log_recovery_item_header header;
     header.magic_code = LOG_PERSISTENT_HEADER_MAGIC;
     header.log_uuid = manager->checkpoint.now_log_uuid;
     header.log_size = logSize;
     header.logs_count = builder->grp->logs_count;
     header.preserved = 0;
-    memcpy(header.len_index, builder->grp->logs.buf_index, builder->grp->logs_count * sizeof(uint16_t));
-    for(int i = 0; i < builder->grp->logs_count; ++i){
-        header.len_index[i] = builder->grp->logs.buf_index[i];
-    }
+//    memcpy(header.len_index, builder->grp->logs.buf_index, builder->grp->logs_count * sizeof(uint16_t));
+//    for(int i = 0; i < builder->grp->logs_count; ++i){
+//        header.len_index[i] = builder->grp->logs.buf_index[i];
+//    }
 
     buffer[0] = &header;
-    buffer[1] = logBuf;
+    buffer[1] = builder->grp->logs.buf_index;
+    buffer[2] = logBuf;
     bufferSize[0] = sizeof(cls_log_recovery_item_header);
-    bufferSize[1] = logSize;
-    int rst = ring_log_file_write(manager->ring_file, manager->checkpoint.now_file_offset, 2, buffer, bufferSize);
-    if (rst != bufferSize[0] + bufferSize[1])
+    bufferSize[1] = builder->grp->logs_count*sizeof(int);
+    bufferSize[2] = logSize;
+    int rst = ring_log_file_write(manager->ring_file, manager->checkpoint.now_file_offset, 3, buffer, bufferSize);
+    if (rst != bufferSize[0] + bufferSize[1]+bufferSize[2])
     {
         cls_error_log("topic %s, write bin log failed, rst %d",
                       manager->config->topic,
@@ -321,7 +323,7 @@ static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manage
 
     char *buffer = NULL;
     int max_buffer_size = 0;
-
+    int *logIndex = NULL;
     while (1)
     {
         rst = ring_log_file_read(manager->ring_file, fileOffset, &header, sizeof(cls_log_recovery_item_header));
@@ -359,6 +361,25 @@ static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manage
                          logUUID);
             break;
         }
+        int logIndexSize = header.logs_count*sizeof(int);
+        if (logIndex != NULL){
+            free(logIndex);
+            logIndex = NULL;
+        }
+        if(logIndex == NULL){
+            logIndex = (int*)malloc(logIndexSize);
+            memset(logIndex, 0, logIndexSize);
+        }
+        
+        rst = ring_log_file_read(manager->ring_file, fileOffset + sizeof(cls_log_recovery_item_header), logIndex, logIndexSize);
+        if (rst != logIndexSize){
+            cls_warn_log("project %s, read binlog file index failed, offset %lld, result %d",
+                         manager->config->topic,
+                         fileOffset + sizeof(cls_log_recovery_item_header),
+                         rst);
+            break;
+        }
+        
         if (buffer == NULL || max_buffer_size < header.log_size)
         {
             if (buffer != NULL)
@@ -368,7 +389,7 @@ static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manage
             buffer = (char *)malloc(header.log_size * 2);
             max_buffer_size = header.log_size * 2;
         }
-        rst = ring_log_file_read(manager->ring_file, fileOffset + sizeof(cls_log_recovery_item_header), buffer, header.log_size);
+        rst = ring_log_file_read(manager->ring_file, fileOffset + sizeof(cls_log_recovery_item_header)+logIndexSize, buffer, header.log_size);
         if (rst != header.log_size)
         {
             // if read fail, just break
@@ -398,10 +419,10 @@ static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manage
         }
 
         logUUID = header.log_uuid;
-        fileOffset += header.log_size + sizeof(cls_log_recovery_item_header);
+        fileOffset += header.log_size + sizeof(cls_log_recovery_item_header) + logIndexSize;
         manager->in_buffer_log_offsets[header.log_uuid % manager->config->maxPersistentLogCount] = fileOffset;
         printf("logbuflen:%ld|logSize:%ld\n",strlen(buffer),header.log_size);
-        rst = log_producer_manager_add_log_raw(producer_manager, buffer, header.log_size, 0, header.log_uuid, header.len_index,header.logs_count);
+        rst = log_producer_manager_add_log_raw(producer_manager, buffer, header.log_size, 0, header.log_uuid, logIndex,header.logs_count);
         if (rst != 0)
         {
             cls_error_log("topic %s, add log to producer manager failed, this log will been dropped",
@@ -412,6 +433,11 @@ static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manage
     {
         free(buffer);
         buffer = NULL;
+    }
+    
+    if(logIndex != NULL){
+        free(logIndex);
+        logIndex = NULL;
     }
 
     if (logUUID < manager->checkpoint.now_log_uuid - 1)

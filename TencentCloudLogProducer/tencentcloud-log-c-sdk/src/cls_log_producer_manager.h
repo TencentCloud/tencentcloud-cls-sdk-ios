@@ -57,7 +57,7 @@ extern int log_producer_manager_add_log_raw(ClsProducerManager * producer_manage
                                                              char * logBuf,
                                                              size_t logSize,
                                                              int flush,
-                                                             int64_t uuid,uint16_t* len_index,int64_t logs_count);
+                                                             int64_t uuid,int* len_index,int64_t logs_count);
 
 CLS_LOG_CPP_END
 

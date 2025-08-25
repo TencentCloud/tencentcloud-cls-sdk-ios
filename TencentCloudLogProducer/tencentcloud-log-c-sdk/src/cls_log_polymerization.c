@@ -190,7 +190,7 @@ void _adjust_cls_buffer(cls_log_buffer *tag, uint32_t new_len)
     tag->max_buffer_len = new_buffer_len;
 }
 
-void add_cls_log_raw(cls_log_group_builder *bder, const char *buffer, size_t size,uint16_t* len_index,int64_t logs_count)
+void add_cls_log_raw(cls_log_group_builder *bder, const char *buffer, size_t size,int* len_index,int64_t logs_count)
 {
     cls_log_buffer *log = &(bder->grp->logs);
 
