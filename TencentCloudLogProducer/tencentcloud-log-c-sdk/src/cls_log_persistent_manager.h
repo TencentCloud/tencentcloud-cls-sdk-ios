@@ -14,6 +14,7 @@
 #include "cls_log_ring_file.h"
 #include "cls_log_producer_manager.h"
 
+int num = 20;
 typedef struct _log_recovery_checkpoint {
     uint64_t version;
     unsigned char signature[16];
@@ -30,7 +31,9 @@ typedef struct _log_recovery_item_header
     uint64_t magic_code;
     int64_t log_uuid;
     int64_t log_size;
+    int64_t logs_count;
     uint64_t preserved;
+    uint16_t len_index[10000];
 }cls_log_recovery_item_header;
 
 typedef struct _log_recovery_manager{
@@ -38,7 +41,7 @@ typedef struct _log_recovery_manager{
     cls_log_recovery_checkpoint checkpoint;
     uint64_t * in_buffer_log_offsets;
     ClsProducerConfig * config;
-    cls_log_group_builder * builder;
+//    cls_log_group_builder * builder;
     int8_t is_invalid;
     int8_t first_checkpoint_saved;
     ring_log_file * ring_file;
@@ -63,7 +66,7 @@ void on_cls_log_recovery_manager_send_done_uuid(const char * config_name,
                                                int64_t startId,
                                                int64_t endId);
 
-int log_recovery_manager_save_cls_log(cls_log_recovery_manager * manager, const char * logBuf, size_t logSize);
+int log_recovery_manager_save_cls_log(cls_log_recovery_manager * manager, cls_log_group_builder *builder);
 int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager * manager, size_t logSize);
 
 int save_cls_log_checkpoint(cls_log_recovery_manager * manager);

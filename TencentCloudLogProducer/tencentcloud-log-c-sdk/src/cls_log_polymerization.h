@@ -57,7 +57,7 @@ extern void InnerAddClsLog(cls_log_group_builder *bder, int64_t logTime,
                                int32_t pair_count, char **keys,
                                int32_t *key_lens, char **values,
                                int32_t *val_lens);
-extern void add_cls_log_raw(cls_log_group_builder* bder, const char * buffer, size_t size);
+extern void add_cls_log_raw(cls_log_group_builder* bder, const char * buffer, size_t size,uint16_t* len_index,int64_t logs_count);
 extern void AddClsSource(cls_log_group_builder *bder, const char *src, size_t len);
 extern void AddClsTopic(cls_log_group_builder *bder, const char *tpc, size_t len);
 extern void AddClsTag(cls_log_group_builder *bder, const char *k, size_t k_len,

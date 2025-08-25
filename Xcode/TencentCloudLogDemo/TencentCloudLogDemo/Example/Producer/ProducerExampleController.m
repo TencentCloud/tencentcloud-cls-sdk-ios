@@ -58,9 +58,16 @@ static ProducerExampleController *selfClzz;
     });
 }
 
-- (void) send {
-    ClsLogProducerResult result = [_client PostClsLog:[self LogData]];
-    [self UpdateReult:[NSString stringWithFormat:@"addlog result: %ld", result]];
+- (void) send{
+
+    for (int i = 0; i < 10000; i++) {
+        ClsLogProducerResult result = [_client PostClsLog:[self LogData]];
+        if( result != ClsLogProducerOK){
+            printf("addlog result: %d\n", result);
+        }
+       
+    }
+    
 }
 
 static void log_send_callback(const char * config_name, int result, size_t log_bytes, size_t compressed_bytes, const char * req_id, const char * message, const unsigned char * raw_buffer, void * userparams) {
@@ -96,7 +103,8 @@ static void log_send_callback(const char * config_name, int result, size_t log_b
     //如下支持checkpoint点位落盘机制
     [_config SetPersistent:1];
     NSArray  *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *Path = [[paths lastObject] stringByAppendingString:@"/loga.dat"];
+    NSString *Path = [[paths lastObject] stringByAppendingString:@"/log.dat"];
+    NSLog(@"文件路径：%@", Path);
     [_config SetPersistentFilePath:Path];
     [_config SetPersistentMaxFileCount:10];
     [_config SetPersistentMaxFileSize:1*1024*1024];
