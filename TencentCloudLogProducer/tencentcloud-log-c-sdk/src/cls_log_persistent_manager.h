@@ -33,7 +33,7 @@ typedef struct _log_recovery_item_header
     int64_t log_size;
     int64_t logs_count;
     uint64_t preserved;
-    uint16_t len_index[10000];
+//    uint16_t len_index[10000];
 }cls_log_recovery_item_header;
 
 typedef struct _log_recovery_manager{

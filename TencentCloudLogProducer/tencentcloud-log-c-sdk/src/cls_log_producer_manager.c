@@ -479,7 +479,7 @@ cls_log_producer_manager_add_log(ClsProducerManager *producermgr,
 int
 log_producer_manager_add_log_raw(ClsProducerManager *producermgr,
                                  char *logBuf, size_t logSize, int flush,
-                                 int64_t uuid,uint16_t* len_index,int64_t logs_count)
+                                 int64_t uuid,int* len_index,int64_t logs_count)
 {
     if (producermgr->totalBufferSize > producermgr->producerconf->maxBufferBytes)
     {
