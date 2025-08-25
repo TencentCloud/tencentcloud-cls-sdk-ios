@@ -76,6 +76,7 @@
     
     
     int ids = 0;
+    int64_t logSize = 0;
     for (NSString *key in logContents) {
         NSString *value = logContents[key];
 
@@ -85,13 +86,19 @@
         keyArray[ids] = keyChar;  //记录contents 所有的key
         valueArray[ids] = valueChar; ////记录contents 所有的value
         keyCountArray[ids] = (int32_t)strlen(keyChar); //记录contents 所有的key的大小
+        logSize +=keyCountArray[ids];
         valueCountArray[ids] = (int32_t)strlen(valueChar); //记录contents 所有的value的大小
+        logSize += valueCountArray[ids];
         
         ids = ids + 1;
     }
-    
-    
-    int res = PostClsLog(self->client, log->logTime, pairCount, keyArray, keyCountArray, valueArray, valueCountArray, flush);
+    int res = 0;
+    if(log_producer_persistent_config_is_enabled(self->logConfig->config)){
+        res = PostClsLogWithPersistent(self->client, log->logTime, pairCount, keyArray, keyCountArray, valueArray, valueCountArray, flush,logSize);
+    }else{
+        res = PostClsLog(self->client, log->logTime, pairCount, keyArray, keyCountArray, valueArray, valueCountArray, flush);
+    }
+
     
     for(int i=0;i<pairCount;i++) {
         free(keyArray[i]);

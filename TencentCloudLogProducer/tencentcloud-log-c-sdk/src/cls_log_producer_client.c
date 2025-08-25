@@ -126,6 +126,88 @@ extern clslogproducerclient *GetClsLogProducer(clslogproducer *producer, const c
 }
 
 int
+PostClsLogWithPersistent(clslogproducerclient *client,
+                                                int64_t logtime,
+                                                int32_t pair_count, char **keys,
+                                                int32_t *key_lens, char **values,
+                                                int32_t *value_lens, int flush, int64_t logSize)
+{
+    if (client == NULL || !client->efficient)
+    {
+        return CLS_LOG_PRODUCER_INVALID;
+    }
+
+    ClsProducerManager *producermgr = ((ClsPrivateProducerClient *)client->private_client)->producermgr;
+    if (producermgr->totalBufferSize > producermgr->producerconf->maxBufferBytes)
+    {
+        return CLS_LOG_PRODUCER_DROP_ERROR;
+    }
+    cls_log_recovery_manager * persistent_manager = ((ClsPrivateProducerClient *)client->private_client)->persistent_manager;
+    if (persistent_manager == NULL || persistent_manager->is_invalid == 1){
+        return 10010;
+    }
+    if (!log_recovery_manager_is_buffer_enough(persistent_manager, logSize))
+    {
+        printf("error totalBufferSize:%lld|maxBufferBytes:%lld\n",producermgr->totalBufferSize,producermgr->producerconf->maxBufferBytes);
+        return 10012;
+    }
+    pthread_mutex_lock(producermgr->lock);
+    pthread_mutex_lock(persistent_manager->lock);
+    if (producermgr->builder == NULL)
+    {
+        if (CheckClsLogQueueIsFull(producermgr->loggroup_queue))
+        {
+            pthread_mutex_unlock(producermgr->lock);
+            pthread_mutex_unlock(persistent_manager->lock);
+            return 10011;
+        }
+        int32_t now_time = time(NULL);
+        producermgr->builder = GenerateClsLogGroup();
+        producermgr->firstLogTime = now_time;
+        producermgr->builder->private_value = producermgr;
+    }
+    InnerAddClsLog(producermgr->builder, logtime, pair_count, keys, key_lens, values, value_lens);
+
+    int32_t nowTime = time(NULL);
+    if (flush == 0 && producermgr->builder->loggroup_size < producermgr->producerconf->logBytesPerPackage && nowTime - producermgr->firstLogTime < producermgr->producerconf->packageTimeoutInMS / 1000 && producermgr->builder->grp->logs_count < producermgr->producerconf->logCountPerPackage)
+    {
+        pthread_mutex_unlock(producermgr->lock);
+        pthread_mutex_unlock(persistent_manager->lock);
+        return CLS_LOG_PRODUCER_OK;
+    }
+
+    int rst = log_recovery_manager_save_cls_log(persistent_manager, producermgr->builder);
+    if (rst != CLS_LOG_PRODUCER_OK)
+    {
+        pthread_mutex_unlock(producermgr->lock);
+        pthread_mutex_unlock(persistent_manager->lock);
+        return 10013;
+    }
+    
+    cls_log_group_builder *builder = producermgr->builder;
+    builder->end_uuid = builder->start_uuid= persistent_manager->checkpoint.now_log_uuid - 1;
+    int ret = CLS_LOG_PRODUCER_OK;
+    producermgr->builder = NULL;
+    size_t loggroup_size = builder->loggroup_size;
+    cls_debug_log("try push loggroup to flusher, size : %d, log count %d", (int)builder->loggroup_size, (int)builder->grp->logs_count);
+    int status = cls_log_queue_push(producermgr->loggroup_queue, builder);
+    if (status != 0)
+    {
+        cls_error_log("try push loggroup to flusher failed, force drop this log group, error code : %d", status);
+        ret = 10014;
+        cls_log_group_destroy(builder);
+    }
+    else
+    {
+        producermgr->totalBufferSize += loggroup_size;
+        pthread_cond_signal(producermgr->triger_cond);
+    }
+    pthread_mutex_unlock(producermgr->lock);
+    pthread_mutex_unlock(persistent_manager->lock);
+    return ret;
+}
+
+int
 PostClsLog(clslogproducerclient *client,
            int64_t logtime,
                                                 int32_t pair_count, char **keys,
@@ -138,30 +220,6 @@ PostClsLog(clslogproducerclient *client,
     }
 
     ClsProducerManager *manager = ((ClsPrivateProducerClient *)client->private_client)->producermgr;
-    cls_log_recovery_manager * persistent_manager = ((ClsPrivateProducerClient *)client->private_client)->persistent_manager;
-    if (persistent_manager != NULL && persistent_manager->is_invalid == 0)
-    {
-        pthread_mutex_lock(persistent_manager->lock);
-        InnerAddClsLog(persistent_manager->builder, CLS_LOG_GET_TIME(), pair_count, keys, key_lens, values, value_lens);
-        char * logBuf = persistent_manager->builder->grp->logs.buffer;
-        size_t logSize = persistent_manager->builder->grp->logs.now_buffer_len;
-        clear_log_tag(&(persistent_manager->builder->grp->logs));
-        if (!log_recovery_manager_is_buffer_enough(persistent_manager, logSize) ||
-            manager->totalBufferSize > manager->producerconf->maxBufferBytes)
-        {
-            pthread_mutex_unlock(persistent_manager->lock);
-            return CLS_LOG_PRODUCER_DROP_ERROR;
-        }
-        int rst = log_recovery_manager_save_cls_log(persistent_manager, logBuf, logSize);
-        if (rst != CLS_LOG_PRODUCER_OK)
-        {
-            pthread_mutex_unlock(persistent_manager->lock);
-            return CLS_LOG_PRODUCER_DROP_ERROR;
-        }
-        rst = log_producer_manager_add_log_raw(manager, logBuf, logSize, flush, persistent_manager->checkpoint.now_log_uuid - 1);
-        pthread_mutex_unlock(persistent_manager->lock);
-        return rst;
-    }
     return cls_log_producer_manager_add_log(manager, logtime,pair_count, keys, key_lens, values, value_lens, flush, -1);
 }
 

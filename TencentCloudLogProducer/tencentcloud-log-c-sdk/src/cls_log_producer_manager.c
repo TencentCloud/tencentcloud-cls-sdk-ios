@@ -3,6 +3,7 @@
 //
 
 #include "cls_log_producer_manager.h"
+#include "cls_log_persistent_manager.h"
 #include "cls_log.h"
 #include "cls_md5.h"
 #include "cls_sds.h"
@@ -62,6 +63,22 @@ void _try_flush_cls_loggroup(ClsProducerManager *producermgr)
     if (producermgr->builder != NULL && now_time - producermgr->firstLogTime > producermgr->producerconf->packageTimeoutInMS / 1000)
     {
         cls_log_group_builder *builder = producermgr->builder;
+        cls_log_recovery_manager *persistent_manager = (cls_log_recovery_manager *)producermgr->uuid_user_param;
+        if(persistent_manager != NULL){
+            pthread_mutex_lock(persistent_manager->lock);
+            int rst = log_recovery_manager_save_cls_log(persistent_manager, builder);
+            if (rst != CLS_LOG_PRODUCER_OK)
+            {
+                cls_log_group_destroy(builder);
+                pthread_mutex_unlock(persistent_manager->lock);
+                pthread_mutex_lock(producermgr->lock);
+                return;
+            }
+            
+            builder->end_uuid = builder->start_uuid= persistent_manager->checkpoint.now_log_uuid - 1;
+            pthread_mutex_unlock(persistent_manager->lock);
+        }
+        
         producermgr->builder = NULL;
         pthread_mutex_unlock(producermgr->lock);
 
@@ -283,6 +300,21 @@ void _push_last_cls_loggroup(ClsProducerManager *manager)
     {
         size_t loggroup_size = builder->loggroup_size;
         cls_debug_log("try push loggroup to flusher, size : %d, log size %d", (int)builder->loggroup_size, (int)builder->grp->logs.now_buffer_len);
+        cls_log_recovery_manager *persistent_manager = (cls_log_recovery_manager *)manager->uuid_user_param;
+        if(persistent_manager != NULL){
+            pthread_mutex_lock(persistent_manager->lock);
+            int rst = log_recovery_manager_save_cls_log(persistent_manager, builder);
+            if (rst != CLS_LOG_PRODUCER_OK)
+            {
+                cls_log_group_destroy(builder);
+                pthread_mutex_unlock(persistent_manager->lock);
+                pthread_mutex_lock(manager->lock);
+                return;
+            }
+            
+            builder->end_uuid = builder->start_uuid= persistent_manager->checkpoint.now_log_uuid - 1;
+            pthread_mutex_unlock(persistent_manager->lock);
+        }
         int32_t status = cls_log_queue_push(manager->loggroup_queue, builder);
         if (status != 0)
         {
@@ -447,13 +479,50 @@ cls_log_producer_manager_add_log(ClsProducerManager *producermgr,
 int
 log_producer_manager_add_log_raw(ClsProducerManager *producermgr,
                                  char *logBuf, size_t logSize, int flush,
-                                 int64_t uuid)
+                                 int64_t uuid,uint16_t* len_index,int64_t logs_count)
 {
-    CLS_LOG_PRODUCER_MANAGER_ADD_LOG_BEGIN;
+    if (producermgr->totalBufferSize > producermgr->producerconf->maxBufferBytes)
+    {
+        return CLS_LOG_PRODUCER_DROP_ERROR;
+    }
+    pthread_mutex_lock(producermgr->lock);
+    if (producermgr->builder == NULL)
+    {
+        if (CheckClsLogQueueIsFull(producermgr->loggroup_queue))
+        {
+            pthread_mutex_unlock(producermgr->lock);
+            return CLS_LOG_PRODUCER_DROP_ERROR;
+        }
+        int32_t now_time = time(NULL);
+        producermgr->builder = GenerateClsLogGroup();
+        producermgr->builder->start_uuid = uuid;
+        producermgr->firstLogTime = now_time;
+        producermgr->builder->private_value = producermgr;
+    }
     
-    add_cls_log_raw(producermgr->builder,logBuf,logSize);
+    add_cls_log_raw(producermgr->builder,logBuf,logSize,len_index,logs_count);
     
-    CLS_LOG_PRODUCER_MANAGER_ADD_LOG_END;
+    cls_log_group_builder *builder = producermgr->builder;
+    builder->end_uuid = uuid;
+    int32_t nowTime = time(NULL);
+    int ret = CLS_LOG_PRODUCER_OK;
+    producermgr->builder = NULL;
+    size_t loggroup_size = builder->loggroup_size;
+    cls_debug_log("try push loggroup to flusher, size : %d, log count %d", (int)builder->loggroup_size, (int)builder->grp->logs_count);
+    int status = cls_log_queue_push(producermgr->loggroup_queue, builder);
+    if (status != 0)
+    {
+        cls_error_log("try push loggroup to flusher failed, force drop this log group, error code : %d", status);
+        ret = CLS_LOG_PRODUCER_DROP_ERROR;
+        cls_log_group_destroy(builder);
+    }
+    else
+    {
+        producermgr->totalBufferSize += loggroup_size;
+        pthread_cond_signal(producermgr->triger_cond);
+    }
+    pthread_mutex_unlock(producermgr->lock);
+    return ret;
     
     return 0;
 
