@@ -88,7 +88,7 @@ int ring_log_file_write_single(ring_log_file *file, uint64_t offset,
     while (nowOffset < buffer_size)
     {
         get_ring_file_offset(file, offset + nowOffset, &fileIndex, &fileOffset);
-        if (log_ring_file_open_fd(file, offset, fileIndex, fileOffset) != 0)
+        if (log_ring_file_open_fd(file, offset+nowOffset, fileIndex, fileOffset) != 0)
         {
             return -1;
         }
@@ -222,7 +222,7 @@ int ring_log_file_clean(ring_log_file *file, uint64_t startOffset,
     {
         file->fileUseFlags[i % file->maxFileCount] = 1;
     }
-    cls_info_log("remove file %s , offset from %lld to %lld, file offset %lld, index from %d to %d",
+    cls_debug_log("remove file %s , offset from %lld to %lld, file offset %lld, index from %d to %d",
                  file->filePath,
                  startOffset,
                  endOffset,

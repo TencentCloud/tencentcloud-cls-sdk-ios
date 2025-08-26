@@ -144,12 +144,11 @@ PostClsLogWithPersistent(clslogproducerclient *client,
     }
     cls_log_recovery_manager * persistent_manager = ((ClsPrivateProducerClient *)client->private_client)->persistent_manager;
     if (persistent_manager == NULL || persistent_manager->is_invalid == 1){
-        return 10010;
+        return CLS_LOG_PRODUCER_PERSISTENT_ERROR;
     }
     if (!log_recovery_manager_is_buffer_enough(persistent_manager, logSize))
     {
-        printf("error totalBufferSize:%lld|maxBufferBytes:%lld\n",producermgr->totalBufferSize,producermgr->producerconf->maxBufferBytes);
-        return 10012;
+        return CLS_LOG_PRODUCER_DROP_ERROR;
     }
     pthread_mutex_lock(producermgr->lock);
     pthread_mutex_lock(persistent_manager->lock);
@@ -159,7 +158,7 @@ PostClsLogWithPersistent(clslogproducerclient *client,
         {
             pthread_mutex_unlock(producermgr->lock);
             pthread_mutex_unlock(persistent_manager->lock);
-            return 10011;
+            return CLS_LOG_PRODUCER_DROP_ERROR;
         }
         int32_t now_time = time(NULL);
         producermgr->builder = GenerateClsLogGroup();
@@ -181,7 +180,7 @@ PostClsLogWithPersistent(clslogproducerclient *client,
     {
         pthread_mutex_unlock(producermgr->lock);
         pthread_mutex_unlock(persistent_manager->lock);
-        return 10013;
+        return CLS_LOG_PRODUCER_PERSISTENT_ERROR;
     }
     
     cls_log_group_builder *builder = producermgr->builder;
