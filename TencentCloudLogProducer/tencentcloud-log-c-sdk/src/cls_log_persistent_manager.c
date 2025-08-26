@@ -159,6 +159,13 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
                       manager->config->topic,
                       rst);
     }
+    cls_debug_log("topic %s,on_cls_log_recovery_manager_send_done_uuid recv bin log success, startId %lld, endId %lld, last_offset %lld start_file_offset %lld now_file_offset:%lld start_log_uuid:%lld now_log_uuid:%lld ringFileIndex:%lld ringFileNowOffset:%lld\n",
+                  manager->config->topic,
+           startId,
+           endId,
+           last_offset,
+                  manager->checkpoint.start_file_offset,
+           manager->checkpoint.now_file_offset,manager->checkpoint.start_log_uuid,manager->checkpoint.now_log_uuid,manager->ring_file->nowFileIndex,manager->ring_file->nowOffset);
     ring_log_file_clean(manager->ring_file, last_offset, manager->checkpoint.start_file_offset);
 
     pthread_mutex_unlock(manager->lock);
@@ -234,10 +241,6 @@ int log_recovery_manager_save_cls_log(cls_log_recovery_manager *manager,
     header.log_size = logSize;
     header.logs_count = builder->grp->logs_count;
     header.preserved = 0;
-//    memcpy(header.len_index, builder->grp->logs.buf_index, builder->grp->logs_count * sizeof(uint16_t));
-//    for(int i = 0; i < builder->grp->logs_count; ++i){
-//        header.len_index[i] = builder->grp->logs.buf_index[i];
-//    }
 
     buffer[0] = &header;
     buffer[1] = builder->grp->logs.buf_index;
@@ -255,13 +258,16 @@ int log_recovery_manager_save_cls_log(cls_log_recovery_manager *manager,
     }
     manager->checkpoint.now_file_offset += rst;
     // update in memory checkpoint
-    manager->in_buffer_log_offsets[manager->checkpoint.now_log_uuid % manager->config->maxPersistentLogCount] = manager->checkpoint.now_file_offset;
+    int64_t resultIndex = manager->checkpoint.now_log_uuid % manager->config->maxPersistentLogCount;
+    manager->in_buffer_log_offsets[resultIndex] = manager->checkpoint.now_file_offset;
     ++manager->checkpoint.now_log_uuid;
-    cls_debug_log("topic %s,write bin log success, offset %lld, uuid %lld, log size %d",
+    cls_debug_log("topic %s,write bin log success, start_file_offset %lld, now_file_offset %lld, start_log_uuid %lld now_log_uuid %lld resultIndex:%lldd ringFileIndex:%lld ringFileNowOffset:%lld\n",
                   manager->config->topic,
+                  manager->checkpoint.start_file_offset,
                   manager->checkpoint.now_file_offset,
+                  manager->checkpoint.start_log_uuid,
                   manager->checkpoint.now_log_uuid,
-                  rst);
+                  resultIndex,manager->ring_file->nowFileIndex,manager->ring_file->nowOffset);
     if (manager->first_checkpoint_saved == 0)
     {
         save_cls_log_checkpoint(manager);
@@ -286,7 +292,7 @@ int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager,
             (uint64_t)manager->config->maxPersistentFileCount * manager->config->maxPersistentFileSize &&
         manager->checkpoint.now_log_uuid - manager->checkpoint.start_log_uuid < manager->config->maxPersistentLogCount - 1)
     {
-        printf("now_file_offset:%lld|start_file_offset:%lld|logSize:%lld|now_log_uuid:%lld|start_log_uuid:%lld\n",manager->checkpoint.now_file_offset,manager->checkpoint.start_file_offset,logSize,manager->checkpoint.now_log_uuid,manager->checkpoint.start_log_uuid);
+        cls_debug_log("now_file_offset:%lld|start_file_offset:%lld|logSize:%lld|now_log_uuid:%lld|start_log_uuid:%lld\n",manager->checkpoint.now_file_offset,manager->checkpoint.start_file_offset,logSize,manager->checkpoint.now_log_uuid,manager->checkpoint.start_log_uuid);
         return 0;
     }
     return 1;
@@ -421,7 +427,6 @@ static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manage
         logUUID = header.log_uuid;
         fileOffset += header.log_size + sizeof(cls_log_recovery_item_header) + logIndexSize;
         manager->in_buffer_log_offsets[header.log_uuid % manager->config->maxPersistentLogCount] = fileOffset;
-        printf("logbuflen:%ld|logSize:%ld\n",strlen(buffer),header.log_size);
         rst = log_producer_manager_add_log_raw(producer_manager, buffer, header.log_size, 0, header.log_uuid, logIndex,header.logs_count);
         if (rst != 0)
         {
