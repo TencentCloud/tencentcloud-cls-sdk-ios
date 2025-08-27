@@ -146,7 +146,7 @@ PostClsLogWithPersistent(clslogproducerclient *client,
     if (persistent_manager == NULL || persistent_manager->is_invalid == 1){
         return CLS_LOG_PRODUCER_PERSISTENT_ERROR;
     }
-    if (!log_recovery_manager_is_buffer_enough(persistent_manager, logSize))
+    if (!log_recovery_manager_is_buffer_enough(persistent_manager, producermgr->builder,logSize))
     {
         return CLS_LOG_PRODUCER_DROP_ERROR;
     }

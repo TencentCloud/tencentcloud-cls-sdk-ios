@@ -15,8 +15,8 @@ static void _set_default_producer_config(ClsProducerConfig *pConfig)
     pConfig->packageTimeoutInMS = 3000;
     pConfig->maxBufferBytes = 64 * 1024 * 1024;
 
-    pConfig->connectTimeoutSec = 10;
-    pConfig->sendTimeoutSec = 15;
+    pConfig->connectTimeoutSec = 60;
+    pConfig->sendTimeoutSec = 60;
     pConfig->destroySenderWaitTimeoutSec = 1;
     pConfig->destroyFlusherWaitTimeoutSec = 1;
     pConfig->compressType = 1;
@@ -24,6 +24,10 @@ static void _set_default_producer_config(ClsProducerConfig *pConfig)
     pConfig->retries = 10;
     pConfig->baseRetryBackoffMs = 100;
     pConfig->maxRetryBackoffMs = 50000;
+    
+    pConfig->maxPersistentFileCount = 10;
+    pConfig->maxPersistentFileSize = 1*1024*1024;
+    pConfig->maxPersistentLogCount = 65535;
 }
 
 static void _copy_config_string(const char *value, cls_sds *src_value)
@@ -305,6 +309,10 @@ int is_cls_valid(ClsProducerConfig *config)
     if (config->packageTimeoutInMS < 0 || config->maxBufferBytes < 0 || config->logCountPerPackage < 0 || config->logBytesPerPackage < 0)
     {
         cls_error_log("invalid producer config log merge and buffer params");
+        return 0;
+    }
+    if(config->sendThreadCount > 1 && config->usePersistent){
+        cls_error_log("persistent not support muti thread");
         return 0;
     }
     if (config->usePersistent)

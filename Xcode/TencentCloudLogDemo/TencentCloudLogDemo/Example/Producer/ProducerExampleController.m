@@ -101,9 +101,9 @@ static void log_send_callback(const char * config_name, int result, size_t log_b
     [_config SetClsCompressType:1];
     
     //如下支持checkpoint点位落盘机制
-    [_config SetPersistent:1];
+    [_config SetPersistent:0];
     NSArray  *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *Path = [[paths lastObject] stringByAppendingString:@"/log.dat"];
+    NSString *Path = [[paths lastObject] stringByAppendingString:@"/cls.dat"];
     NSLog(@"文件路径：%@", Path);
     [_config SetPersistentFilePath:Path];
     [_config SetPersistentMaxFileCount:10];

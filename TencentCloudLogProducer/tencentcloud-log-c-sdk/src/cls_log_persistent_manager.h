@@ -67,7 +67,7 @@ void on_cls_log_recovery_manager_send_done_uuid(const char * config_name,
                                                int64_t endId);
 
 int log_recovery_manager_save_cls_log(cls_log_recovery_manager * manager, cls_log_group_builder *builder);
-int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager * manager, size_t logSize);
+int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager * manager, cls_log_group_builder *bder,size_t logSize);
 
 int save_cls_log_checkpoint(cls_log_recovery_manager * manager);
 
