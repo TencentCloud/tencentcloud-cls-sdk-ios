@@ -18,6 +18,8 @@
 #define MAX_CHECKPOINT_FILE_SIZE (sizeof(cls_log_recovery_checkpoint) * 1024)
 #define LOG_PERSISTENT_HEADER_MAGIC (0xf7216a5b76df67f5)
 
+static void log_persistent_manager_reset(cls_log_recovery_manager *manager);
+
 static int32_t is_valid_log_checkpoint(cls_log_recovery_checkpoint *checkpoint)
 {
     return checkpoint->check_sum == checkpoint->start_log_uuid + checkpoint->now_log_uuid +
@@ -128,12 +130,14 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
     }
     if (manager->is_invalid)
     {
+        log_persistent_manager_reset(manager);
         return;
     }
     if (startId < 0 || endId < 0 || startId > endId || endId - startId > 1024 * 1024)
     {
         cls_fatal_log("invalid id range %lld %lld", startId, endId);
         manager->is_invalid = 1;
+        log_persistent_manager_reset(manager);
         return;
     }
 
@@ -145,6 +149,7 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
                       startId,
                       manager->checkpoint.start_log_uuid);
         manager->is_invalid = 1;
+        log_persistent_manager_reset(manager);
         return;
     }
     pthread_mutex_lock(manager->lock);
@@ -268,15 +273,18 @@ int log_recovery_manager_save_cls_log(cls_log_recovery_manager *manager,
                   manager->checkpoint.start_log_uuid,
                   manager->checkpoint.now_log_uuid,
                   resultIndex,manager->ring_file->nowFileIndex,manager->ring_file->nowOffset);
-    if (manager->first_checkpoint_saved == 0)
+    rst = save_cls_log_checkpoint(manager);
+    if (rst != 0)
     {
-        save_cls_log_checkpoint(manager);
-        manager->first_checkpoint_saved = 1;
+        cls_error_log("topic %s, save checkpoint failed, reason %d",
+                      manager->config->topic,
+                      rst);
+        return rst;
     }
     return 0;
 }
 
-int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager,
+int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager, cls_log_group_builder *bder,
                                             size_t logSize)
 {
     if (manager->checkpoint.now_file_offset < manager->checkpoint.start_file_offset)
@@ -286,13 +294,17 @@ int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager,
                       manager->checkpoint.now_file_offset,
                       manager->checkpoint.start_file_offset);
         manager->is_invalid = 1;
+        log_persistent_manager_reset(manager);
         return 0;
     }
-    if (manager->checkpoint.now_file_offset - manager->checkpoint.start_file_offset + logSize + 1024 >
-            (uint64_t)manager->config->maxPersistentFileCount * manager->config->maxPersistentFileSize &&
+    int64_t calcSize = manager->checkpoint.now_file_offset - manager->checkpoint.start_file_offset + logSize + 1024;
+    if(bder != NULL){
+        calcSize += bder->grp->logs.now_buffer_len + bder->grp->logs_count*sizeof(int);
+    }
+    if (calcSize > (uint64_t)manager->config->maxPersistentFileCount * manager->config->maxPersistentFileSize &&
         manager->checkpoint.now_log_uuid - manager->checkpoint.start_log_uuid < manager->config->maxPersistentLogCount - 1)
     {
-        cls_debug_log("now_file_offset:%lld|start_file_offset:%lld|logSize:%lld|now_log_uuid:%lld|start_log_uuid:%lld\n",manager->checkpoint.now_file_offset,manager->checkpoint.start_file_offset,logSize,manager->checkpoint.now_log_uuid,manager->checkpoint.start_log_uuid);
+        cls_fatal_log("buffer is enough now_file_offset:%lld|start_file_offset:%lld|logSize:%lld|now_log_uuid:%lld|start_log_uuid:%lld calcSize:%lld logroup_size:%lld now_buffer_len:%lld\n",manager->checkpoint.now_file_offset,manager->checkpoint.start_file_offset,logSize,manager->checkpoint.now_log_uuid,manager->checkpoint.start_log_uuid,calcSize,bder->loggroup_size,bder->grp->logs.now_buffer_len);
         return 0;
     }
     return 1;
