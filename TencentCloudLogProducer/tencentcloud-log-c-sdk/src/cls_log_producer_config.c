@@ -27,7 +27,7 @@ static void _set_default_producer_config(ClsProducerConfig *pConfig)
     
     pConfig->maxPersistentFileCount = 10;
     pConfig->maxPersistentFileSize = 1*1024*1024;
-    pConfig->maxPersistentLogCount = 65535;
+    pConfig->maxPersistentLogCount = 65536;
 }
 
 static void _copy_config_string(const char *value, cls_sds *src_value)
@@ -169,7 +169,7 @@ void SetClsSendTimeoutSec(ClsProducerConfig *config, int32_t send_timeout_sec)
 
 void SetClsRetries(ClsProducerConfig *config, int32_t retries)
 {
-    if (config == NULL || retries <= 0)
+    if (config == NULL)
     {
         return;
     }
@@ -359,7 +359,7 @@ void log_producer_config_set_persistent_file_path(ClsProducerConfig *config,
 void log_producer_config_set_persistent_max_log_count(ClsProducerConfig *config,
                                            int32_t max_log_count)
 {
-    if (config == NULL)
+    if (config == NULL || max_log_count < 65536)
         return;
     config->maxPersistentLogCount = max_log_count;
 }
@@ -367,7 +367,7 @@ void log_producer_config_set_persistent_max_log_count(ClsProducerConfig *config,
 void log_producer_config_set_persistent_max_file_size(ClsProducerConfig *config,
                                                  int32_t file_size)
 {
-    if (config == NULL)
+    if (config == NULL || file_size < 1*1024*1024)
         return;
     config->maxPersistentFileSize = file_size;
 }
@@ -375,7 +375,7 @@ void log_producer_config_set_persistent_max_file_size(ClsProducerConfig *config,
 void log_producer_config_set_persistent_max_file_count(ClsProducerConfig *config,
                                                   int32_t file_count)
 {
-    if (config == NULL)
+    if (config == NULL || file_count < 10)
         return;
     config->maxPersistentFileCount = file_count;
 }

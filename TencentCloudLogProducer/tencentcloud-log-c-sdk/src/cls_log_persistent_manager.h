@@ -63,6 +63,7 @@ void on_cls_log_recovery_manager_send_done_uuid(const char * config_name,
                                                const char * error_message,
                                                const unsigned char * raw_buffer,
                                                void *persistent_manager,
+                                                int forceFlush,
                                                int64_t startId,
                                                int64_t endId);
 
@@ -72,6 +73,8 @@ int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager * manager, cl
 int save_cls_log_checkpoint(cls_log_recovery_manager * manager);
 
 int log_persistent_manager_recover_cls_log(cls_log_recovery_manager * manager, ClsProducerManager * producer_manager);
+
+void ResetPersistentLog(cls_log_recovery_manager * manager);
 
 
 #endif /* cls_log_persistent_manager_h */

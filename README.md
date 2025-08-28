@@ -54,6 +54,7 @@ pod 'TencentCloudLogProducer/Core', '1.1.3'
 | persistentMaxFileCount                 | 持久化文件个数。通过接口SetPersistentMaxFileCount设置 |                整数取值范围为5～10                |
 | persistentMaxFileSize                 | 每个持久化文件的大小，单位为Byte。通过接口SetPersistentMaxFileSize设置 |                单位为Byte                |
 | persistentMaxLogCount                 | 数本地最多缓存的日志数量。通过接口SetPersistentMaxLogCount设置 |                不建议超过1048576，默认为65536                 |
+| clsretries                 | 重试次数。通过接口SetClsRetries设置 |                -1:永久重试 0:不重试                 |
 
 ### 使用demo
 

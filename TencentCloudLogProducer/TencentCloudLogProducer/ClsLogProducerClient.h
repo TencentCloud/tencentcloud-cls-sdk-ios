@@ -44,6 +44,8 @@ typedef NS_ENUM(NSInteger, ClsLogProducerResult) {
 
 - (void) UpdateSecurityToken:(NSString *)securityToken;
 
+- (void) DiscardPersistentLog;
+
 @end
 
 struct SearchClsReult

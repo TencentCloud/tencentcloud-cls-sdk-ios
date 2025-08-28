@@ -31,5 +31,6 @@ int ring_log_file_read(ring_log_file * file, uint64_t offset, void * buffer, siz
 int ring_log_file_flush(ring_log_file * file);
 int ring_log_file_clean(ring_log_file * file, uint64_t startOffset, uint64_t endOffset);
 int ring_log_file_close(ring_log_file * file);
+void log_ring_file_remove_file(ring_log_file *file, int32_t fileIndex);
 
 #endif /* cls_log_ring_file_h */

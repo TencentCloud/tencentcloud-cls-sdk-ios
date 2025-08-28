@@ -117,10 +117,11 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
                                               const char *error_message,
                                               const unsigned char *raw_buffer,
                                               void *persistent_manager,
+                                              int forceFlush,
                                               int64_t startId,
                                               int64_t endId)
 {
-    if (result >= CLS_HTTP_INTERNAL_SERVER_ERROR || result == CLS_HTTP_TOO_MANY_REQUESTS || result == CLS_HTTP_REQUEST_TIMEOUT || result == CLS_HTTP_FORBIDDEN){
+    if (result >= CLS_HTTP_INTERNAL_SERVER_ERROR || result == CLS_HTTP_TOO_MANY_REQUESTS || result == CLS_HTTP_REQUEST_TIMEOUT || result == CLS_HTTP_FORBIDDEN || result <= 0){
         return;
     }
     cls_log_recovery_manager *manager = (cls_log_recovery_manager *)persistent_manager;
@@ -308,6 +309,17 @@ int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager, cls
         return 0;
     }
     return 1;
+}
+
+void ResetPersistentLog(cls_log_recovery_manager *manager){
+    if(manager->ring_file != NULL){
+        for (int i = 0; i < manager->ring_file->maxFileCount; ++i)
+        {
+            log_ring_file_remove_file(manager->ring_file, i);
+            
+        }
+    }
+    log_persistent_manager_reset(manager);
 }
 
 static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manager,
@@ -501,8 +513,8 @@ static void log_persistent_manager_reset(cls_log_recovery_manager *manager)
     ClsProducerConfig *config = manager->config;
     log_persistent_manager_clear(manager);
     log_persistent_manager_init(manager, config);
-    manager->checkpoint.start_log_uuid = (int64_t)(time(NULL)) * 1000LL * 1000LL * 1000LL + 500LL * 1000LL * 1000LL;
-    manager->checkpoint.now_log_uuid = manager->checkpoint.start_log_uuid;
+//    manager->checkpoint.start_log_uuid = (int64_t)(time(NULL)) * 1000LL * 1000LL * 1000LL + 500LL * 1000LL * 1000LL;
+//    manager->checkpoint.now_log_uuid = manager->checkpoint.start_log_uuid;
     manager->is_invalid = 0;
 }
 

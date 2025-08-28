@@ -184,6 +184,7 @@ void *cls_log_producer_flush_thread(void *param)
                                                                   "invalid send param, magic num not found",
                                                                   NULL,
                                                                   producermgr->uuid_user_param,
+                                                                  1,
                                                                   builder->start_uuid,
                                                                   builder->end_uuid);
                     }
