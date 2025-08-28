@@ -148,7 +148,7 @@ PostClsLogWithPersistent(clslogproducerclient *client,
     }
     if (!log_recovery_manager_is_buffer_enough(persistent_manager, producermgr->builder,logSize))
     {
-        return CLS_LOG_PRODUCER_DROP_ERROR;
+        return CLS_LOG_PRODUCER_PERSISTENT_ENOUGH;
     }
     pthread_mutex_lock(producermgr->lock);
     pthread_mutex_lock(persistent_manager->lock);
@@ -307,4 +307,16 @@ void ClsLogSearchLogDestroy()
     }
     search_init_api_flag = 0;
     cls_log_destroy();
+}
+
+void DiscardPersistentLog(clslogproducerclient *client){
+    cls_log_recovery_manager * persistent_manager = ((ClsPrivateProducerClient *)client->private_client)->persistent_manager;
+    ClsProducerManager *producermgr = ((ClsPrivateProducerClient *)client->private_client)->producermgr;
+    if(persistent_manager != NULL && producermgr != NULL){
+        pthread_mutex_lock(producermgr->lock);
+        pthread_mutex_lock(persistent_manager->lock);
+        ResetPersistentLog(persistent_manager);
+        pthread_mutex_unlock(persistent_manager->lock);
+        pthread_mutex_unlock(producermgr->lock);
+    }
 }

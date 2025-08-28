@@ -22,6 +22,7 @@ typedef void(*on_cls_log_producer_send_done_function)(const char * config_name,
         const char * error_message,
         const unsigned char * raw_buffer,
         void *user_param,
+        int forceFlush,
         int64_t startId,
         int64_t endId);
 
@@ -38,6 +39,7 @@ extern int CLS_LOG_PRODUCER_SEND_DISCARD_ERROR;
 extern int CLS_LOG_PRODUCER_SEND_TIME_ERROR;
 extern int CLS_LOG_PRODUCER_SEND_EXIT_BUFFERED;
 extern int CLS_LOG_PRODUCER_PARAMETERS_INVALID;
+extern int CLS_LOG_PRODUCER_PERSISTENT_ENOUGH;
 extern int CLS_LOG_PRODUCER_PERSISTENT_ERROR;
 
 extern int CLS_HTTP_SUCCESS;

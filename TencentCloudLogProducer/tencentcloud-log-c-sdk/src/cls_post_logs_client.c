@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "cls_log_error.h"
 #ifdef WIN32
 #include <windows.h>
 #else
@@ -90,6 +91,7 @@ void *SendClsProcess(void *param)
                                                  "invalid send param, magic num not found",
                                                  send_param->log_buf->data,
                                                  producermgr->uuid_user_param,
+                                                 1,
                                                  send_param->start_uuid,
                                                  send_param->end_uuid);
         }
@@ -181,58 +183,30 @@ void *SendClsProcess(void *param)
 int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *send_param, post_cls_result result, cls_send_error_info *error_info)
 {
     int32_t send_result = ErrorClsResult(result);
+    int forceFlush = 0;
     ClsProducerManager *producermgr = (ClsProducerManager *)send_param->producermgr;
     if (producermgr->callbackfunc != NULL)
     {
         int callback_result = send_result == CLS_LOG_SEND_OK ? CLS_LOG_PRODUCER_OK : (CLS_LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - CLS_LOG_SEND_NETWORK_ERROR);
         producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result.requestID, result.message, send_param->log_buf->data, producermgr->user_param);
     }
-    if (producermgr->send_done_persistent_function != NULL)
-    {
-        producermgr->send_done_persistent_function(producermgr->producerconf->topic,
-                                                  result.statusCode,
-                                                  send_param->log_buf->raw_length,
-                                                  send_param->log_buf->length,
-                                                  result.requestID,
-                                                  result.message,
-                                                  send_param->log_buf->data,
-                                                  producermgr->uuid_user_param,
-                                                  send_param->start_uuid,
-                                                  send_param->end_uuid);
-    }
-    switch (send_result)
-    {
-    case CLS_LOG_SEND_OK:
-        break;
-    case CLS_LOG_SEND_NETWORK_ERROR:
-    case CLS_LOG_SEND_SERVER_ERROR:
-        if (error_info->last_send_error != CLS_LOG_SEND_NETWORK_ERROR
-            && error_info->last_send_error != CLS_LOG_SEND_SERVER_ERROR)
-        {
-            error_info->last_send_error = CLS_LOG_SEND_NETWORK_ERROR;
+    if(result.statusCode == CLS_HTTP_INTERNAL_SERVER_ERROR || result.statusCode == CLS_HTTP_TOO_MANY_REQUESTS || CLS_HTTP_TOO_MANY_REQUESTS == CLS_HTTP_REQUEST_TIMEOUT || result.statusCode == CLS_HTTP_FORBIDDEN || result.statusCode <= 0){
+        if(config->retries == -1){
             error_info->last_sleep_ms = config->baseRetryBackoffMs;
         }
-        else
+        else if (error_info->last_sleep_ms < config->maxRetryBackoffMs && error_info->retryCount < config->retries)
         {
-            if (error_info->last_sleep_ms < config->maxRetryBackoffMs)
-            {
-                error_info->last_sleep_ms = config->baseRetryBackoffMs + pow(2, error_info->retryCount);
-            }
-            if (error_info->retryCount >= config->retries || error_info->last_sleep_ms >= config->maxRetryBackoffMs)
-            {
-                break;
-            }
+            error_info->last_sleep_ms = config->baseRetryBackoffMs + pow(2, error_info->retryCount);
+            error_info->retryCount++;
+        }else{
+            forceFlush = 1;
+            error_info->last_sleep_ms = 0;
+            error_info->retryCount = 0;
         }
-        cls_warn_log("send network error,config : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
-                     send_param->producerconf->topic,
-                     (int)send_param->log_buf->length,
-                     (int)send_param->log_buf->raw_length,
-                     result.statusCode,
-                     result.message);
-        error_info->retryCount++;
-        return error_info->last_sleep_ms;
-    default:
-        break;
+    }else{
+        forceFlush = 1;
+        error_info->last_sleep_ms = 0;
+        error_info->retryCount = 0;
     }
 
     pthread_mutex_lock(producermgr->lock);
@@ -258,8 +232,23 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
                      result.statusCode,
                      result.message);
     }
+    
+    if (producermgr->send_done_persistent_function != NULL)
+    {
+        producermgr->send_done_persistent_function(producermgr->producerconf->topic,
+                                                  result.statusCode,
+                                                  send_param->log_buf->raw_length,
+                                                  send_param->log_buf->length,
+                                                  result.requestID,
+                                                  result.message,
+                                                  send_param->log_buf->data,
+                                                  producermgr->uuid_user_param,
+                                                  forceFlush,
+                                                  send_param->start_uuid,
+                                                  send_param->end_uuid);
+    }
 
-    return 0;
+    return error_info->last_sleep_ms;
 }
 
 

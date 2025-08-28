@@ -41,6 +41,8 @@ PostClsLogWithPersistent(clslogproducerclient *client,
                                                 int32_t *key_lens, char **values,
                          int32_t *value_lens, int flush, int64_t logSize);
 
+void DiscardPersistentLog(clslogproducerclient *client);
+
 /*
  支持search log 能力
  */

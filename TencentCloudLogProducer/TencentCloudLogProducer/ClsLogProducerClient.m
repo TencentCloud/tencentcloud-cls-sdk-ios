@@ -59,6 +59,11 @@
     return [self PostClsLog:log flush:0];
 }
 
+- (void) DiscardPersistentLog
+{
+    DiscardPersistentLog(self->client);
+}
+
 - (ClsLogProducerResult)PostClsLog:(ClsLog *) log flush:(int) flush
 {
     if (!enable || self->client == NULL || log == nil) {
