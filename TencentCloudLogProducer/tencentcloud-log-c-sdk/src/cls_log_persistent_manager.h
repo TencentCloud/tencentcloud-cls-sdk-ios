@@ -14,7 +14,6 @@
 #include "cls_log_ring_file.h"
 #include "cls_log_producer_manager.h"
 
-int num = 20;
 typedef struct _log_recovery_checkpoint {
     uint64_t version;
     unsigned char signature[16];
