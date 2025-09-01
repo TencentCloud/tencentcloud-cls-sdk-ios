@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <TencentCloudLogProducer.h>
+#import "TencentCloudLogProducer.h"
 #import "ClsNetWorkDataSender.h"
 #import "ClsNetworkDiagnosis.h"
 #import "baseClsSender.h"
