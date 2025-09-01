@@ -143,17 +143,17 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
     }
 
     // multi thread send is not allowed, and this should never happen
-    if (startId > manager->checkpoint.start_log_uuid)
+    pthread_mutex_lock(manager->lock);
+    if (startId < manager->checkpoint.start_log_uuid || endId > manager->checkpoint.now_log_uuid)
     {
-        cls_fatal_log("topic %s, invalid checkpoint start log uuid %lld %lld",
+        cls_fatal_log("topic %s, invalid checkpoint start log uuid %lld %lld %lld %lld\n",
                       manager->config->topic,
                       startId,
-                      manager->checkpoint.start_log_uuid);
-        manager->is_invalid = 1;
-        log_persistent_manager_reset(manager);
+                      endId,
+                      manager->checkpoint.start_log_uuid,manager->checkpoint.now_log_uuid);
+        pthread_mutex_unlock(manager->lock);
         return;
     }
-    pthread_mutex_lock(manager->lock);
 
     uint64_t last_offset = manager->checkpoint.start_file_offset;
     manager->checkpoint.start_file_offset = manager->in_buffer_log_offsets[endId % manager->config->maxPersistentLogCount];
@@ -180,8 +180,9 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
 static void log_persistent_manager_init(cls_log_recovery_manager *manager, ClsProducerConfig *config)
 {
     memset(manager, 0, sizeof(cls_log_recovery_manager));
-//    manager->builder = GenerateClsLogGroup();
-    manager->checkpoint.start_log_uuid = (int64_t)(time(NULL)) * 1000LL * 1000LL * 1000LL;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    manager->checkpoint.start_log_uuid = tv.tv_sec * 1000000 + tv.tv_usec;
     manager->checkpoint.now_log_uuid = manager->checkpoint.start_log_uuid;
     manager->config = config;
     pthread_mutex_t* cs = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
@@ -312,13 +313,6 @@ int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager, cls
 }
 
 void ResetPersistentLog(cls_log_recovery_manager *manager){
-    if(manager->ring_file != NULL){
-        for (int i = 0; i < manager->ring_file->maxFileCount; ++i)
-        {
-            log_ring_file_remove_file(manager->ring_file, i);
-            
-        }
-    }
     log_persistent_manager_reset(manager);
 }
 
@@ -513,8 +507,6 @@ static void log_persistent_manager_reset(cls_log_recovery_manager *manager)
     ClsProducerConfig *config = manager->config;
     log_persistent_manager_clear(manager);
     log_persistent_manager_init(manager, config);
-//    manager->checkpoint.start_log_uuid = (int64_t)(time(NULL)) * 1000LL * 1000LL * 1000LL + 500LL * 1000LL * 1000LL;
-//    manager->checkpoint.now_log_uuid = manager->checkpoint.start_log_uuid;
     manager->is_invalid = 0;
 }
 

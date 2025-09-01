@@ -243,6 +243,8 @@ int ring_log_file_close(ring_log_file *file)
 {
     if (file != NULL)
     {
+        file->nowFileIndex = 0;
+        file->nowOffset = 0;
         cls_sdsfree(file->filePath);
         if (file->nowFD > 0)
         {
