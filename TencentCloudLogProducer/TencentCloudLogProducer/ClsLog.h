@@ -5,7 +5,7 @@
 
 @interface ClsLog : NSObject
 {
-    @package uint64_t logTime;
+    @package int64_t logTime;
     @package NSMutableDictionary *content;
 }
 
@@ -13,9 +13,9 @@
 
 - (NSMutableDictionary *) getClsContent;
 
-- (void)SetClsTime:(unsigned int) logTime;
+- (void)SetClsTime:(int64_t) logTime;
 
-- (unsigned int) getClsTime;
+- (int64_t) getClsTime;
 
 @end
 

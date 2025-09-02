@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <TencentCloudLogProducer.h>
+#import "TencentCloudLogProducer.h"
 #import "ClsConfig.h"
 #import "baseClsSender.h"
 NS_ASSUME_NONNULL_BEGIN
