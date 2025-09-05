@@ -51,9 +51,9 @@ pod 'TencentCloudLogProducer/Core', '1.1.3'
 | compressType                 | 数据上传时的压缩类型，默认为LZ4压缩，默认为1s。通过接口SetClsCompressType设置 |                0 不压缩，1 LZ4压缩， 默认为1                 |
 | persistent                 | 是否开启断点续传功能。通过接口SetPersistent设置 |                0 关闭(默认)，1 开启                 |
 | persistentFilePath                 | 持久化的文件名，需保证文件所在的文件夹已创建。通过接口SetPersistentFilePath设置 |                                 |
-| persistentMaxFileCount                 | 持久化文件个数。通过接口SetPersistentMaxFileCount设置 |                整数取值范围为5～10                |
-| persistentMaxFileSize                 | 每个持久化文件的大小，单位为Byte。通过接口SetPersistentMaxFileSize设置 |                单位为Byte                |
-| persistentMaxLogCount                 | 数本地最多缓存的日志数量。通过接口SetPersistentMaxLogCount设置 |                不建议超过1048576，默认为65536                 |
+| persistentMaxFileCount                 | 持久化文件个数。通过接口SetPersistentMaxFileCount设置 |        至少10个,默认10                |
+| persistentMaxFileSize                 | 每个持久化文件的大小，单位为Byte。通过接口SetPersistentMaxFileSize设置 |                单位为Byte,最少1M,默认1M                |
+| persistentMaxLogCount                 | 数本地最多缓存的日志数量。通过接口SetPersistentMaxLogCount设置 |                不建议超过1048576，最少65536条,默认为65536                 |
 | clsretries                 | 重试次数。通过接口SetClsRetries设置 |                -1:永久重试 0:不重试                 |
 
 ### 使用demo
