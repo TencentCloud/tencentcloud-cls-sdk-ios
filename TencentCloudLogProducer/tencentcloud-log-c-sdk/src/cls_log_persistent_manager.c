@@ -306,7 +306,8 @@ int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager, cls
     if (calcSize > (uint64_t)manager->config->maxPersistentFileCount * manager->config->maxPersistentFileSize &&
         manager->checkpoint.now_log_uuid - manager->checkpoint.start_log_uuid < manager->config->maxPersistentLogCount - 1)
     {
-        cls_fatal_log("buffer is enough now_file_offset:%lld|start_file_offset:%lld|logSize:%lld|now_log_uuid:%lld|start_log_uuid:%lld calcSize:%lld logroup_size:%lld now_buffer_len:%lld\n",manager->checkpoint.now_file_offset,manager->checkpoint.start_file_offset,logSize,manager->checkpoint.now_log_uuid,manager->checkpoint.start_log_uuid,calcSize,bder->loggroup_size,bder->grp->logs.now_buffer_len);
+        
+        cls_fatal_log("buffer is enough now_file_offset:%lld|start_file_offset:%lld|logSize:%lld|now_log_uuid:%lld|start_log_uuid:%lld calcSize:%lld\n",manager->checkpoint.now_file_offset,manager->checkpoint.start_file_offset,logSize,manager->checkpoint.now_log_uuid,manager->checkpoint.start_log_uuid,calcSize);
         return 0;
     }
     return 1;

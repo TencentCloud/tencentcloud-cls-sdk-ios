@@ -9,6 +9,8 @@
 #define cls_log_ring_file_h
 
 #include <stdio.h>
+#include <stdint.h>
+#include <_types/_uint64_t.h>
 
 typedef struct _ring_log_file
 {
