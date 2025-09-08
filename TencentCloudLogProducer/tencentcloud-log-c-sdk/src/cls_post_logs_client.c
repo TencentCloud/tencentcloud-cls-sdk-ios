@@ -190,7 +190,7 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
         int callback_result = send_result == CLS_LOG_SEND_OK ? CLS_LOG_PRODUCER_OK : (CLS_LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - CLS_LOG_SEND_NETWORK_ERROR);
         producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result.requestID, result.message, send_param->log_buf->data, producermgr->user_param);
     }
-    if(result.statusCode == CLS_HTTP_INTERNAL_SERVER_ERROR || result.statusCode == CLS_HTTP_TOO_MANY_REQUESTS || CLS_HTTP_TOO_MANY_REQUESTS == CLS_HTTP_REQUEST_TIMEOUT || result.statusCode == CLS_HTTP_FORBIDDEN || result.statusCode <= 0){
+    if(result.statusCode == CLS_HTTP_INTERNAL_SERVER_ERROR || result.statusCode == CLS_HTTP_TOO_MANY_REQUESTS || result.statusCode == CLS_HTTP_REQUEST_TIMEOUT || result.statusCode == CLS_HTTP_FORBIDDEN || result.statusCode <= 0){
         if(config->retries == -1){
             error_info->last_sleep_ms = config->baseRetryBackoffMs;
         }
@@ -208,10 +208,12 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
         error_info->last_sleep_ms = 0;
         error_info->retryCount = 0;
     }
+    if(forceFlush){
+        pthread_mutex_lock(producermgr->lock);
+        producermgr->totalBufferSize -= send_param->log_buf->length;
+        pthread_mutex_unlock(producermgr->lock);
+    }
 
-    pthread_mutex_lock(producermgr->lock);
-    producermgr->totalBufferSize -= send_param->log_buf->length;
-    pthread_mutex_unlock(producermgr->lock);
     if (send_result == CLS_LOG_SEND_OK)
     {
         cls_debug_log("send success,topic : %s, buffer len : %d, raw len : %d, total buffer : %d,code : %d, error msg : %s",
