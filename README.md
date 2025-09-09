@@ -69,7 +69,7 @@ NSString* topic_id = @"your_topic";
     [config SetClsTopic:topic_id];
     [config SetClsPackageLogBytes:1024*1024];
     [config SetPackageLogCount:1024];
-    [config SetClsPackageTimeout:3000];
+    [config SetClsPackageTimeout:1000];
     [config SetClsMaxBufferLimit:64*1024*1024];
     [config SetClsSendThreadCount:1];
     [config SetClsConnectTimeoutSec:10];
@@ -127,7 +127,7 @@ let config = ClsLogProducerConfig(coreInfo:"your endpoint", accessKeyID:"your ac
 config.SetClsTopic(utils.topic)
 config.SetClsPackageLogBytes(1024*1024)
 config.SetClsPackageLogCount(1024)
-config.SetClsPackageTimeout(3000)
+config.SetClsPackageTimeout(1000)
 config.SetClsMaxBufferLimit(64*1024*1024)
 config.SetClsSendThreadCoun(1)
 config.SetClsConnectTimeoutSec(10)

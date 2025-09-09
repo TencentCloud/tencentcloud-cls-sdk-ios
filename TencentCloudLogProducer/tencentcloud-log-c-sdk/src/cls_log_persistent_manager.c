@@ -318,8 +318,9 @@ void ResetPersistentLog(cls_log_recovery_manager *manager){
 }
 
 static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manager,
-                                                ClsProducerManager *producer_manager)
+                                                ClsProducerManager *producer_manager,int* hasMoreData)
 {
+    *hasMoreData = 0;
     int rst = recover_log_checkpoint(manager);
     if (rst != 0)
     {
@@ -449,6 +450,7 @@ static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manage
         rst = log_producer_manager_add_log_raw(producer_manager, buffer, header.log_size, 0, header.log_uuid, logIndex,header.logs_count);
         if (rst != 0)
         {
+            *hasMoreData = 1;
             cls_error_log("topic %s, add log to producer manager failed, this log will been dropped",
                           manager->config->topic);
         }
@@ -516,18 +518,30 @@ int log_persistent_manager_recover_cls_log(cls_log_recovery_manager *manager,
 {
     cls_info_log("topic %s, start recover persistent manager",
                  manager->config->topic);
-    pthread_mutex_lock(manager->lock);
-    int rst = log_persistent_manager_recover_inner(manager, producer_manager);
-    if (rst != 0)
-    {
-        // if recover failed, reset persistent manager
-        manager->is_invalid = 1;
-        log_persistent_manager_reset(manager);
-    }
-    else
-    {
-        manager->is_invalid = 0;
-    }
-    pthread_mutex_unlock(manager->lock);
+    int32_t oldRetries = manager->config->retries;
+    manager->config->retries = 0;
+    int hasMoreData = 0;
+    int rst = 0;
+    do {
+        if(producer_manager->totalBufferSize == 0){
+            pthread_mutex_lock(manager->lock);
+            rst = log_persistent_manager_recover_inner(manager, producer_manager,&hasMoreData);
+            if (rst != 0)
+            {
+                // if recover failed, reset persistent manager
+                manager->is_invalid = 1;
+                log_persistent_manager_reset(manager);
+                break;
+            }
+            else
+            {
+                manager->is_invalid = 0;
+            }
+            pthread_mutex_unlock(manager->lock);
+        }else{
+            usleep(1000);
+        }
+    } while (hasMoreData);
+    manager->config->retries = oldRetries;
     return rst;
 }
