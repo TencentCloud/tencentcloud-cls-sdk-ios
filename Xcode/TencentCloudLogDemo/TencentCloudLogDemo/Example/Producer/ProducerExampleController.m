@@ -58,9 +58,16 @@ static ProducerExampleController *selfClzz;
     });
 }
 
-- (void) send {
-    ClsLogProducerResult result = [_client PostClsLog:[self LogData]];
-    [self UpdateReult:[NSString stringWithFormat:@"addlog result: %ld", result]];
+- (void) send{
+
+    for (int i = 0; i < 10000; i++) {
+        ClsLogProducerResult result = [_client PostClsLog:[self LogData]];
+        if( result != ClsLogProducerOK){
+            printf("addlog result: %d\n", result);
+        }
+       
+    }
+    
 }
 
 static void log_send_callback(const char * config_name, int result, size_t log_bytes, size_t compressed_bytes, const char * req_id, const char * message, const unsigned char * raw_buffer, void * userparams) {
@@ -84,14 +91,24 @@ static void log_send_callback(const char * config_name, int result, size_t log_b
     [_config SetClsTopic:utils.topic];
     [_config SetClsPackageLogBytes:1024*1024];
     [_config SetClsPackageLogCount:1024];
-    [_config SetClsPackageTimeout:3000];
+    [_config SetClsPackageTimeout:1000];
     [_config SetClsMaxBufferLimit:64*1024*1024];
     [_config SetClsSendThreadCount:1];
-    [_config SetClsConnectTimeoutSec:10];
-    [_config SetClsSendTimeoutSec:10];
+    [_config SetClsConnectTimeoutSec:60];
+    [_config SetClsSendTimeoutSec:60];
     [_config SetClsDestroyFlusherWaitSec:1];
     [_config SetClsDestroySenderWaitSec:1];
     [_config SetClsCompressType:1];
+    
+    //如下支持checkpoint点位落盘机制
+    [_config SetPersistent:0];
+    NSArray  *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *Path = [[paths lastObject] stringByAppendingString:@"/cls.dat"];
+    NSLog(@"文件路径：%@", Path);
+    [_config SetPersistentFilePath:Path];
+    [_config SetPersistentMaxFileCount:10];
+    [_config SetPersistentMaxFileSize:1*1024*1024];
+    [_config SetPersistentMaxLogCount:65536];
 
     _client = [[ClsLogProducerClient alloc] initWithClsLogProducer:_config callback:log_send_callback];
 }

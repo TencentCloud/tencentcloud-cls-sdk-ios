@@ -15,7 +15,7 @@
     _config = [[ClsLogProducerConfig alloc] initClsWithCoreInfo:config.endpoint accessKeyID:config.accessKeyId accessKeySecret:config.accessKeySecret];
     [_config SetClsTopic:config.topicId];
     [_config SetClsPackageLogCount:1024];
-    [_config SetClsPackageTimeout:3000];
+    [_config SetClsPackageTimeout:1000];
     [_config SetClsMaxBufferLimit:64*1024*1024];
     [_config SetClsSendThreadCount:1];
     [_config SetClsConnectTimeoutSec:10];

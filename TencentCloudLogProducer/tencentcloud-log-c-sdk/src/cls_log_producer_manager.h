@@ -36,6 +36,9 @@ typedef struct {
   volatile uint64_t send_param_queue_read;
   volatile uint64_t send_param_queue_write;
   CLSATOMICINT send_thread_count;
+    
+  on_cls_log_producer_send_done_function send_done_persistent_function;
+  void * uuid_user_param;
 
 } ClsProducerManager;
 
@@ -49,6 +52,12 @@ cls_log_producer_manager_add_log(ClsProducerManager *producermgr,
                                    int32_t pair_count, char **keys,
                                    int32_t *key_lens, char **values,
                                    int32_t *val_lens, int flush, int64_t uuid);
+
+extern int log_producer_manager_add_log_raw(ClsProducerManager * producer_manager,
+                                                             char * logBuf,
+                                                             size_t logSize,
+                                                             int flush,
+                                                             int64_t uuid,int* len_index,int64_t logs_count);
 
 CLS_LOG_CPP_END
 

@@ -15,8 +15,8 @@ static void _set_default_producer_config(ClsProducerConfig *pConfig)
     pConfig->packageTimeoutInMS = 3000;
     pConfig->maxBufferBytes = 64 * 1024 * 1024;
 
-    pConfig->connectTimeoutSec = 10;
-    pConfig->sendTimeoutSec = 15;
+    pConfig->connectTimeoutSec = 60;
+    pConfig->sendTimeoutSec = 60;
     pConfig->destroySenderWaitTimeoutSec = 1;
     pConfig->destroyFlusherWaitTimeoutSec = 1;
     pConfig->compressType = 1;
@@ -24,6 +24,10 @@ static void _set_default_producer_config(ClsProducerConfig *pConfig)
     pConfig->retries = 10;
     pConfig->baseRetryBackoffMs = 100;
     pConfig->maxRetryBackoffMs = 50000;
+    
+    pConfig->maxPersistentFileCount = 10;
+    pConfig->maxPersistentFileSize = 1*1024*1024;
+    pConfig->maxPersistentLogCount = 65536;
 }
 
 static void _copy_config_string(const char *value, cls_sds *src_value)
@@ -85,6 +89,10 @@ void DestroyClsLogProducerConfig(ClsProducerConfig *pConfig)
     if (pConfig->source != NULL)
     {
         cls_sdsfree(pConfig->source);
+    }
+    if (pConfig->persistentFilePath != NULL)
+    {
+        cls_sdsfree(pConfig->persistentFilePath);
     }
     free(pConfig);
 }
@@ -161,7 +169,7 @@ void SetClsSendTimeoutSec(ClsProducerConfig *config, int32_t send_timeout_sec)
 
 void SetClsRetries(ClsProducerConfig *config, int32_t retries)
 {
-    if (config == NULL || retries <= 0)
+    if (config == NULL)
     {
         return;
     }
@@ -303,5 +311,79 @@ int is_cls_valid(ClsProducerConfig *config)
         cls_error_log("invalid producer config log merge and buffer params");
         return 0;
     }
+    if(config->sendThreadCount > 1 && config->usePersistent){
+        cls_error_log("persistent not support muti thread");
+        return 0;
+    }
+    if (config->usePersistent)
+    {
+        if (config->persistentFilePath == NULL || config->maxPersistentFileCount <= 0 || config->maxPersistentLogCount <= 0 || config->maxPersistentFileSize <=0 )
+        {
+            cls_error_log("invalid producer persistent config params");
+            return 0;
+        }
+    }
     return 1;
+}
+
+int log_producer_persistent_config_is_enabled(ClsProducerConfig *config)
+{
+    if (config == NULL)
+    {
+        cls_error_log("invalid producer config");
+        return 0;
+    }
+    if (config->usePersistent == 0)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+void log_producer_config_set_persistent(ClsProducerConfig *config,
+                                        int32_t persistent)
+{
+    if (config == NULL)
+        return;
+    config->usePersistent = persistent;
+}
+
+void log_producer_config_set_persistent_file_path(ClsProducerConfig *config,
+                                                  const char *file_path)
+{
+    if (config == NULL)
+        return;
+    _copy_config_string(file_path, &config->persistentFilePath);
+}
+
+void log_producer_config_set_persistent_max_log_count(ClsProducerConfig *config,
+                                           int32_t max_log_count)
+{
+    if (config == NULL || max_log_count < 65536)
+        return;
+    config->maxPersistentLogCount = max_log_count;
+}
+
+void log_producer_config_set_persistent_max_file_size(ClsProducerConfig *config,
+                                                 int32_t file_size)
+{
+    if (config == NULL || file_size < 1*1024*1024)
+        return;
+    config->maxPersistentFileSize = file_size;
+}
+
+void log_producer_config_set_persistent_max_file_count(ClsProducerConfig *config,
+                                                  int32_t file_count)
+{
+    if (config == NULL || file_count < 10)
+        return;
+    config->maxPersistentFileCount = file_count;
+}
+
+void log_producer_config_set_persistent_force_flush(ClsProducerConfig *config,
+                                                    int32_t force)
+{
+    if (config == NULL)
+        return;
+    config->forceFlushDisk = force;
 }

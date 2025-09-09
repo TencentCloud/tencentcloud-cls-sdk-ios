@@ -34,6 +34,14 @@ GetClsLogProducer(clslogproducer *producer, const char *config_name);
  int PostClsLog(clslogproducerclient *client, int64_t time, int32_t pair_count,
     char **keys, int32_t *key_lens, char **values, int32_t *value_lens,
     int flush);
+int
+PostClsLogWithPersistent(clslogproducerclient *client,
+                                                int64_t logtime,
+                                                int32_t pair_count, char **keys,
+                                                int32_t *key_lens, char **values,
+                         int32_t *value_lens, int flush, int64_t logSize);
+
+void DiscardPersistentLog(clslogproducerclient *client);
 
 /*
  支持search log 能力
