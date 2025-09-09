@@ -60,6 +60,18 @@
 
 - (void) ResetClsSecurityToken:(NSString *)securityToken;
 
+- (void) SetPersistent:(int) persistent;
+
+- (void) SetPersistentFilePath: (NSString *)filePath;
+
+- (void) SetPersistentMaxLogCount: (int)max_log_count;
+
+- (void) SetPersistentMaxFileSize: (int)file_size;
+
+- (void) SetPersistentMaxFileCount: (int)file_count;
+
+- (void) SetPersistentForceFlush: (int)force;
+
 @end
 
 #endif /* CLS_LOG_PRODUCER_CONFIG_H */

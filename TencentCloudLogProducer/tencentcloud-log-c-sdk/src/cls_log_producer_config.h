@@ -41,6 +41,13 @@ typedef struct _cls_log_producer_config {
     
   int32_t maxRetryBackoffMs;
     
+  int32_t usePersistent;
+  char * persistentFilePath;
+  int32_t maxPersistentLogCount;
+  int32_t maxPersistentFileSize;
+  int32_t maxPersistentFileCount;
+  int32_t forceFlushDisk; // force flush disk
+    
 
 } ClsProducerConfig;
 
@@ -104,6 +111,26 @@ void DestroyClsLogProducerConfig(ClsProducerConfig *config);
 
 
  int is_cls_valid(ClsProducerConfig *config);
+
+int log_producer_persistent_config_is_enabled(ClsProducerConfig * config);
+
+void log_producer_config_set_persistent(ClsProducerConfig *config,
+                                        int32_t persistent);
+
+void log_producer_config_set_persistent_file_path(ClsProducerConfig *config,
+                                                  const char *file_path);
+
+void log_producer_config_set_persistent_max_log_count(ClsProducerConfig *config,
+                                                      int32_t max_log_count);
+
+void log_producer_config_set_persistent_max_file_size(ClsProducerConfig *config,
+                                                      int32_t file_size);
+
+void log_producer_config_set_persistent_max_file_count(ClsProducerConfig *config,
+                                                       int32_t file_count);
+
+void log_producer_config_set_persistent_force_flush(ClsProducerConfig *config,
+                                                    int32_t force);
 
 CLS_LOG_CPP_END
 

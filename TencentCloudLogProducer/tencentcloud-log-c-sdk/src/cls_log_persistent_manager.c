@@ -1,0 +1,547 @@
+//
+//  cls_log_persistent_manager.c
+//  TencentCloudLogProducer
+//
+//  Created by hao lv on 2025/8/20.
+//
+
+#include "cls_log_persistent_manager.h"
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include "cls_log.h"
+#include "cls_log_error.h"
+#include <pthread.h>
+#include "cls_sds.h"
+
+
+#define MAX_CHECKPOINT_FILE_SIZE (sizeof(cls_log_recovery_checkpoint) * 1024)
+#define LOG_PERSISTENT_HEADER_MAGIC (0xf7216a5b76df67f5)
+
+static void log_persistent_manager_reset(cls_log_recovery_manager *manager);
+
+static int32_t is_valid_log_checkpoint(cls_log_recovery_checkpoint *checkpoint)
+{
+    return checkpoint->check_sum == checkpoint->start_log_uuid + checkpoint->now_log_uuid +
+                                        checkpoint->start_file_offset + checkpoint->now_file_offset;
+}
+
+static int32_t recover_log_checkpoint(cls_log_recovery_manager *manager)
+{
+    FILE *tmpFile = fopen(manager->checkpoint_file_path, "rb");
+    if (tmpFile == NULL)
+    {
+        if (errno == ENOENT)
+        {
+            return 0;
+        }
+        return -1;
+    }
+    fseek(tmpFile, 0, SEEK_END);
+    long pos = ftell(tmpFile);
+    if (pos == 0)
+    {
+        // empty file
+        return 0;
+    }
+    long fixedPos = pos - pos % sizeof(cls_log_recovery_checkpoint);
+    long lastPos = fixedPos == 0 ? 0 : fixedPos - sizeof(cls_log_recovery_checkpoint);
+    fseek(tmpFile, lastPos, SEEK_SET);
+    if (1 != fread((void *)&(manager->checkpoint), sizeof(cls_log_recovery_checkpoint), 1, tmpFile))
+    {
+        fclose(tmpFile);
+        return -2;
+    }
+    if (!is_valid_log_checkpoint(&(manager->checkpoint)))
+    {
+        fclose(tmpFile);
+        return -3;
+    }
+    fclose(tmpFile);
+    manager->checkpoint_file_size = pos;
+    return 0;
+}
+
+int save_cls_log_checkpoint(cls_log_recovery_manager *manager)
+{
+    cls_log_recovery_checkpoint *checkpoint = &(manager->checkpoint);
+    checkpoint->check_sum = checkpoint->start_log_uuid + checkpoint->now_log_uuid +
+                            checkpoint->start_file_offset + checkpoint->now_file_offset;
+    if (manager->checkpoint_file_size >= MAX_CHECKPOINT_FILE_SIZE)
+    {
+        if (manager->checkpoint_file_ptr != NULL)
+        {
+            fclose(manager->checkpoint_file_ptr);
+            manager->checkpoint_file_ptr = NULL;
+        }
+        char tmpFilePath[256];
+        strcpy(tmpFilePath, manager->checkpoint_file_path);
+        strcat(tmpFilePath, ".bak");
+        cls_info_log("start switch checkpoint index file %s \n", manager->checkpoint_file_path);
+        FILE *tmpFile = fopen(tmpFilePath, "wb+");
+        if (tmpFile == NULL)
+            return -1;
+        if (1 !=
+            fwrite((const void *)(&manager->checkpoint), sizeof(cls_log_recovery_checkpoint), 1, tmpFile))
+        {
+            fclose(tmpFile);
+            return -2;
+        }
+        if (fclose(tmpFile) != 0)
+            return -3;
+        if (rename(tmpFilePath, manager->checkpoint_file_path) != 0)
+            return -4;
+        manager->checkpoint_file_size = sizeof(cls_log_recovery_checkpoint);
+        return 0;
+    }
+    if (manager->checkpoint_file_ptr == NULL)
+    {
+        manager->checkpoint_file_ptr = fopen(manager->checkpoint_file_path, "ab+");
+        if (manager->checkpoint_file_ptr == NULL)
+            return -5;
+    }
+    if (1 !=
+        fwrite((const void *)(&manager->checkpoint), sizeof(cls_log_recovery_checkpoint), 1, manager->checkpoint_file_ptr))
+        return -6;
+    if (fflush(manager->checkpoint_file_ptr) != 0)
+        return -7;
+    manager->checkpoint_file_size += sizeof(cls_log_recovery_checkpoint);
+    return 0;
+}
+
+void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
+                                              int result,
+                                              size_t log_bytes,
+                                              size_t compressed_bytes,
+                                              const char *req_id,
+                                              const char *error_message,
+                                              const unsigned char *raw_buffer,
+                                              void *persistent_manager,
+                                              int forceFlush,
+                                              int64_t startId,
+                                              int64_t endId)
+{
+    if ((result >= CLS_HTTP_INTERNAL_SERVER_ERROR || result == CLS_HTTP_TOO_MANY_REQUESTS || result == CLS_HTTP_REQUEST_TIMEOUT || result == CLS_HTTP_FORBIDDEN || result <= 0) && !forceFlush){
+        return;
+    }
+    cls_log_recovery_manager *manager = (cls_log_recovery_manager *)persistent_manager;
+    if (manager == NULL)
+    {
+        return;
+    }
+    if (manager->is_invalid)
+    {
+        log_persistent_manager_reset(manager);
+        return;
+    }
+    if (startId < 0 || endId < 0 || startId > endId || endId - startId > 1024 * 1024)
+    {
+        cls_fatal_log("invalid id range %lld %lld", startId, endId);
+        manager->is_invalid = 1;
+        log_persistent_manager_reset(manager);
+        return;
+    }
+
+    // multi thread send is not allowed, and this should never happen
+    pthread_mutex_lock(manager->lock);
+    if (startId < manager->checkpoint.start_log_uuid || endId > manager->checkpoint.now_log_uuid)
+    {
+        cls_fatal_log("topic %s, invalid checkpoint start log uuid %lld %lld %lld %lld\n",
+                      manager->config->topic,
+                      startId,
+                      endId,
+                      manager->checkpoint.start_log_uuid,manager->checkpoint.now_log_uuid);
+        pthread_mutex_unlock(manager->lock);
+        return;
+    }
+
+    uint64_t last_offset = manager->checkpoint.start_file_offset;
+    manager->checkpoint.start_file_offset = manager->in_buffer_log_offsets[endId % manager->config->maxPersistentLogCount];
+    manager->checkpoint.start_log_uuid = endId + 1;
+    int rst = save_cls_log_checkpoint(manager);
+    if (rst != 0)
+    {
+        cls_error_log("topic %s, save checkpoint failed, reason %d",
+                      manager->config->topic,
+                      rst);
+    }
+    cls_debug_log("topic %s,on_cls_log_recovery_manager_send_done_uuid recv bin log success, startId %lld, endId %lld, last_offset %lld start_file_offset %lld now_file_offset:%lld start_log_uuid:%lld now_log_uuid:%lld ringFileIndex:%lld ringFileNowOffset:%lld\n",
+                  manager->config->topic,
+           startId,
+           endId,
+           last_offset,
+                  manager->checkpoint.start_file_offset,
+           manager->checkpoint.now_file_offset,manager->checkpoint.start_log_uuid,manager->checkpoint.now_log_uuid,manager->ring_file->nowFileIndex,manager->ring_file->nowOffset);
+    ring_log_file_clean(manager->ring_file, last_offset, manager->checkpoint.start_file_offset);
+
+    pthread_mutex_unlock(manager->lock);
+}
+
+static void log_persistent_manager_init(cls_log_recovery_manager *manager, ClsProducerConfig *config)
+{
+    memset(manager, 0, sizeof(cls_log_recovery_manager));
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    manager->checkpoint.start_log_uuid = tv.tv_sec * 1000000 + tv.tv_usec;
+    manager->checkpoint.now_log_uuid = manager->checkpoint.start_log_uuid;
+    manager->config = config;
+    pthread_mutex_t* cs = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    assert(cs != INVALID_CRITSECT);
+    pthread_mutex_init(cs, NULL);
+    manager->lock = cs;
+    manager->checkpoint_file_path = cls_sdscat(cls_sdsdup(config->persistentFilePath), ".idx");
+    manager->in_buffer_log_offsets = (uint64_t *)malloc(sizeof(uint64_t) * config->maxPersistentLogCount);
+    memset(manager->in_buffer_log_offsets, 0, sizeof(uint64_t) * config->maxPersistentLogCount);
+    manager->ring_file = ring_log_file_open(config->persistentFilePath, config->maxPersistentFileCount, config->maxPersistentFileSize, config->forceFlushDisk);
+}
+
+static void log_persistent_manager_clear(cls_log_recovery_manager *manager)
+{
+//    cls_log_group_destroy(manager->builder);
+    if (manager->lock != INVALID_CRITSECT) {
+        pthread_mutex_destroy(manager->lock);
+        free(manager->lock);
+    }
+    if (manager->checkpoint_file_ptr != NULL)
+    {
+        fclose(manager->checkpoint_file_ptr);
+        manager->checkpoint_file_ptr = NULL;
+    }
+    free(manager->in_buffer_log_offsets);
+    cls_sdsfree(manager->checkpoint_file_path);
+    ring_log_file_close(manager->ring_file);
+}
+
+cls_log_recovery_manager *
+create_cls_log_recovery_manager(ClsProducerConfig *config)
+{
+    if (!log_producer_persistent_config_is_enabled(config))
+    {
+        return NULL;
+    }
+    cls_log_recovery_manager *manager = (cls_log_recovery_manager *)malloc(sizeof(cls_log_recovery_manager));
+    log_persistent_manager_init(manager, config);
+    return manager;
+}
+
+void destroy_cls_log_recovery_manager(cls_log_recovery_manager *manager)
+{
+    if (manager == NULL)
+    {
+        return;
+    }
+    log_persistent_manager_clear(manager);
+    free(manager);
+}
+
+int log_recovery_manager_save_cls_log(cls_log_recovery_manager *manager,
+                                      cls_log_group_builder *builder)
+{
+    const char *logBuf = builder->grp->logs.buffer;
+    size_t logSize = builder->grp->logs.now_buffer_len;
+    // save binlog
+    const void *buffer[3];
+    size_t bufferSize[3];
+    cls_log_recovery_item_header header;
+    header.magic_code = LOG_PERSISTENT_HEADER_MAGIC;
+    header.log_uuid = manager->checkpoint.now_log_uuid;
+    header.log_size = logSize;
+    header.logs_count = builder->grp->logs_count;
+    header.preserved = 0;
+
+    buffer[0] = &header;
+    buffer[1] = builder->grp->logs.buf_index;
+    buffer[2] = logBuf;
+    bufferSize[0] = sizeof(cls_log_recovery_item_header);
+    bufferSize[1] = builder->grp->logs_count*sizeof(int);
+    bufferSize[2] = logSize;
+    int rst = ring_log_file_write(manager->ring_file, manager->checkpoint.now_file_offset, 3, buffer, bufferSize);
+    if (rst != bufferSize[0] + bufferSize[1]+bufferSize[2])
+    {
+        cls_error_log("topic %s, write bin log failed, rst %d",
+                      manager->config->topic,
+                      rst);
+        return CLS_LOG_PRODUCER_PERSISTENT_ERROR;
+    }
+    manager->checkpoint.now_file_offset += rst;
+    // update in memory checkpoint
+    int64_t resultIndex = manager->checkpoint.now_log_uuid % manager->config->maxPersistentLogCount;
+    manager->in_buffer_log_offsets[resultIndex] = manager->checkpoint.now_file_offset;
+    ++manager->checkpoint.now_log_uuid;
+    cls_debug_log("topic %s,write bin log success, start_file_offset %lld, now_file_offset %lld, start_log_uuid %lld now_log_uuid %lld resultIndex:%lldd ringFileIndex:%lld ringFileNowOffset:%lld\n",
+                  manager->config->topic,
+                  manager->checkpoint.start_file_offset,
+                  manager->checkpoint.now_file_offset,
+                  manager->checkpoint.start_log_uuid,
+                  manager->checkpoint.now_log_uuid,
+                  resultIndex,manager->ring_file->nowFileIndex,manager->ring_file->nowOffset);
+    rst = save_cls_log_checkpoint(manager);
+    if (rst != 0)
+    {
+        cls_error_log("topic %s, save checkpoint failed, reason %d",
+                      manager->config->topic,
+                      rst);
+        return rst;
+    }
+    return 0;
+}
+
+int log_recovery_manager_is_buffer_enough(cls_log_recovery_manager *manager, cls_log_group_builder *bder,
+                                            size_t logSize)
+{
+    if (manager->checkpoint.now_file_offset < manager->checkpoint.start_file_offset)
+    {
+        cls_fatal_log("topic %s, persistent manager is invalid, file offset error, %lld %lld",
+                      manager->config->topic,
+                      manager->checkpoint.now_file_offset,
+                      manager->checkpoint.start_file_offset);
+        manager->is_invalid = 1;
+        log_persistent_manager_reset(manager);
+        return 0;
+    }
+    int64_t calcSize = manager->checkpoint.now_file_offset - manager->checkpoint.start_file_offset + logSize + 1024;
+    if(bder != NULL){
+        calcSize += bder->grp->logs.now_buffer_len + bder->grp->logs_count*sizeof(int);
+    }
+    if (calcSize > (uint64_t)manager->config->maxPersistentFileCount * manager->config->maxPersistentFileSize &&
+        manager->checkpoint.now_log_uuid - manager->checkpoint.start_log_uuid < manager->config->maxPersistentLogCount - 1)
+    {
+        
+        cls_fatal_log("buffer is enough now_file_offset:%lld|start_file_offset:%lld|logSize:%lld|now_log_uuid:%lld|start_log_uuid:%lld calcSize:%lld\n",manager->checkpoint.now_file_offset,manager->checkpoint.start_file_offset,logSize,manager->checkpoint.now_log_uuid,manager->checkpoint.start_log_uuid,calcSize);
+        return 0;
+    }
+    return 1;
+}
+
+void ResetPersistentLog(cls_log_recovery_manager *manager){
+    log_persistent_manager_reset(manager);
+}
+
+static int log_persistent_manager_recover_inner(cls_log_recovery_manager *manager,
+                                                ClsProducerManager *producer_manager,int* hasMoreData)
+{
+    *hasMoreData = 0;
+    int rst = recover_log_checkpoint(manager);
+    if (rst != 0)
+    {
+        return rst;
+    }
+
+    cls_info_log("topic %s, recover persistent checkpoint success, checkpoint %lld %lld %lld %lld",
+                 manager->config->topic,
+                 manager->checkpoint.start_file_offset,
+                 manager->checkpoint.now_file_offset,
+                 manager->checkpoint.start_log_uuid,
+                 manager->checkpoint.now_log_uuid);
+
+    if (manager->checkpoint.start_file_offset == 0 && manager->checkpoint.now_file_offset == 0)
+    {
+        // no need to recover
+        return 0;
+    }
+
+    // try recover ring file
+
+    cls_log_recovery_item_header header;
+
+    uint64_t fileOffset = manager->checkpoint.start_file_offset;
+    int64_t logUUID = manager->checkpoint.start_log_uuid;
+
+    char *buffer = NULL;
+    int max_buffer_size = 0;
+    int *logIndex = NULL;
+    while (1)
+    {
+        rst = ring_log_file_read(manager->ring_file, fileOffset, &header, sizeof(cls_log_recovery_item_header));
+        if (rst != sizeof(cls_log_recovery_item_header))
+        {
+            if (rst == 0)
+            {
+                cls_info_log("topic %s,  read end of file",
+                             manager->config->topic);
+                if (buffer != NULL)
+                {
+                    free(buffer);
+                    buffer = NULL;
+                }
+                break;
+            }
+            cls_error_log("topic %s,  read binlog file header failed, offset %lld, result %d",
+                          manager->config->topic,
+                          fileOffset,
+                          rst);
+            if (buffer != NULL)
+            {
+                free(buffer);
+                buffer = NULL;
+            }
+            return -1;
+        }
+        if (header.magic_code != LOG_PERSISTENT_HEADER_MAGIC ||
+            header.log_uuid < logUUID ||
+            header.log_size <= 0 || header.log_size > 10 * 1024 * 1024)
+        {
+            cls_info_log("topic %s, read binlog file fail, invalid header: uuid %lld expect %lld",
+                         manager->config->topic,
+                         header.log_uuid,
+                         logUUID);
+            break;
+        }
+        int logIndexSize = header.logs_count*sizeof(int);
+        if (logIndex != NULL){
+            free(logIndex);
+            logIndex = NULL;
+        }
+        if(logIndex == NULL){
+            logIndex = (int*)malloc(logIndexSize);
+            memset(logIndex, 0, logIndexSize);
+        }
+        
+        rst = ring_log_file_read(manager->ring_file, fileOffset + sizeof(cls_log_recovery_item_header), logIndex, logIndexSize);
+        if (rst != logIndexSize){
+            cls_warn_log("project %s, read binlog file index failed, offset %lld, result %d",
+                         manager->config->topic,
+                         fileOffset + sizeof(cls_log_recovery_item_header),
+                         rst);
+            break;
+        }
+        
+        if (buffer == NULL || max_buffer_size < header.log_size)
+        {
+            if (buffer != NULL)
+            {
+                free(buffer);
+            }
+            buffer = (char *)malloc(header.log_size * 2);
+            max_buffer_size = header.log_size * 2;
+        }
+        rst = ring_log_file_read(manager->ring_file, fileOffset + sizeof(cls_log_recovery_item_header)+logIndexSize, buffer, header.log_size);
+        if (rst != header.log_size)
+        {
+            // if read fail, just break
+            cls_warn_log("project %s, read binlog file content failed, offset %lld, result %d",
+                         manager->config->topic,
+                         fileOffset + sizeof(cls_log_recovery_item_header),
+                         rst);
+            break;
+        }
+        if (header.log_uuid - logUUID > 1024 * 1024)
+        {
+            cls_error_log("topic %s, log uuid jump, %lld %lld",
+                          manager->config->topic,
+                          header.log_uuid,
+                          logUUID);
+            if (buffer != NULL)
+            {
+                free(buffer);
+                buffer = NULL;
+            }
+            return -3;
+        }
+        // set empty log uuid len 0
+        for (int64_t emptyUUID = logUUID + 1; emptyUUID < header.log_uuid; ++emptyUUID)
+        {
+            manager->in_buffer_log_offsets[emptyUUID % manager->config->maxPersistentLogCount] = 0;
+        }
+
+        logUUID = header.log_uuid;
+        fileOffset += header.log_size + sizeof(cls_log_recovery_item_header) + logIndexSize;
+        manager->in_buffer_log_offsets[header.log_uuid % manager->config->maxPersistentLogCount] = fileOffset;
+        rst = log_producer_manager_add_log_raw(producer_manager, buffer, header.log_size, 0, header.log_uuid, logIndex,header.logs_count);
+        if (rst != 0)
+        {
+            *hasMoreData = 1;
+            cls_error_log("topic %s, add log to producer manager failed, this log will been dropped",
+                          manager->config->topic);
+        }
+    }
+    if (buffer != NULL)
+    {
+        free(buffer);
+        buffer = NULL;
+    }
+    
+    if(logIndex != NULL){
+        free(logIndex);
+        logIndex = NULL;
+    }
+
+    if (logUUID < manager->checkpoint.now_log_uuid - 1)
+    {
+        // replay fail
+        cls_fatal_log("topic %s, replay bin log failed, now log uuid %lld, expected min log uuid %lld, start uuid %lld, start offset  %lld, now offset  %lld, replayed offset %lld",
+                      manager->config->topic,
+                      logUUID,
+                      manager->checkpoint.now_log_uuid,
+                      manager->checkpoint.start_log_uuid,
+                      manager->checkpoint.start_file_offset,
+                      manager->checkpoint.now_file_offset,
+                      fileOffset);
+        return -4;
+    }
+
+    // update new checkpoint when replay bin log success
+    if (fileOffset > manager->checkpoint.start_file_offset)
+    {
+        manager->checkpoint.now_log_uuid = logUUID + 1;
+        manager->checkpoint.now_file_offset = fileOffset;
+    }
+
+    cls_info_log("topic %s, replay bin log success, now checkpoint %lld %lld %lld %lld",
+                 manager->config->topic,
+                 manager->checkpoint.start_log_uuid,
+                 manager->checkpoint.now_log_uuid,
+                 manager->checkpoint.start_file_offset,
+                 manager->checkpoint.now_file_offset);
+
+    // save new checkpoint
+    rst = save_cls_log_checkpoint(manager);
+    if (rst != 0)
+    {
+        cls_error_log("topic %s, save checkpoint failed, reason %d",
+                      manager->config->topic,
+                      rst);
+    }
+    return rst;
+}
+
+static void log_persistent_manager_reset(cls_log_recovery_manager *manager)
+{
+    ClsProducerConfig *config = manager->config;
+    log_persistent_manager_clear(manager);
+    log_persistent_manager_init(manager, config);
+    manager->is_invalid = 0;
+}
+
+int log_persistent_manager_recover_cls_log(cls_log_recovery_manager *manager,
+                                   ClsProducerManager *producer_manager)
+{
+    cls_info_log("topic %s, start recover persistent manager",
+                 manager->config->topic);
+    int32_t oldRetries = manager->config->retries;
+    manager->config->retries = 0;
+    int hasMoreData = 0;
+    int rst = 0;
+    do {
+        if(producer_manager->totalBufferSize == 0){
+            pthread_mutex_lock(manager->lock);
+            rst = log_persistent_manager_recover_inner(manager, producer_manager,&hasMoreData);
+            if (rst != 0)
+            {
+                // if recover failed, reset persistent manager
+                manager->is_invalid = 1;
+                log_persistent_manager_reset(manager);
+                break;
+            }
+            else
+            {
+                manager->is_invalid = 0;
+            }
+            pthread_mutex_unlock(manager->lock);
+        }else{
+            usleep(1000);
+        }
+    } while (hasMoreData);
+    manager->config->retries = oldRetries;
+    return rst;
+}

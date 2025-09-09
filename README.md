@@ -44,11 +44,17 @@ pod 'TencentCloudLogProducer/Core', '1.1.3'
 | packageTimeoutInMS           | 日志的发送逗留时间，如果缓存超时，则会被立即发送，单位为毫秒，默认为3000。通过SetClsPackageTimeout接口设置 |                        整数，单位毫秒                        |
 | maxBufferBytes               | 单个Producer Client实例可以使用的内存的上限，超出缓存时add_log接口会立即返回失败。通过接口SetClsMaxBufferLimit设置 |                        整数，单位字节                        |
 | sendThreadCount              | 发送线程数，默认为1。通过接口SetClsSendThreadCount设置          |                             整数                             |
-| connectTimeoutSec            | 网络连接超时时间，默认为10s。通过接口SetClsConnectTimeoutSec设置 |                         整数，单位秒                         |
-| sendTimeoutSec               | 读写超时，默认为15s。通过接口SetClsSendTimeoutSec设置           |                         整数，单位秒                         |
+| connectTimeoutSec            | 网络连接超时时间，默认为60s。通过接口SetClsConnectTimeoutSec设置 |                         整数，单位秒                         |
+| sendTimeoutSec               | 读写超时，默认为60s。通过接口SetClsSendTimeoutSec设置           |                         整数，单位秒                         |
 | destroyFlusherWaitTimeoutSec | flusher线程销毁最大等待时间，默认为1s。通过接口SetClsDestroyFlusherWaitSec设置 |                         整数，单位秒                         |
 | destroySenderWaitTimeoutSec  | sender线程池销毁最大等待时间，默认为1s。通过接口SetClsDestroySenderWaitSec设置 |                         整数，单位秒                         |
 | compressType                 | 数据上传时的压缩类型，默认为LZ4压缩，默认为1s。通过接口SetClsCompressType设置 |                0 不压缩，1 LZ4压缩， 默认为1                 |
+| persistent                 | 是否开启断点续传功能。通过接口SetPersistent设置 |                0 关闭(默认)，1 开启                 |
+| persistentFilePath                 | 持久化的文件名，需保证文件所在的文件夹已创建。通过接口SetPersistentFilePath设置 |                                 |
+| persistentMaxFileCount                 | 持久化文件个数。通过接口SetPersistentMaxFileCount设置 |        至少10个,默认10                |
+| persistentMaxFileSize                 | 每个持久化文件的大小，单位为Byte。通过接口SetPersistentMaxFileSize设置 |                单位为Byte,最少1M,默认1M                |
+| persistentMaxLogCount                 | 数本地最多缓存的日志数量。通过接口SetPersistentMaxLogCount设置 |                不建议超过1048576，最少65536条,默认为65536                 |
+| clsretries                 | 重试次数。通过接口SetClsRetries设置 |                -1:永久重试 0:不重试                 |
 
 ### 使用demo
 
@@ -63,11 +69,11 @@ NSString* topic_id = @"your_topic";
     [config SetClsTopic:topic_id];
     [config SetClsPackageLogBytes:1024*1024];
     [config SetPackageLogCount:1024];
-    [config SetClsPackageTimeout:3000];
+    [config SetClsPackageTimeout:1000];
     [config SetClsMaxBufferLimit:64*1024*1024];
     [config SetClsSendThreadCount:1];
-    [config SetClsConnectTimeoutSec:10];
-    [config SetClsSendTimeoutSec:10];
+    [config SetClsConnectTimeoutSec:60];
+    [config SetClsSendTimeoutSec:60];
     [config SetClsDestroyFlusherWaitSec:1];
     [config SetClsDestroySenderWaitSec:1];
     [config SetClsCompressType:1];
@@ -121,7 +127,7 @@ let config = ClsLogProducerConfig(coreInfo:"your endpoint", accessKeyID:"your ac
 config.SetClsTopic(utils.topic)
 config.SetClsPackageLogBytes(1024*1024)
 config.SetClsPackageLogCount(1024)
-config.SetClsPackageTimeout(3000)
+config.SetClsPackageTimeout(1000)
 config.SetClsMaxBufferLimit(64*1024*1024)
 config.SetClsSendThreadCoun(1)
 config.SetClsConnectTimeoutSec(10)
