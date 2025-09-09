@@ -94,8 +94,8 @@ static void log_send_callback(const char * config_name, int result, size_t log_b
     [_config SetClsPackageTimeout:1000];
     [_config SetClsMaxBufferLimit:64*1024*1024];
     [_config SetClsSendThreadCount:1];
-    [_config SetClsConnectTimeoutSec:10];
-    [_config SetClsSendTimeoutSec:10];
+    [_config SetClsConnectTimeoutSec:60];
+    [_config SetClsSendTimeoutSec:60];
     [_config SetClsDestroyFlusherWaitSec:1];
     [_config SetClsDestroySenderWaitSec:1];
     [_config SetClsCompressType:1];
