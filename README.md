@@ -49,7 +49,7 @@ pod 'TencentCloudLogProducer/Core', '1.1.3'
 | destroyFlusherWaitTimeoutSec | flusher线程销毁最大等待时间，默认为1s。通过接口SetClsDestroyFlusherWaitSec设置 |                         整数，单位秒                         |
 | destroySenderWaitTimeoutSec  | sender线程池销毁最大等待时间，默认为1s。通过接口SetClsDestroySenderWaitSec设置 |                         整数，单位秒                         |
 | compressType                 | 数据上传时的压缩类型，默认为LZ4压缩，默认为1s。通过接口SetClsCompressType设置 |                0 不压缩，1 LZ4压缩， 默认为1                 |
-| persistent                 | 是否开启断点续传功能。通过接口SetPersistent设置 |                0 关闭(默认)，1 开启                 |
+| persistent                 | 是否开启断点续传功能。通过接口SetPersistent设置(1.3.0版本以上支持)  |                0 关闭(默认)，1 开启                |
 | persistentFilePath                 | 持久化的文件名，需保证文件所在的文件夹已创建。通过接口SetPersistentFilePath设置 |                                 |
 | persistentMaxFileCount                 | 持久化文件个数。通过接口SetPersistentMaxFileCount设置 |        至少10个,默认10                |
 | persistentMaxFileSize                 | 每个持久化文件的大小，单位为Byte。通过接口SetPersistentMaxFileSize设置 |                单位为Byte,最少1M,默认1M                |
