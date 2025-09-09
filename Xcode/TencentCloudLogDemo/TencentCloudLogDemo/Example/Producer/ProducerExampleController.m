@@ -91,7 +91,7 @@ static void log_send_callback(const char * config_name, int result, size_t log_b
     [_config SetClsTopic:utils.topic];
     [_config SetClsPackageLogBytes:1024*1024];
     [_config SetClsPackageLogCount:1024];
-    [_config SetClsPackageTimeout:3000];
+    [_config SetClsPackageTimeout:1000];
     [_config SetClsMaxBufferLimit:64*1024*1024];
     [_config SetClsSendThreadCount:1];
     [_config SetClsConnectTimeoutSec:10];
