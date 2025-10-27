@@ -46,6 +46,8 @@ typedef NS_ENUM(NSInteger, ClsLogProducerResult) {
 
 - (void) DiscardPersistentLog;
 
+- (id) configTuning:(ClsLogProducerConfig *)logProducerConfig;
+
 @end
 
 struct SearchClsReult

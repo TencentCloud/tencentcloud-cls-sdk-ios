@@ -26,4 +26,6 @@
 
 void cls_arr_to_string(const char** in, const int inlen,char *out);
 char* cls_get_local_ip(const char *eth_inf);
+int isNeedRetryWithErrorCode(int errCode);
+void generate_uuid_v4(char *uuid_str);
 #endif /* utils_h */
