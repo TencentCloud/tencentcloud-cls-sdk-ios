@@ -94,7 +94,7 @@ void GetClsQueryString(const root_t parameterList,
 }
 
 
-void PostClsLogsWithLz4(const char *endpoint, const char *accesskeyId, const char *accessKey, const char *topic,cls_lz4_content *buffer, const char *token, cls_log_post_option *option, post_cls_result *rst)
+void PostClsLogsWithLz4(const char *endpoint, const char *accesskeyId, const char *accessKey, const char *topic,cls_lz4_content *buffer, const char *token, cls_log_post_option *option, post_cls_result *rst,char* uuid)
 {
     const char *operation = "/structuredlog";
     root_t httpHeader = RB_ROOT;
@@ -104,7 +104,8 @@ void PostClsLogsWithLz4(const char *endpoint, const char *accesskeyId, const cha
     }
     put(&httpHeader, "Host", (char *)endpoint);
     put(&httpHeader, "Content-Type", "application/x-protobuf");
-    put(&httpHeader, "User-Agent", "tencent-log-sdk-ios v1.0.0");
+    put(&httpHeader, "User-Agent", "tencent-log-sdk-ios v1.3.1");
+    put(&httpHeader, "x-cls-trace-id", uuid);
 
     root_t params = RB_ROOT;
     put(&params, "topic_id", topic);
