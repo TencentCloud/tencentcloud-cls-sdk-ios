@@ -24,6 +24,7 @@
     if (self = [super init])
     {
          ClsLogProducerInit(CLS_LOG_GLOBAL_ALL);
+        [self configTuning:logProducerConfig];
         self->producer = ConstructorClsLogProducer(logProducerConfig->config, *callback, nil);
         self->client = GetClsLogProducer(self->producer, nil);
         if(self->client == NULL){
@@ -35,6 +36,24 @@
     }
 
     return self;
+}
+
+- (void) configTuning:(ClsLogProducerConfig *)logProducerConfig{
+    if(logProducerConfig->config->usePersistent == 0){
+        return;
+    }
+    //如果开启了落盘需要参数调优
+    [logProducerConfig SetClsPackageLogBytes:1024];
+    [logProducerConfig SetClsPackageLogCount:10];
+    [logProducerConfig SetClsMaxBufferLimit:64*1024*1024];
+    [logProducerConfig SetClsSendThreadCount:1];
+    [logProducerConfig SetClsConnectTimeoutSec:60];
+    [logProducerConfig SetClsSendTimeoutSec:60];
+    [logProducerConfig SetClsDestroyFlusherWaitSec:1];
+    [logProducerConfig SetClsDestroySenderWaitSec:1];
+    [logProducerConfig SetClsCompressType:1];
+    [logProducerConfig SetClsRetries:-1];
+    
 }
 
 - (void) UpdateSecurityToken:(NSString *)securityToken{
