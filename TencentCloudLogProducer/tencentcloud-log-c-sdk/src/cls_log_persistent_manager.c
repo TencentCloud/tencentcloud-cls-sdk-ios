@@ -13,6 +13,7 @@
 #include "cls_log_error.h"
 #include <pthread.h>
 #include "cls_sds.h"
+#include "cls_utils.h"
 
 
 #define MAX_CHECKPOINT_FILE_SIZE (sizeof(cls_log_recovery_checkpoint) * 1024)
@@ -121,7 +122,7 @@ void on_cls_log_recovery_manager_send_done_uuid(const char *config_name,
                                               int64_t startId,
                                               int64_t endId)
 {
-    if ((result >= CLS_HTTP_INTERNAL_SERVER_ERROR || result == CLS_HTTP_TOO_MANY_REQUESTS || result == CLS_HTTP_REQUEST_TIMEOUT || result == CLS_HTTP_FORBIDDEN || result <= 0) && !forceFlush){
+    if (isNeedRetryWithErrorCode(result) && !forceFlush){
         return;
     }
     cls_log_recovery_manager *manager = (cls_log_recovery_manager *)persistent_manager;

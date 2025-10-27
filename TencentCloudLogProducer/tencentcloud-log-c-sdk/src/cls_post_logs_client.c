@@ -8,6 +8,7 @@
 #include "cls_log.h"
 #include "cls_lz4.h"
 #include "cls_sds.h"
+#include "cls_utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -104,7 +105,8 @@ void *SendClsProcess(void *param)
     memset(&error_info, 0, sizeof(error_info));
 
     ClsProducerManager *producermgr = (ClsProducerManager *)send_param->producermgr;
-
+    char uuid[37];
+    generate_uuid_v4(uuid);
     do
     {
         if (producermgr->shutdown)
@@ -140,7 +142,7 @@ void *SendClsProcess(void *param)
         rst.statusCode = 0;
         rst.message = NULL;
         memset(rst.requestID, 0, 128);
-        PostClsLogsWithLz4(config->endpoint, accessKeyId, accessKey, topic, send_buf,token, &option, &rst);
+        PostClsLogsWithLz4(config->endpoint, accessKeyId, accessKey, topic, send_buf,token, &option, &rst,uuid);
         cls_sdsfree(accessKeyId);
         cls_sdsfree(accessKey);
         cls_sdsfree(topic);
@@ -190,7 +192,7 @@ int32_t AfterClsProcess(ClsProducerConfig *config,cls_log_producer_send_param *s
         int callback_result = send_result == CLS_LOG_SEND_OK ? CLS_LOG_PRODUCER_OK : (CLS_LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - CLS_LOG_SEND_NETWORK_ERROR);
         producermgr->callbackfunc(producermgr->producerconf->topic, callback_result, send_param->log_buf->raw_length, send_param->log_buf->length, result.requestID, result.message, send_param->log_buf->data, producermgr->user_param);
     }
-    if(result.statusCode == CLS_HTTP_INTERNAL_SERVER_ERROR || result.statusCode == CLS_HTTP_TOO_MANY_REQUESTS || result.statusCode == CLS_HTTP_REQUEST_TIMEOUT || result.statusCode == CLS_HTTP_FORBIDDEN || result.statusCode <= 0){
+    if(isNeedRetryWithErrorCode(result.statusCode)){
         if(config->retries == -1){
             error_info->last_sleep_ms = config->baseRetryBackoffMs;
         }

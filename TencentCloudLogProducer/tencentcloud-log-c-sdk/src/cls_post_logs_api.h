@@ -28,7 +28,7 @@ void PostClsLogsWithLz4(const char *endpoint,
                                        cls_lz4_content *buffer,
                                        const char *token,
                                        cls_log_post_option *option,
-                     post_cls_result *rst);
+                     post_cls_result *rst,char* uuid);
 
 void post_cls_log_result_destroy(post_cls_result *result);
 void GetClsQueryString(const root_t parameterList, cls_sds queryString);
