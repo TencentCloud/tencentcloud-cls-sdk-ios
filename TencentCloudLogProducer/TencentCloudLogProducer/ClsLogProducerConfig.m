@@ -1,10 +1,10 @@
 
 
-#ifdef DEBUG
-#define CLSLog(...) NSLog(__VA_ARGS__)
-#else
-#define CLSLog(...)
-#endif
+//#ifdef DEBUG
+//#define CLSLog(...) NSLog(__VA_ARGS__)
+//#else
+//#define CLSLog(...)
+//#endif
 
 #import <Foundation/Foundation.h>
 #import "ClsLogProducerConfig.h"
