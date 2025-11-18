@@ -106,18 +106,62 @@ static NSUInteger kEvictBatchSize = 100;
     }
     
     // 异步写入（核心修改：插入前先执行清理）
+    // 异步写入（核心优化：将清理、压缩、插入合并为单个数据库任务）
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         __block BOOL success = NO;
         __block NSError *dbError = nil;
         
-        // 1. 插入前先清理旧数据（与Android deleteDataLowMemory逻辑一致）
-        [self evictOldDataIfNeeded];
-        
-        // 2. 执行插入操作
-        NSTimeInterval currentTimeSec = [[NSDate date] timeIntervalSince1970];
-        int64_t currentTimeMs = (int64_t)(currentTimeSec * 1000);
-        
-        [self.dbQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
+        // 将清理、VACUUM、插入合并到同一个数据库任务中
+        [self.dbQueue inDatabase:^(FMDatabase *db) {
+            // 1. 清理旧数据（包含DELETE + VACUUM）
+            BOOL hasCleanedData = NO;
+            while (YES) {
+                uint64_t currentSize = [self getDatabaseSize];
+                if (currentSize <= self.maxDatabaseSize) {
+                    CLSLog(@"当前数据库大小：%.2f MB（未超阈值），无需清理", currentSize / 1024.0 / 1024.0);
+                    break;
+                }
+                
+                // 1.1 批量删除最早的日志
+                NSUInteger deletedCount = 0;
+                NSString *deleteSQL = [NSString stringWithFormat:
+                                      @"DELETE FROM %@ "
+                                      "ORDER BY create_time ASC "
+                                      "LIMIT %lu",
+                                      kLogTable, (unsigned long)kEvictBatchSize];
+                
+                BOOL deleteSuccess = [db executeUpdate:deleteSQL];
+                if (deleteSuccess) {
+                    deletedCount = db.changes;
+                    CLSLog(@"清理旧数据成功，删除条数：%lu，清理前大小：%.2f MB",
+                          (unsigned long)deletedCount,
+                          currentSize / 1024.0 / 1024.0);
+                } else {
+                    CLSLog(@"清理旧数据失败：%@", db.lastError);
+                    dbError = db.lastError;
+                    break; // 清理失败，终止后续操作
+                }
+                
+                // 1.2 执行VACUUM（删除后立即压缩）
+                if (deletedCount > 0) {
+                    hasCleanedData = YES;
+                    if ([db executeUpdate:@"VACUUM"]) {
+                        uint64_t newSize = [self getDatabaseSize];
+                        CLSLog(@"VACUUM 完成，压缩后大小：%.2f MB", newSize / 1024.0 / 1024.0);
+                    } else {
+                        CLSLog(@"VACUUM 失败：%@", db.lastError);
+                        // VACUUM失败不终止，仅记录日志
+                    }
+                } else {
+                    CLSLog(@"无更多数据可清理，当前大小：%.2f MB", currentSize / 1024.0 / 1024.0);
+                    break;
+                }
+            }
+            
+            // 2. 执行插入操作（清理完成后才插入）
+            NSTimeInterval currentTimeSec = [[NSDate date] timeIntervalSince1970];
+            int64_t currentTimeMs = (int64_t)(currentTimeSec * 1000);
+            
             NSString *insertSQL = [NSString stringWithFormat:
                                   @"INSERT INTO %@ (log_item_data, topic_id, create_time) "
                                   "VALUES (?, ?, ?)", kLogTable];
@@ -125,7 +169,6 @@ static NSUInteger kEvictBatchSize = 100;
             success = [db executeUpdate:insertSQL, base64Data, topicId, @(currentTimeMs)];
             if (!success) {
                 dbError = db.lastError;
-                *rollback = YES;
                 CLSLog(@"insert failed: %@", dbError);
             }
         }];
@@ -156,62 +199,6 @@ static NSUInteger kEvictBatchSize = 100;
     }
     
     return [fileAttrs[NSFileSize] unsignedLongLongValue];
-}
-
-#pragma mark - 清理旧数据（移除VACUUM，与Android一致）
-- (void)evictOldDataIfNeeded {
-    BOOL hasCleanedData = NO; // 标记是否有实际清理数据
-    while (YES) {
-        uint64_t currentSize = [self getDatabaseSize];
-        if (currentSize <= self.maxDatabaseSize) {
-            CLSLog(@"current database size：%.2f MB（未超阈值）", currentSize / 1024.0 / 1024.0);
-            break;
-        }
-        
-        // 批量删除最早的日志
-        __block NSUInteger deletedCount = 0;
-        [self.dbQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
-            NSString *deleteSQL = [NSString stringWithFormat:
-                                 @"DELETE FROM %@ "
-                                 "WHERE _id IN ("
-                                 "  SELECT _id FROM %@ "
-                                 "  ORDER BY create_time ASC "
-                                 "  LIMIT %lu"
-                                 ")", kLogTable, kLogTable, (unsigned long)kEvictBatchSize];
-            
-            BOOL success = [db executeUpdate:deleteSQL];
-            if (success) {
-                deletedCount = db.changes;
-                CLSLog(@"清理旧数据成功，删除条数：%lu，清理前大小：%.2f MB",
-                      (unsigned long)deletedCount,
-                      currentSize / 1024.0 / 1024.0);
-            } else {
-                CLSLog(@"清理旧数据失败：%@", db.lastError);
-                *rollback = YES;
-            }
-        }];
-        
-        // 若本次删除了数据，标记为需要执行 VACUUM
-        if (deletedCount > 0) {
-            hasCleanedData = YES;
-        } else {
-            CLSLog(@"无更多数据可清理，当前大小：%.2f MB", currentSize / 1024.0 / 1024.0);
-            break;
-        }
-    }
-    
-    // 仅在有实际清理数据时执行 VACUUM
-    if (hasCleanedData) {
-        [self.dbQueue inDatabase:^(FMDatabase *db) {
-            if ([db executeUpdate:@"VACUUM"]) {
-                CLSLog(@"VACUUM 完成，空间已回收");
-                uint64_t newSize = [self getDatabaseSize];
-                CLSLog(@"压缩后大小：%.2f MB", newSize / 1024.0 / 1024.0);
-            } else {
-                CLSLog(@"VACUUM 失败：%@", db.lastError);
-            }
-        }];
-    }
 }
 
 #pragma mark - 查询待发送日志（无修改）
