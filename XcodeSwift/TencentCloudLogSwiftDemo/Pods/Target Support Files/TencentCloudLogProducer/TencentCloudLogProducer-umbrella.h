@@ -11,8 +11,15 @@
 #endif
 
 #import "ClsLog.h"
+#import "ClsLogModel.h"
 #import "ClsLogProducerClient.h"
 #import "ClsLogProducerConfig.h"
+#import "ClsLogs.pbobjc.h"
+#import "ClsLogSender.h"
+#import "ClsLogStorage.h"
+#import "ClsNetworkTool.h"
+#import "ClsSignatureTool.h"
+#import "cls_lz4.h"
 #import "TencentCloudLogProducer.h"
 #import "baseClsPlugin.h"
 #import "baseClsSender.h"

@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name         = "TencentCloudLogProducer"
-  s.version      = "1.3.1"
+  s.version      = "2.0.0"
   s.summary      = "TencentCloudLogProducer ios"
   s.description  = <<-DESC
   log service ios producer.
@@ -20,7 +20,7 @@ Pod::Spec.new do |s|
   s.author             = { "herrylv" => "herrylv@tencent.com" }
   s.source       = { :git => "https://github.com/TencentCloud/tencentcloud-cls-sdk-ios.git", :tag => s.version.to_s  }
   s.social_media_url = 'https://cloud.tencent.com/document/product/614/67157'
-  s.ios.deployment_target = '9.0'
+  s.ios.deployment_target = '10.0'
   s.default_subspec = 'Core'
   s.static_framework = true
   s.pod_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'arm64' }
@@ -46,6 +46,9 @@ Pod::Spec.new do |s|
           'TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_producer_config.h'
           
           c.dependency 'GMOpenSSL', '~> 2.2.6'
+          c.dependency 'Protobuf', '~> 3.29.5'
+          c.dependency 'FMDB', '~> 2.7.5'
+          c.dependency 'Reachability', '~> 3.2'
   s.resource_bundles = { s.name => ['TencentCloudLogProducer/TencentCloudLogProducer/PrivacyInfo.xcprivacy'] }
   end
   s.subspec 'NetWorkDiagnosis' do |b|
