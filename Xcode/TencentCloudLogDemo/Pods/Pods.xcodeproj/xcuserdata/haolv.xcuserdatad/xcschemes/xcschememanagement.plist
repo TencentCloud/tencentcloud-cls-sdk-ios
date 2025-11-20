@@ -4,12 +4,27 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>FMDB.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>GMOpenSSL.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 		</dict>
 		<key>Pods-TencentCloudLogDemo.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>Protobuf-Protobuf_Privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>Protobuf.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>

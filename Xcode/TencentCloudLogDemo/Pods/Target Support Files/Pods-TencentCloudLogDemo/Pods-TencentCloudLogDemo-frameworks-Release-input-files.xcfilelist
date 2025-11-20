@@ -1,2 +1,4 @@
 ${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks.sh
+${BUILT_PRODUCTS_DIR}/FMDB/FMDB.framework
+${BUILT_PRODUCTS_DIR}/Protobuf/Protobuf.framework
 ${BUILT_PRODUCTS_DIR}/Reachability/Reachability.framework

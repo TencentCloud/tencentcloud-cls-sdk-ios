@@ -1,9 +1,16 @@
 PODS:
+  - FMDB (2.7.5):
+    - FMDB/standard (= 2.7.5)
+  - FMDB/standard (2.7.5)
   - GMOpenSSL (2.2.9)
+  - Protobuf (3.29.5)
   - Reachability (3.2)
-  - TencentCloudLogProducer/Core (1.3.0):
+  - TencentCloudLogProducer/Core (1.3.1):
+    - FMDB (~> 2.7.5)
     - GMOpenSSL (~> 2.2.6)
-  - TencentCloudLogProducer/NetWorkDiagnosis (1.3.0):
+    - Protobuf (~> 3.29.5)
+    - Reachability (~> 3.2)
+  - TencentCloudLogProducer/NetWorkDiagnosis (1.3.1):
     - Reachability (~> 3.2)
     - TencentCloudLogProducer/Core
 
@@ -13,7 +20,9 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - FMDB
     - GMOpenSSL
+    - Protobuf
     - Reachability
 
 EXTERNAL SOURCES:
@@ -21,9 +30,11 @@ EXTERNAL SOURCES:
     :path: "../../"
 
 SPEC CHECKSUMS:
+  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   GMOpenSSL: d6d119ff8f00d4e03c2cdf733fb61e98e22da9c7
+  Protobuf: 164aea2ae380c3951abdc3e195220c01d17400e0
   Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
-  TencentCloudLogProducer: 40ae808b2227a05e66d3dbf348835771666043e3
+  TencentCloudLogProducer: 702b24f09c3512955e58e8d41165460f5871e0b6
 
 PODFILE CHECKSUM: 08eb0903ad8062c9e40619e96643e3b6d8eef6d2
 

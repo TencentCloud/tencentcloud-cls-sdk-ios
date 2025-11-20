@@ -22,123 +22,123 @@
 ### import
 
 ```
-#import <TencentCloudLogProducer.h>
+#import "TencentCloudLogProducer/ClsLogSender.h"
+#import "TencentCloudLogProducer/CLSLogStorage.h"
 ```
 
 ### Podfile
 
 ```objective-c
-pod 'TencentCloudLogProducer/Core', '1.3.0'
+pod 'TencentCloudLogProducer/Core', '2.0.0'
 ```
 
 ### 配置
 
-| 参数                         | 说明                                                         |                             取值                             |
-| ---------------------------- | ------------------------------------------------------------ | :----------------------------------------------------------: |
-| topic                        | 日志主题 ID ，通过接口SetClsTopic设置                           | 可在控制台获取https://console.cloud.tencent.com/cls/logset/desc |
-| accessKeyId                  | 访问密钥ID，通过接口setAccessKeyId设置                       | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
-| accessKey                    | 访问密钥Key，通过接口setAccessKeySecret设置                  | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
-| endpoint                     | 地域信息。通过接口setEndpoint设置                            | 参考官方文档：https://cloud.tencent.com/document/product/614/18940 |
-| logBytesPerPackage           | 缓存的日志包的大小上限，取值为1~5242880，单位为字节。默认为1024 * 1024。通过SetClsPackageLogBytes接口设置 |                        整数，单位字节                        |
-| logCountPerPackage           | 缓存的日志包中包含日志数量的最大值，取值为1~10000，默认为1024条。通过SetPackageLogCount接口设置 |                             整数                             |
-| packageTimeoutInMS           | 日志的发送逗留时间，如果缓存超时，则会被立即发送，单位为毫秒，默认为3000。通过SetClsPackageTimeout接口设置 |                        整数，单位毫秒                        |
-| maxBufferBytes               | 单个Producer Client实例可以使用的内存的上限，超出缓存时add_log接口会立即返回失败。通过接口SetClsMaxBufferLimit设置 |                        整数，单位字节                        |
-| sendThreadCount              | 发送线程数，默认为1。通过接口SetClsSendThreadCount设置          |                             整数                             |
-| connectTimeoutSec            | 网络连接超时时间，默认为60s。通过接口SetClsConnectTimeoutSec设置 |                         整数，单位秒                         |
-| sendTimeoutSec               | 读写超时，默认为60s。通过接口SetClsSendTimeoutSec设置           |                         整数，单位秒                         |
-| destroyFlusherWaitTimeoutSec | flusher线程销毁最大等待时间，默认为1s。通过接口SetClsDestroyFlusherWaitSec设置 |                         整数，单位秒                         |
-| destroySenderWaitTimeoutSec  | sender线程池销毁最大等待时间，默认为1s。通过接口SetClsDestroySenderWaitSec设置 |                         整数，单位秒                         |
-| compressType                 | 数据上传时的压缩类型，默认为LZ4压缩，默认为1s。通过接口SetClsCompressType设置 |                0 不压缩，1 LZ4压缩， 默认为1                 |
-| persistent                 | 是否开启断点续传功能。通过接口SetPersistent设置(1.3.0版本以上支持)  |                0 关闭(默认)，1 开启                |
-| persistentFilePath                 | 持久化的文件名，需保证文件所在的文件夹已创建。通过接口SetPersistentFilePath设置 |                                 |
-| persistentMaxFileCount                 | 持久化文件个数。通过接口SetPersistentMaxFileCount设置 |        至少10个,默认10                |
-| persistentMaxFileSize                 | 每个持久化文件的大小，单位为Byte。通过接口SetPersistentMaxFileSize设置 |                单位为Byte,最少1M,默认1M                |
-| persistentMaxLogCount                 | 数本地最多缓存的日志数量。通过接口SetPersistentMaxLogCount设置 |                不建议超过1048576，最少65536条,默认为65536                 |
-| clsretries                 | 重试次数。通过接口SetClsRetries设置 |                -1:永久重试 0:不重试                 |
-
+| 参数                           | 说明                                                             |                                                                                                    取值                                                                                                     |
+|------------------------------|----------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| topic                        | 日志主题 ID                                                        |                                                                         可在控制台获取https://console.cloud.tencent.com/cls/logset/desc                                                                          |
+| accessKeyId                  | 访问密钥ID                                                         | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
+| accessKey                    | 访问密钥Key                                                        | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
+| endpoint                     | 地域信息                                                           |                                                                        参考官方文档：https://cloud.tencent.com/document/product/614/18940                                                                        |
+| token                        | 临时密钥                                                           |                                                                                               若使用临时密钥需要设置该值                                                                                               |
+| sendLogInterval           | 日志的发送逗留时间，默认5S                      |                                                                                                  整数，单位秒                                                                                                   |
+| maxMemorySize               | sdk内存的上限，默认32M                                                 |                                                                                                  整数，单位字节                                                                                                  |
 ### 使用demo
 
-
 ```objective-c
-NSString* endpoint = @"project's_endpoint";
-NSString* accesskeyid = @"your_accesskey_id";
-NSString* accesskeysecret = @"your_accesskey_secret";
-NSString* topic_id = @"your_topic";
+#import "TencentCloudLogProducer/ClsLogSender.h"
+#import "TencentCloudLogProducer/CLSLogStorage.h"
 
-    ClsLogProducerConfig *config = [[ClsLogProducerConfig alloc] initWithCoreInfo:[endpoint] accessKeyID:[accesskeyid] accessKeySecret:[accesskeysecret];
-    [config SetClsTopic:topic_id];
-    [config SetClsPackageLogBytes:1024*1024];
-    [config SetPackageLogCount:1024];
-    [config SetClsPackageTimeout:1000];
-    [config SetClsMaxBufferLimit:64*1024*1024];
-    [config SetClsSendThreadCount:1];
-    [config SetClsConnectTimeoutSec:60];
-    [config SetClsSendTimeoutSec:60];
-    [config SetClsDestroyFlusherWaitSec:1];
-    [config SetClsDestroySenderWaitSec:1];
-    [config SetClsCompressType:1];
-        
-        //callback若传入空则不会回调
-    ClsLogProducerClient *client; = [[ClsLogProducerClient alloc] initWithClsLogProducer:config callback:nil];
-        ClsLog* log = [[ClsLog alloc] init];
-    [log PutClsContent:@"cls_key_1" value:@"cls_value_1"];
-    [log PutClsContent:@"cls_key_1" value:@"cls_value_2"];
-    ClsLogProducerResult result = [client PostClsLog:log];
+#启动sdk
+ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:@"endpoint"
+                                                  accessKeyId:@"accessKeyId"
+                                                    accessKey:@"accessKey"];
+_sender = [LogSender sharedSender];
+[_sender setConfig:config];
+[_sender start];
+
+#写日志
+Log_Content *content = [Log_Content message];
+content.key = @"key";
+content.value = @"value";
+
+Log *logItem = [Log message];
+     [logItem.contentsArray addObject:content];
+     logItem.time = [timestamp longLongValue];
+
+[[ClsLogStorage sharedInstance] writeLog:logItem
+                                 topicId:@"topicid"
+                               completion:^(BOOL success, NSError *error) {
+    if (success) {
+        NSLog(@"日志写入成功（第 %d 条），等待发送", i + 1);
+    } else {
+        NSLog(@"日志写入失败（第 %d 条），error: %@", i + 1, error);
+    }
+}];
 ```
 
 ## swift配置说明
 
-### import
+### 桥接必要的头文件
 
-```swift
-import TencentCloudLogProducer
+```
+#import "TencentCloudLogProducer/ClsLogSender.h"
+#import "TencentCloudLogProducer/ClsLogModel.h"
+#import "TencentCloudLogProducer/CLSLogStorage.h"
+#import "TencentCloudLogProducer/ClsLogs.pbobjc.h"
 ```
 
 ### Podfile
 
 ```swift
-pod 'TencentCloudLogProducer/Core'
+pod 'TencentCloudLogProducer/Core', '2.0.0'
+import TencentCloudLogProducer
 ```
 
 ### 配置
 
-| 参数                         | 说明                                                         |                             取值                             |
-| ---------------------------- | ------------------------------------------------------------ | :----------------------------------------------------------: |
-| topic                        | 日志主题 ID ，通过接口SetClsTopic设置                           | 可在控制台获取https://console.cloud.tencent.com/cls/logset/desc |
-| accessKeyId                  | 访问密钥ID，通过接口setAccessKeyId设置                       | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
-| accessKey                    | 访问密钥Key，通过接口setAccessKeySecret设置                  | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
-| endpoint                     | 地域信息。通过接口setEndpoint设置                            | 参考官方文档：https://cloud.tencent.com/document/product/614/18940 |
-| logBytesPerPackage           | 缓存的日志包的大小上限，取值为1~5242880，单位为字节。默认为1024 * 1024。通过SetClsPackageLogBytes接口设置 |                        整数，单位字节                        |
-| logCountPerPackage           | 缓存的日志包中包含日志数量的最大值，取值为1~10000，默认为1024条。通过SetPackageLogCount接口设置 |                             整数                             |
-| packageTimeoutInMS           | 日志的发送逗留时间，如果缓存超时，则会被立即发送，单位为毫秒，默认为3000。通过SetClsPackageTimeout接口设置 |                        整数，单位毫秒                        |
-| maxBufferBytes               | 单个Producer Client实例可以使用的内存的上限，超出缓存时add_log接口会立即返回失败。通过接口SetClsMaxBufferLimit设置 |                        整数，单位字节                        |
-| sendThreadCount              | 发送线程数，默认为1。通过接口SetClsSendThreadCount设置          |                             整数                             |
-| connectTimeoutSec            | 网络连接超时时间，默认为10s。通过接口SetClsConnectTimeoutSec设置 |                         整数，单位秒                         |
-| sendTimeoutSec               | 读写超时，默认为15s。通过接口SetClsSendTimeoutSec设置           |                         整数，单位秒                         |
-| destroyFlusherWaitTimeoutSec | flusher线程销毁最大等待时间，默认为1s。通过接口SetClsDestroyFlusherWaitSec设置 |                         整数，单位秒                         |
-| destroySenderWaitTimeoutSec  | sender线程池销毁最大等待时间，默认为1s。通过接口SetClsDestroySenderWaitSec设置 |                         整数，单位秒                         |
-| compressType                 | 数据上传时的压缩类型，默认为LZ4压缩，默认为1s。通过接口SetClsCompressType设置 |                0 不压缩，1 LZ4压缩， 默认为1                 |
+| 参数                           | 说明                                                             |                                                                                                    取值                                                                                                     |
+|------------------------------|----------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| topic                        | 日志主题 ID                                                        |                                                                         可在控制台获取https://console.cloud.tencent.com/cls/logset/desc                                                                          |
+| accessKeyId                  | 访问密钥ID                                                         | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
+| accessKey                    | 访问密钥Key                                                        | 密钥信息获取请前往[密钥获取](https://console.cloud.tencent.com/cam/capi)。并请确保密钥关联的账号具有相应的[SDK上传日志权限](https://cloud.tencent.com/document/product/614/68374#.E4.BD.BF.E7.94.A8-api-.E4.B8.8A.E4.BC.A0.E6.95.B0.E6.8D.AE) |
+| endpoint                     | 地域信息                                                           |                                                                        参考官方文档：https://cloud.tencent.com/document/product/614/18940                                                                        |
+| token                        | 临时密钥                                                           |                                                                                               若使用临时密钥需要设置该值                                                                                               |
+| sendLogInterval           | 日志的发送逗留时间，默认5S                      |                                                                                                  整数，单位秒                                                                                                   |
+| maxMemorySize               | sdk内存的上限，默认32M                                                 |                                                                                                  整数，单位字节                                                                                                  |
 
 ### 使用demo
 
 ```
-//创建配置信息
-let config = ClsLogProducerConfig(coreInfo:"your endpoint", accessKeyID:"your accessKeyID", accessKeySecret:"your accessKeySecret")!
-config.SetClsTopic(utils.topic)
-config.SetClsPackageLogBytes(1024*1024)
-config.SetClsPackageLogCount(1024)
-config.SetClsPackageTimeout(1000)
-config.SetClsMaxBufferLimit(64*1024*1024)
-config.SetClsSendThreadCoun(1)
-config.SetClsConnectTimeoutSec(10)
-config.SetClsSendTimeoutSec(10)
-config.SetClsDestroyFlusherWaitSec(1)
-config.SetClsDestroySenderWaitSec(1)
-config.SetClsCompressType(1)
-let tv = self.resText;
+import TencentCloudLogProducer
+//初始化sdk
+let config = ClsLogSenderConfig(
+   endpoint: "endpoint" ?? "",
+   accessKeyId: "accessKeyId" ?? "",
+   accessKey: "accessKey" ?? ""
+)
+sender = LogSender.shared()
+sender.setConfig(config)
+sender.start()
 
-//构建client
-client = ClsLogProducerClient(clsLogProducer:config, callback:callbackFunc)
+#发送数据
+let content = Log_Content()
+content.key = "key"
+content.value = value
+
+let logItem = Log()
+logItem.contentsArray.add(content)
+logItem.time = Int64(timestamp)!
+
+// 写入日志
+ClsLogStorage.sharedInstance().write(logItem, topicId: "topicid")
+ { success, error in
+    if success {
+        print("日志写入成功（第 \(i + 1) 条），等待发送")
+    } else {
+        print("日志写入失败（第 \(i + 1) 条），error: \(error.debugDescription)")
+    }
+}
 ```
 
 ## 网络探测
@@ -342,6 +342,7 @@ ClsAdapter *clsAdapter = [ClsAdapter sharedInstance];
 */
 - (void) httping:(NSString*)url output:(id<CLSOutputDelegate>)output complate:(CLSHttpCompleteHandler)complate customFiled:(NSMutableDictionary*) customFiled;
 ```
+
 
 
 

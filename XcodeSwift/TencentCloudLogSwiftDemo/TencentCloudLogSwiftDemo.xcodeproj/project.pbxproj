@@ -131,6 +131,7 @@
 				996E3F782859905E00982B7E /* Sources */,
 				996E3F792859905E00982B7E /* Frameworks */,
 				996E3F7A2859905E00982B7E /* Resources */,
+				574D27249BA865FF010A69F3 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -192,6 +193,23 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		574D27249BA865FF010A69F3 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogSwiftDemo/Pods-TencentCloudLogSwiftDemo-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogSwiftDemo/Pods-TencentCloudLogSwiftDemo-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogSwiftDemo/Pods-TencentCloudLogSwiftDemo-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		B5D1207A84CD6D62CF603376 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

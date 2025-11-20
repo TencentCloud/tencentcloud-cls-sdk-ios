@@ -1,12 +1,12 @@
 
 
 #import "ProducerExampleController.h"
-#import "TencentCloudLogProducer/ClsLogProducerClient.h"
+#import "TencentCloudLogProducer/ClsLogSender.h"
+#import "TencentCloudLogProducer/CLSLogStorage.h"
 
 @interface ProducerExampleController ()
 @property(nonatomic, strong) UITextView *statusTextView;
-@property(nonatomic, strong) ClsLogProducerConfig *config;
-@property(nonatomic, strong) ClsLogProducerClient *client;
+@property(nonatomic, strong) LogSender *sender;
 
 @end
 
@@ -21,6 +21,10 @@ static ProducerExampleController *selfClzz;
     self.title = @"基础信息配置";
     [self initViews];
     [self initLogProducer];
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application {
+    [[LogSender sharedSender] stop]; // 应用退出前停止日志发送线程
 }
 
 - (void) initViews {
@@ -59,77 +63,52 @@ static ProducerExampleController *selfClzz;
 }
 
 - (void) send{
+    // 写入日志（自动触发发送）
+    // 压缩后的 JSON 字符串（无缩进无换行）
+    __block NSInteger logIndex = 0; // 自增序号（标记写入顺序）
 
-    for (int i = 0; i < 10000; i++) {
-        ClsLogProducerResult result = [_client PostClsLog:[self LogData]];
-        if( result != ClsLogProducerOK){
-            printf("addlog result: %d\n", result);
-        }
-       
-    }
-    
-}
-
-static void log_send_callback(const char * config_name, int result, size_t log_bytes, size_t compressed_bytes, const char * req_id, const char * message, const unsigned char * raw_buffer, void * userparams) {
-    if (result == ClsLogProducerOK) {
-        NSString *success = [NSString stringWithFormat:@"send success, topic : %s, result : %d, log bytes : %d, compressed bytes : %d, request id : %s", config_name, (result), (int)log_bytes, (int)compressed_bytes, req_id];
-        CLSLogV("%@", success);
+    // 循环写入 10 条日志
+    for (int i = 0; i < 1000; i++) {
+        NSString *timestamp = [NSString stringWithFormat:@"%lld", (long long)([[NSDate date] timeIntervalSince1970] * 1000)];
+        NSString *jsonString = [NSString stringWithFormat:@"{\"log_index\":\" %ld\",\"write_timestamp\":\"%@\"}",(long)i, timestamp];
+        Log_Content *content = [Log_Content message];
+        content.key = @"message";
+        content.value = jsonString;
         
-        [selfClzz UpdateReult:success];
-    } else {
-        NSString *fail = [NSString stringWithFormat:@"send fail   , topic : %s, result : %d, log bytes : %d, compressed bytes : %d, request id : %s, error message : %s", config_name, (result), (int)log_bytes, (int)compressed_bytes, req_id, message];
-        CLSLogV("%@", fail);
+        Log *logItem = [Log message];
+             [logItem.contentsArray addObject:content];
+             logItem.time = [timestamp longLongValue]; // 日志时间戳（与写入时间一致）
         
-        [selfClzz UpdateReult:fail];
+        [[ClsLogStorage sharedInstance] writeLog:logItem
+                                         topicId:@"topicid"
+                                       completion:^(BOOL success, NSError *error) {
+            if (success) {
+                NSLog(@"日志写入成功（第 %d 条），等待发送", i + 1);
+            } else {
+                NSLog(@"日志写入失败（第 %d 条），error: %@", i + 1, error);
+            }
+        }];
     }
-}
 
+//    [[ClsLogStorage sharedInstance] writeLog:logItem
+//                                     topicId:@"topicid"  // 与发送器绑定的主题一致
+//                                   completion:^(BOOL success, NSError *error) {
+//        if (success) {
+//            NSLog(@"日志写入成功，等待发送");
+//        }else{
+//            NSLog(@"日志写入失败，error:%@",error);
+//        }
+//    }];
+
+}
 - (void) initLogProducer {
     DemoUtils *utils = [DemoUtils sharedInstance];
-
-    _config = [[ClsLogProducerConfig alloc] initClsWithCoreInfo:[utils endpoint] accessKeyID:[utils accessKeyId] accessKeySecret:[utils accessKeySecret]];
-    [_config SetClsTopic:utils.topic];
-    [_config SetClsPackageLogBytes:1024*1024];
-    [_config SetClsPackageLogCount:1024];
-    [_config SetClsPackageTimeout:1000];
-    [_config SetClsMaxBufferLimit:64*1024*1024];
-    [_config SetClsSendThreadCount:1];
-    [_config SetClsConnectTimeoutSec:60];
-    [_config SetClsSendTimeoutSec:60];
-    [_config SetClsDestroyFlusherWaitSec:1];
-    [_config SetClsDestroySenderWaitSec:1];
-    [_config SetClsCompressType:1];
-    
-    //如下支持checkpoint点位落盘机制
-    [_config SetPersistent:0];
-    NSArray  *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *Path = [[paths lastObject] stringByAppendingString:@"/cls.dat"];
-    NSLog(@"文件路径：%@", Path);
-    [_config SetPersistentFilePath:Path];
-    [_config SetPersistentMaxFileCount:10];
-    [_config SetPersistentMaxFileSize:1*1024*1024];
-    [_config SetPersistentMaxLogCount:65536];
-
-    _client = [[ClsLogProducerClient alloc] initWithClsLogProducer:_config callback:log_send_callback];
-}
-
-
-- (ClsLog *) LogData {
-    ClsLog* log = [[ClsLog alloc] init];
-
-    [log PutClsContent:@"content_key_1" value:@"1abcakjfhksfsfsxyz012345678!@#$%^&"];
-    [log PutClsContent:@"content_key_2" value:@"2abcdefghijklmnopqrstuvwxyz4444444"];
-    [log PutClsContent:@"content_key_3" value:@"3slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutClsContent:@"content_key_4" value:@"4slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutClsContent:@"content_key_5" value:@"5slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutClsContent:@"content_key_6" value:@"6slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutClsContent:@"content_key_7" value:@"7slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutClsContent:@"content_key_8" value:@"8slfjhdfjh092834932hjksnfjknskjfnd"];
-    [log PutClsContent:@"content_key_9" value:@"9abcdefghijklmnopqrstuvwxyz0123456789"];
-    [log PutClsContent:@"content" value:@"中文"];
-
-//    [log SetTime:[[NSDate date] timeIntervalSince1970]*1000];
-    return log;
+    ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:[utils endpoint]
+                                                      accessKeyId:[utils accessKeyId]
+                                                        accessKey:[utils accessKeySecret]];
+    _sender = [LogSender sharedSender];
+    [_sender setConfig:config];
+    [_sender start];
 }
 
 
