@@ -1,6 +1,0 @@
-framework module TencentCloudLogProducer {
-  umbrella header "TencentCloudLogProducer-umbrella.h"
-
-  export *
-  module * { export * }
-}

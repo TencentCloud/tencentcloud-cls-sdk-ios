@@ -1,8 +1,8 @@
 //
 //  main.m
-//  TencentCloundLogDemo
+//  TencentCloudLogDemo
 //
-//  Created by herrylv on 2022/5/7.
+//  Created by hao lv on 2025/12/4.
 //
 
 #import <UIKit/UIKit.h>

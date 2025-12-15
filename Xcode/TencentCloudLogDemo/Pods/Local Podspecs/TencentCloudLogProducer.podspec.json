@@ -1,6 +1,6 @@
 {
   "name": "TencentCloudLogProducer",
-  "version": "1.3.1",
+  "version": "2.0.0",
   "summary": "TencentCloudLogProducer ios",
   "description": "log service ios producer.\nhttps://cloud.tencent.com/product/cls",
   "homepage": "https://cloud.tencent.com/",
@@ -13,7 +13,7 @@
   },
   "source": {
     "git": "https://github.com/TencentCloud/tencentcloud-cls-sdk-ios.git",
-    "tag": "1.3.1"
+    "tag": "2.0.0"
   },
   "social_media_url": "https://cloud.tencent.com/document/product/614/67157",
   "platforms": {
@@ -27,37 +27,12 @@
   "user_target_xcconfig": {
     "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "arm64"
   },
-  "resource_bundles": {
-    "TencentCloudLogProducer": [
-      "TencentCloudLogProducer/TencentCloudLogProducer/PrivacyInfo.xcprivacy"
-    ]
-  },
   "subspecs": [
     {
       "name": "Core",
-      "vendored_libraries": "TencentCloudLogProducer/tencentCloud-log-c-sdk/curl/lib/libcurl.a",
-      "source_files": [
-        "TencentCloudLogProducer/TencentCloudLogProducer/*.{h,m}",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/*.{c,h}",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/curl/include/curl/*.{c,h}",
-        "TencentCloudLogProducer/TencentCloudLogProducer/utils/*.{m,h}"
-      ],
-      "public_header_files": [
-        "TencentCloudLogProducer/TencentCloudLogProducer/*.h",
-        "TencentCloudLogProducer/TencentCloudLogProducer/utils/*.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_define.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_adaptor.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_inner_include.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_multi_thread.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_producer_client.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_error.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/ClsLogProducerConfig.h",
-        "TencentCloudLogProducer/tencentCloud-log-c-sdk/src/cls_log_producer_config.h"
-      ],
+      "source_files": "TencentCloudLogProducer/Core/*.{h,m}",
+      "public_header_files": "TencentCloudLogProducer/Core/*.h",
       "dependencies": {
-        "GMOpenSSL": [
-          "~> 2.2.6"
-        ],
         "Protobuf": [
           "~> 3.29.5"
         ],
@@ -67,23 +42,34 @@
         "Reachability": [
           "~> 3.2"
         ]
+      },
+      "libraries": [
+        "z",
+        "sqlite3"
+      ],
+      "frameworks": [
+        "Foundation",
+        "SystemConfiguration",
+        "UIKit"
+      ],
+      "resource_bundles": {
+        "TencentCloudLogProducer": [
+          "TencentCloudLogProducer/PrivacyInfo.xcprivacy"
+        ]
       }
     },
     {
       "name": "NetWorkDiagnosis",
       "dependencies": {
-        "TencentCloudLogProducer/Core": [],
-        "Reachability": [
-          "~> 3.2"
-        ]
+        "TencentCloudLogProducer/Core": []
       },
-      "source_files": "TencentCloudLogProducer/TencentCloudLogProducer/NetWorkDiagnosis/*.{m,h}",
-      "frameworks": "SystemConfiguration",
-      "public_header_files": [
-        "TencentCloudLogProducer/TencentCloudLogProducer/NetWorkDiagnosis/*.h",
-        "SystemConfiguration"
-      ],
-      "libraries": "resolv"
+      "source_files": "TencentCloudLogProducer/NetWorkDiagnosis/*.{m,h}",
+      "public_header_files": "TencentCloudLogProducer/NetWorkDiagnosis/*.h",
+      "frameworks": "CoreTelephony",
+      "libraries": "resolv",
+      "pod_target_xcconfig": {
+        "GCC_PREPROCESSOR_DEFINITIONS": "CLS_HAS_CORE_TELEPHONY=1"
+      }
     }
   ]
 }
