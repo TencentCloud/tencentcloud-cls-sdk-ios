@@ -64,8 +64,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "154"
             endingLineNumber = "154"
-            landmarkName = "-testTimeoutResponse"
-            landmarkType = "7">
+            landmarkName = "unknown"
+            landmarkType = "0">
             <Locations>
                <Location
                   uuid = "30A25FBB-9498-4C63-A7F7-D23D64F3FCB9 - bda48ce05c0183c2"
@@ -152,7 +152,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "7BEBFDF8-C140-47E2-9D1F-7309B150926D"
-            shouldBeEnabled = "No"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../TencentCloudLogProducer/NetWorkDiagnosis/CLSNetworkUtils.m"
@@ -206,8 +206,8 @@
             filePath = "../../TencentCloudLogProducer/NetWorkDiagnosis/ClsNetworkDiagnosis.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "214"
-            endingLineNumber = "214"
+            startingLineNumber = "240"
+            endingLineNumber = "240"
             landmarkName = "-httpingv2:complate:"
             landmarkType = "7">
          </BreakpointContent>
@@ -216,7 +216,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "CC217E90-4A5A-4534-B6F9-805C89C7F6FC"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../TencentCloudLogProducer/NetWorkDiagnosis/CLSNetworkUtils.m"
@@ -226,6 +226,22 @@
             endingLineNumber = "175"
             landmarkName = "+getNetworkEnvironmentInfo:networkAppId:appKey:uin:endpoint:"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "94A41F45-7911-4BFB-BA1A-F404330C80FC"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../TencentCloudLogProducer/NetWorkDiagnosis/network_ios/cls_dns_detector.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "2356"
+            endingLineNumber = "2356"
+            landmarkName = "perform_dns_with_prefer(domain, dns_servers, dns_server_count, prefer, timeout_ms, interface_index, result)"
+            landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

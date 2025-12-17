@@ -13,9 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface CLSHttpingResult : NSObject
 
 // 基础信息
-@property (nonatomic, copy) NSString *netType;
 @property (nonatomic, copy, nullable) NSString *pageName;
-@property (nonatomic, copy) NSString *eventType;
 
 // 详细网络信息
 @property (nonatomic, strong) NSDictionary *netOrigin;
@@ -33,9 +31,18 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 @interface CLSMultiInterfaceHttping : CLSBaseFields
+@property (nonatomic, strong) NSURLSession *urlSession;
+@property (nonatomic, strong) NSMutableDictionary *timingMetrics;
+@property (nonatomic, assign) CFAbsoluteTime startTime;
+@property (nonatomic, assign) CFAbsoluteTime requestPreparationTime;
+@property (nonatomic, assign) NSUInteger receivedBytes;
+@property (nonatomic, strong) NSMutableData *responseData;
+@property (nonatomic, copy) void (^completionHandler)(NSDictionary *resultDict, NSError *error);
+@property (nonatomic, strong) NSDictionary *interfaceInfo;
+@property (nonatomic, strong) dispatch_source_t timeoutTimer;
 @property (nonatomic, strong, readonly) CLSHttpRequest *request;
 - (instancetype)initWithRequest:(CLSHttpRequest *)request;
-- (void)start:(CLSHttpRequest *) request complate:(CompleteCallback)complate;
+- (void)start:(CompleteCallback)complate;
 @end
 
 NS_ASSUME_NONNULL_END

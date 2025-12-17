@@ -48,6 +48,15 @@
 
 @implementation CLSPingRequest
 // 使用从 CLSRequest 继承的 init 方法
+- (instancetype)init {
+    self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
+    if (self) {
+        // 2. 初始化子类自己的属性，port默认为0是一个合理的选择
+        _maxTTL = 64;
+        _interval = 200;
+    }
+    return self;
+}
 @end
 
 @implementation CLSTcpRequest
@@ -93,7 +102,6 @@
 @property(nonatomic, strong) NSLock *lock;
 
 @property(nonatomic, strong) ClsLogSenderConfig *config;
-@property(nonatomic, strong) baseClsSender *sender;
 @property(nonatomic, strong) NSMutableArray *callbacks;
 
 - (NSString *) generateId;
@@ -140,6 +148,24 @@
 /// @param topicId 主题ID（与netToken二选一）
 /// @param netToken 网络令牌（与topicId二选一）
 - (void)setupLogSenderWithConfig:(ClsLogSenderConfig *)config
+                         topicId:(NSString * _Nullable)topicId{
+    if (topicId.length == 0) {
+        NSLog(@"错误：topicId不能为空");
+        return;
+    }
+    // 复用核心逻辑
+    [self innerSetupLogSenderWithConfig:config topicId:topicId netToken:nil];
+}
+
+- (void)setupLogSenderWithConfig:(ClsLogSenderConfig *)config
+                        netToken:(NSString * _Nullable)netToken{
+    if (netToken.length == 0) {
+        NSLog(@"错误：netToken不能为空");
+        return;
+    }
+    [self innerSetupLogSenderWithConfig:config topicId:nil netToken:netToken];
+}
+- (void)innerSetupLogSenderWithConfig:(ClsLogSenderConfig *)config
                          topicId:(NSString * _Nullable)topicId
                         netToken:(NSString * _Nullable)netToken {
     // 加锁保证线程安全，且仅首次调用生效
@@ -232,7 +258,7 @@
         httping.topicId = _topicId;
     }
     httping.endPoint = _config.endpoint;
-    [httping start:request complate:complate];
+    [httping start:complate];
 }
 
 - (void) tcpPingv2:(CLSTcpRequest *) request complate:(CompleteCallback)complate{
@@ -256,8 +282,8 @@
     }else{
         tcpPing.topicId = _topicId;
     }
-    
-    [tcpPing start:request complate:complate];
+    tcpPing.endPoint = _config.endpoint;
+    [tcpPing start:complate];
 }
 - (void) pingv2:(CLSPingRequest *) request complate:(CompleteCallback)complate{
     if (![self validateParamsWithRequest:request.domain]) {
@@ -280,8 +306,8 @@
     }else{
         ping.topicId = _topicId;
     }
-    
-    [ping start:request complate:complate];
+    ping.endPoint = _config.endpoint;
+    [ping start:complate];
 }
 
 - (void) dns:(CLSDnsRequest *) request complate:(CompleteCallback)complate{
@@ -305,8 +331,8 @@
     }else{
         dns.topicId = _topicId;
     }
-    
-    [dns start:request complate:complate];
+    dns.endPoint = _config.endpoint;
+    [dns start:complate];
 }
 - (void) mtr:(CLSMtrRequest *) request complate:(CompleteCallback)complate{
     if (![self validateParamsWithRequest:request.domain]) {
@@ -329,6 +355,7 @@
     }else{
         mtr.topicId = _topicId;
     }
-    [mtr start:request complate:complate];
+    mtr.endPoint = _config.endpoint;
+    [mtr start:complate];
 }
 @end

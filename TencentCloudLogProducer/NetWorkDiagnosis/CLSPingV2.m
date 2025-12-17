@@ -14,331 +14,189 @@
 #import "CLSIdGenerator.h"
 #import "CLSSPanBuilder.h"
 #import "CLSCocoa.h"
+#import "network_ios/cls_ping_detector.h"
 
-@implementation CLSMultiInterfacePingResult
+// 常量定义（统一维护，便于修改）
+static NSString *const kPINGLogPrefix = @"[PING检测]";
+static const NSUInteger kPINGJsonBufferSize = 2048;
+static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
 
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        _netType = @"ping";
-        _eventType = @"net_d";
-        _success = NO;
-    }
-    return self;
-}
-
+@interface CLSMultiInterfacePing ()
+@property (nonatomic, strong) NSDictionary *interfaceInfo;
 @end
-
 
 @implementation CLSMultiInterfacePing
 
-- (instancetype)initWithConfiguration:(CLSPingRequest *)request {
+- (instancetype)initWithRequest:(CLSPingRequest *)request {
     self = [super init];
     if (self) {
         _request = request;
-        _latencies = [NSMutableArray array];
-        _interfaceInfo = @{};
-        _isCompleted = NO;
     }
     return self;
 }
 
-- (int)connect:(struct sockaddr_in *)addr{
-    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
-    if (sock == -1) {
-        return errno;
-    }
-    NSString *interfacename = self.interfaceInfo[@"name"];
-    if (interfacename && ![interfacename isEqualToString:@"unknown"]) {
-         // 获取指定接口的IP地址
-         NSString *sourceIP = [CLSNetworkUtils getIPAddressForInterface:interfacename];
-         if (sourceIP) {
-             struct sockaddr_in localAddr;
-             memset(&localAddr, 0, sizeof(localAddr));
-             localAddr.sin_family = AF_INET;
-             localAddr.sin_port = 0; // 系统自动分配源端口
-             inet_pton(AF_INET, sourceIP.UTF8String, &localAddr.sin_addr);
-             
-             if (bind(sock, (struct sockaddr *)&localAddr, sizeof(localAddr)) == -1) {
-                 NSLog(@"Bind to interface %@ (IP: %@) failed: %s", interfacename, sourceIP, strerror(errno));
-                 self.bindFailedCount++;
-                 close(sock);
-                 return -1;
-             } else {
-                 NSLog(@"Successfully bound to interface: %@ (IP: %@)", interfacename, sourceIP);
-             }
-         } else {
-             NSLog(@"🟡 Could not get IP for interface: %@, using default route", interfacename);
-         }
-     }
-
-    int index = 0;
-    int r = 0;
-    uint16_t identifier = (uint16_t)arc4random();
-    int ttl = 0;
-    int size = 0;
-    int loss = 0;
-    struct timeval timeout;
-    timeout.tv_sec = (long)self.request.timeout;
-    timeout.tv_usec = 10;
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-    int result = [CLSNetworkUtils ping:&addr seq:index identifier:identifier sock:sock ttl:&ttl size:&size];
-    close(sock);
-    return result;
-}
-
-- (void)performPing {
-    
-    const char *hostaddr = [self.request.domain UTF8String];
-    if (hostaddr == NULL) {
-        hostaddr = "\0";
-    }
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_len = sizeof(addr);
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(30002);
-    addr.sin_addr.s_addr = inet_addr(hostaddr);
-    if (addr.sin_addr.s_addr == INADDR_NONE) { //无效的地址
-        struct hostent *host = gethostbyname(hostaddr);
-        if (host == NULL || host->h_addr == NULL) {
-            return;
-        }
-        addr.sin_addr = *(struct in_addr *)host->h_addr;
+#pragma mark - 单网卡PING检测
+- (void)startPingWithInterface:(NSDictionary *)interfaceInfo completion:(CompleteCallback)completion {
+    // 1. 空值校验：网卡信息为空直接回调空结果
+    if (!interfaceInfo) {
+        NSLog(@"%@ 网卡信息为空，跳过检测", kPINGLogPrefix);
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (completion) completion(emptyResult);
+        return;
     }
     
-    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
-    int result = [self connect:&addr];
-    CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
-    NSTimeInterval latency = (endTime - startTime) * 1000;
-    if (result == 0) {
-        [self.latencies addObject:@(latency)];
-        self.successCount++;
-    } else {
-        self.failureCount++;
+    // 2. 核心参数校验：request/domain 为空直接返回
+    if (!self.request) {
+        NSLog(@"%@ 检测请求为空，跳过检测", kPINGLogPrefix);
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (completion) completion(emptyResult);
+        return;
     }
-}
-
-- (NSString *)resolveHostToIP:(NSString *)host {
-//    const char *hostname = [host UTF8String];
-//    struct hostent *host_entry = gethostbyname(hostname);
-//    
-//    if (host_entry == NULL) {
-//        return host; // 如果解析失败，返回原始host
-//    }
-//    
-//    struct in_addr ​**addr_list = (struct in_addr ​**)host_entry->h_addr_list;
-//    if (addr_list[0] != NULL) {
-//        char *ip_address = inet_ntoa(*addr_list[0]);
-//        return [NSString stringWithUTF8String:ip_address];
-//    }
-    
-    return host;
-}
-
-- (NSTimeInterval)extractLatencyFromPingOutput:(NSString *)output {
-    // 解析ping输出中的时间值（参考Linux脚本的解析方法）[1,2](@ref)
-    NSArray *lines = [output componentsSeparatedByString:@"\n"];
-    for (NSString *line in lines) {
-        if ([line containsString:@"time="]) {
-            NSRange timeRange = [line rangeOfString:@"time="];
-            NSRange msRange = [line rangeOfString:@" ms"];
-            if (timeRange.location != NSNotFound && msRange.location != NSNotFound) {
-                NSRange numberRange = NSMakeRange(timeRange.location + timeRange.length,
-                                                msRange.location - (timeRange.location + timeRange.length));
-                NSString *timeString = [line substringWithRange:numberRange];
-                return [timeString doubleValue];
-            }
-        }
+    NSString *domainStr = self.request.domain ?: @"";
+    if (domainStr.length == 0) {
+        NSLog(@"%@ 检测域名为空，跳过检测", kPINGLogPrefix);
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (completion) completion(emptyResult);
+        return;
     }
-    return 0;
-}
-
-- (CLSMultiInterfacePingResult *)buildPingResult {
-    CLSMultiInterfacePingResult *result = [[CLSMultiInterfacePingResult alloc] init];
-    result.netType = @"ping";
-    result.eventType = @"net_d";
-    result.success = (_failureCount == 0);
-    result.totalTime = [[_latencies valueForKeyPath:@"@sum.self"] doubleValue];
+    const char *domain = [domainStr UTF8String];
+    NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
+    self.interfaceInfo = [interfaceInfo copy];
     
-    // 构建netOrigin
-    result.netOrigin = [self buildNetOrigin];
+    // 3. 初始化PING配置（关键：memset清空结构体）
+    cls_ping_detector_config config;
+    memset(&config, 0, sizeof(config)); // 必须初始化，避免残留值
+    config.packet_size = self.request.size;
+    config.ttl = self.request.maxTTL;
+    config.timeout_ms = self.request.timeout;
+    config.interval_ms = self.request.interval;
+    config.times = self.request.maxTimes;
+    config.prefer = kPreferIPv4; // 使用常量，语义清晰
     
-    // 构建netInfo
-    result.netInfo = [self buildEnhancedNetworkInfo];
+    // 4. 处理网卡下标（unsigned int 类型适配，空值兜底）
+    NSNumber *indexNum = interfaceInfo[@"index"];
+    unsigned int interfaceIndex = 0;
+    if (indexNum && [indexNum isKindOfClass:[NSNumber class]]) {
+        NSInteger tempIndex = [indexNum integerValue];
+        interfaceIndex = (tempIndex > 0) ? (unsigned int)tempIndex : 0;
+    }
+    config.interface_index = interfaceIndex;
     
-    result.detectEx = self.request.detectEx ?: @{};
-    result.userEx = self.request.userEx ?: @{};
-    
-    return result;
-}
-
-- (NSDictionary *)buildNetOrigin {
-    NSNumber *minLatency = [_latencies valueForKeyPath:@"@min.self"] ?: @0;
-    NSNumber *maxLatency = [_latencies valueForKeyPath:@"@max.self"] ?: @0;
-    NSNumber *avgLatency = [_latencies valueForKeyPath:@"@avg.self"] ?: @0;
-    NSNumber *stddev = [self calculateStdDev] ?: @0;
-    
-    double lossRate = self.request.maxTimes > 0 ? (double)_failureCount / self.request.maxTimes : 0;
-    
-    return @{
-        @"host": self.request.domain ?: @"",
-        @"method": @"ping",
-        @"trace_id": CLSIdGenerator.generateTraceId,
-        @"appKey": self.request.appKey ?: @"",
-        @"host_ip": [self resolveHostToIP:self.request.domain] ?: @"",
-        @"interface": self.interfaceInfo[@"type"] ?: @"unknown",
-        @"count": @(self.request.maxTimes),
-        @"size": @(self.request.size),
-        @"total": @([[self.latencies valueForKeyPath:@"@sum.self"] doubleValue]),
-        @"loss": @(lossRate),
-        @"latency_min": minLatency,
-        @"latency_max": maxLatency,
-        @"latency": avgLatency,
-        @"stddev": stddev,
-        @"responseNum": @(_successCount),
-        @"exceptionNum": @(_failureCount),
-        @"bindFailed": @(_bindFailedCount),
-        @"src": @"app"
-    };
-}
-
-- (NSDictionary *)buildEnhancedNetworkInfo {
-//    NSMutableDictionary *networkInfo = [[CLSNetworkUtils getNetworkEnvironmentInfo:self.interfaceInfo[@"type"]] mutableCopy];
-//    return [networkInfo copy];
-    return nil;
-}
-
-- (NSNumber *)calculateStdDev {
-    if (_latencies.count == 0) return @0;
-    
-    double mean = [[_latencies valueForKeyPath:@"@avg.self"] doubleValue];
-    double sumOfSquaredDifferences = 0.0;
-    
-    for (NSNumber *latency in _latencies) {
-        double difference = [latency doubleValue] - mean;
-        sumOfSquaredDifferences += difference * difference;
+    // 5. 执行PING检测（异常捕获，避免流程中断）
+    cls_ping_detector_result result;
+    cls_ping_detector_error_code code = cls_ping_detector_error_unknown_error;
+    @try {
+        code = cls_ping_detector_perform_ping(domain, &config, &result);
+    } @catch (NSException *exception) {
+        NSLog(@"%@ 网卡%@（域名%@）：检测抛出异常：%@", kPINGLogPrefix, interfaceName, domainStr, exception);
+        code = cls_ping_detector_error_unknown_error;
     }
     
-    double variance = sumOfSquaredDifferences / _latencies.count;
-    return @(sqrt(variance));
-}
-
-- (void)cancelTimeoutTimer {
-    if (_timeoutTimer) {
-        dispatch_source_cancel(_timeoutTimer);
-        _timeoutTimer = nil;
+    // 6. 转换检测结果为JSON字符串
+    char json_buffer[kPINGJsonBufferSize] = {0};
+    (void)cls_ping_detector_result_to_json(&result, code, json_buffer, sizeof(json_buffer));
+    
+    // 7. 错误日志增强（补充上下文）
+    if (code != cls_ping_detector_error_success) {
+        NSLog(@"%@ 网卡%@（域名%@）：检测失败，错误码：%d", kPINGLogPrefix, interfaceName, domainStr, code);
     }
+    
+    // 8. 解析JSON并构建上报数据
+    NSString *jsonString = [[NSString alloc] initWithCString:json_buffer encoding:NSUTF8StringEncoding];
+    NSLog(@"%@ 网卡%@（域名%@）：检测结果：%@", kPINGLogPrefix, interfaceName, domainStr, jsonString);
+    NSDictionary *reportData = [self buildReportDataFromPingResult:jsonString];
+    
+    // 9. 回调结果（空值兜底）
+    CLSResponse *callbackResult = [CLSResponse complateResultWithContent:reportData ?: @{}];
+    if (completion) {
+        completion(callbackResult);
+    }
+    
+    // 10. 上报链路数据（语义化日志，避免冗余构建）
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+    [builder setURL:domainStr];
+    [builder report:self.topicId reportData:reportData];
 }
 
-- (void)completePingWithError:(NSError *)error {
-    if (_isCompleted) return;
-    _isCompleted = YES;
+#pragma mark - 构建PING上报数据
+- (NSDictionary *)buildReportDataFromPingResult:(NSString *)sectionResult {
+    // 1. 空值校验
+    if (!sectionResult || sectionResult.length == 0) {
+        NSLog(@"%@ 上报数据：JSON字符串为空", kPINGLogPrefix);
+        return @{};
+    }
     
-    [self cancelTimeoutTimer];
+    // 2. JSON字符串转NSData（UTF-8编码，空值兜底）
+    NSData *jsonData = [sectionResult dataUsingEncoding:NSUTF8StringEncoding];
+    if (!jsonData) {
+        NSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kPINGLogPrefix, sectionResult);
+        return @{};
+    }
     
-    CLSMultiInterfacePingResult *result = [self buildPingResult];
+    // 3. 解析JSON为可变字典（带错误处理）
+    NSError *parseError = nil;
+    id jsonObject = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                    options:NSJSONReadingMutableContainers
+                                                      error:&parseError];
     
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (self.completionHandler) {
-            self.completionHandler(result, error);
-            self.completionHandler = nil;
-        }
-    });
-}
-
-- (void)handleTimeout {
-    _isCompleted = YES;
-    [self cancelTimeoutTimer];
+    // 解析错误兜底
+    if (parseError) {
+        NSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kPINGLogPrefix, parseError.localizedDescription, sectionResult);
+        return @{};
+    }
     
-    NSError *error = [NSError errorWithDomain:@"CLSTcpingErrorDomain"
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}];
-    [self completePingWithError:error];
-}
-
-- (void)setupTimeoutTimer {
-    [self cancelTimeoutTimer];
+    // 4. 校验解析结果类型（必须是字典）
+    if (![jsonObject isKindOfClass:[NSMutableDictionary class]]) {
+        NSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kPINGLogPrefix, [jsonObject class]);
+        return @{};
+    }
     
-    __weak typeof(self) weakSelf = self;
-    _timeoutTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
-                                         dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+    NSMutableDictionary *reportData = (NSMutableDictionary *)jsonObject;
+    NSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kPINGLogPrefix, reportData);
     
-    dispatch_source_set_timer(_timeoutTimer,
-                             dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)),
-                             DISPATCH_TIME_FOREVER, 0);
-    
-    dispatch_source_set_event_handler(_timeoutTimer, ^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleTimeout];
-    });
-    
-    dispatch_resume(_timeoutTimer);
-}
-
-- (void)startPingWithCompletion:(NSDictionary *)currentInterface
-                     completion:(void (^)(CLSMultiInterfacePingResult *result, NSError *error))completion {
-    self.completionHandler = completion;
-    self.isCompleted = NO;
-    self.interfaceInfo = [currentInterface copy];
-    
-    // 重置状态
-    self.successCount = 0;
-    self.failureCount = 0;
-    self.bindFailedCount = 0;
-    [_latencies removeAllObjects];
-    
-    // 设置超时控制
-    [self setupTimeoutTimer];
-    
-    // 启动异步Ping测试
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        for (NSUInteger i = 0; i < self.request.maxTimes && !self->_isCompleted; i++) {
-            [self performPing];
-        }
-        
-        if (!self->_isCompleted) {
-            [self completePingWithError:nil];
-        }
-    });
-}
-
-- (NSDictionary *)buildReportDataFromPingResult:(CLSMultiInterfacePingResult *)result {
-    NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:result.netOrigin];
-    
-    // 添加网络信息
-    reportData[@"netInfo"] = result.netInfo ?: @{};
-    reportData[@"detectEx"] = result.detectEx ?: @{};
-    reportData[@"userEx"] = result.userEx ?: @{};
-    
-    // 添加时间戳
-    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
-    reportData[@"timestamp"] = @(timestamp);
-    reportData[@"startDate"] = @(timestamp);
+    // 5. 追加通用字段（空值兜底，避免崩溃）
+    reportData[@"trace_id"] = CLSIdGenerator.generateTraceId ?: @""; // 核心修复：nil兜底
+    reportData[@"netInfo"] = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interfaceInfo[@"type"]
+                                                                networkAppId:self.networkAppId
+                                                                       appKey:self.appKey
+                                                                         uin:self.uin
+                                                                     endpoint:self.endPoint
+                                                                interfaceDNS:self.interfaceInfo[@"dns"]];
+    reportData[@"detectEx"] = self.request.detectEx ?: @{};
+    reportData[@"userEx"] = self.request.detectEx ?: @{};
     
     return [reportData copy];
 }
 
-- (void)start:(CLSPingRequest *) request complate:(CompleteCallback)complate {
-    
-    NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
-    
-    for (NSDictionary *currentInterface in availableInterfaces) {
-        NSLog(@"interface:%@",currentInterface);
-        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-        [builder setURL:request.domain];
-        CLSMultiInterfacePing *ping = [[CLSMultiInterfacePing alloc] initWithRequest:request];
-        [self startPingWithCompletion:currentInterface completion:^(CLSMultiInterfacePingResult *result, NSError *error) {
-            NSDictionary *reportData = [self buildReportDataFromPingResult:result];
-            CLSResponse *complateResult = [CLSResponse complateResultWithContent:reportData];
-            if (complate) {
-                complate(complateResult);
-            }
-            [builder report:self.topicId reportData:reportData];
-        }];
+#pragma mark - 启动多网卡PING检测
+- (void)start:(CompleteCallback)completion {
+    // 空值校验：回调为空直接返回
+    if (!completion) {
+        NSLog(@"%@ 检测回调为空，终止检测", kPINGLogPrefix);
+        return;
     }
-
+    
+    // 获取可用网卡列表（空值兜底）
+    NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
+    if (availableInterfaces.count == 0) {
+        NSLog(@"%@ 无可用网卡接口", kPINGLogPrefix);
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        completion(emptyResult);
+        return;
+    }
+    
+    // 遍历网卡执行检测
+    for (NSDictionary *interfaceInfo in availableInterfaces) {
+        NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
+        NSLog(@"%@ 开始检测网卡：%@", kPINGLogPrefix, interfaceName);
+        [self startPingWithInterface:interfaceInfo completion:completion];
+        
+        // 非多端口检测时，仅检测第一个网卡后退出
+        if (self.request && !self.request.enableMultiplePortsDetect) {
+            NSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kPINGLogPrefix);
+            break;
+        }
+    }
 }
 
 @end
-

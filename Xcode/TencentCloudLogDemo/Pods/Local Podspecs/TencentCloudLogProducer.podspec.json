@@ -63,9 +63,9 @@
       "dependencies": {
         "TencentCloudLogProducer/Core": []
       },
-      "source_files": "TencentCloudLogProducer/NetWorkDiagnosis/*.{m,h}",
+      "source_files": "TencentCloudLogProducer/NetWorkDiagnosis/**/*.{m,h}",
       "public_header_files": "TencentCloudLogProducer/NetWorkDiagnosis/*.h",
-      "frameworks": "CoreTelephony",
+      "frameworks": "Network",
       "libraries": "resolv",
       "pod_target_xcconfig": {
         "GCC_PREPROCESSOR_DEFINITIONS": "CLS_HAS_CORE_TELEPHONY=1"

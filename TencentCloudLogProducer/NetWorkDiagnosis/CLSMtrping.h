@@ -12,8 +12,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface CLSMtrResult : NSObject
 
-@property (nonatomic, copy) NSString *netType;
-@property (nonatomic, copy) NSString *eventType;
 @property (nonatomic, assign) BOOL success;
 @property (nonatomic, assign) NSTimeInterval totalTime;
 
@@ -37,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) void (^completionHandler)(CLSMtrResult *result, NSError *error);
 
 - (instancetype)initWithRequest:(CLSMtrRequest *)request;
-- (void)start:(CLSMtrRequest *) request complate:(CompleteCallback)complate;
+- (void)start:(CompleteCallback)complate;
 @end
 
 NS_ASSUME_NONNULL_END

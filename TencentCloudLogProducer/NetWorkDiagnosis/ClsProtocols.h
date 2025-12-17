@@ -32,6 +32,8 @@
 @end
 
 @interface CLSPingRequest : CLSRequest
+@property(atomic, assign) int maxTTL;
+@property(atomic, assign) int interval;
 @end
 
 @interface CLSDnsRequest : CLSRequest

@@ -82,7 +82,7 @@
 
 + (NSDictionary *)getNetworkEnvironmentInfo:(NSString *)usedNet networkAppId:(NSString *)networkAppId appKey:(NSString *)appKey uin:(NSString *)uin endpoint:(NSString *)endpoint{
     // 调用独立封装的Token解析方法
-    if(networkAppId == nil || networkAppId.length == 0 || appKey == nil || appKey.length == 0 || uin == nil || uin.length == 0){
+    if(networkAppId == nil || networkAppId.length == 0 || appKey == nil || appKey.length == 0 || uin == nil || uin.length == 0 || endpoint == nil || endpoint.length == 0){
         return @{};
     }
 
@@ -237,42 +237,41 @@
 + (NSArray<NSDictionary *> *)getAllNetworkInterfacesDetail {
     NSMutableArray<NSDictionary *> *activeInterfaces = [NSMutableArray array];
     struct ifaddrs *allInterfaces = NULL;
-    // 初始化CoreTelephony网络信息对象（用于获取蜂窝网络制式）
     CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
-    // iOS 12+ 支持获取当前激活的蜂窝网络信息，兼容旧版本需判断
     NSString *currentRadioAccessTechnology = networkInfo.currentRadioAccessTechnology;
+    
     if (getifaddrs(&allInterfaces) == 0) {
         struct ifaddrs *currentInterface = allInterfaces;
         
         while (currentInterface != NULL) {
-            // 基本条件检查：地址有效，且是IPv4或IPv6
             if (currentInterface->ifa_addr != NULL &&
                 (currentInterface->ifa_addr->sa_family == AF_INET ||
                  currentInterface->ifa_addr->sa_family == AF_INET6)) {
                     
                 NSString *interfaceName = [NSString stringWithUTF8String:currentInterface->ifa_name];
                 unsigned int flags = currentInterface->ifa_flags;
-                
-                // 关键判断：接口是否启用(UP)且正在运行(RUNNING) [1](@ref)
                 BOOL isInterfaceActive = ((flags & IFF_UP) && (flags & IFF_RUNNING));
                 
-                // 只关注Wi-Fi(en*)或蜂窝网络(pdp_ip*)接口 [1](@ref)
                 if (isInterfaceActive &&
                     ([interfaceName hasPrefix:@"en"] || [interfaceName hasPrefix:@"pdp_ip"])) {
                     
-                    // 获取IP地址
+                    // ========== 核心：获取网卡下标（interface index） ==========
+                    // if_nametoindex：通过网卡名称（如 en0、pdp_ip0）获取数字下标
+                    unsigned int interfaceIndex = if_nametoindex(currentInterface->ifa_name);
+                    // 兜底：若获取失败（返回0），标记为-1
+                    NSInteger interfaceIndexFinal = interfaceIndex > 0 ? (NSInteger)interfaceIndex : -1;
+                    
+                    // 原有IP地址解析逻辑（不变）
                     char ipStr[INET6_ADDRSTRLEN];
                     const char *ipCString = "未知";
                     NSString *family = @"Unknown";
                     
                     if (currentInterface->ifa_addr->sa_family == AF_INET) {
-                        // IPv4地址
                         struct sockaddr_in *ipv4 = (struct sockaddr_in *)currentInterface->ifa_addr;
                         inet_ntop(AF_INET, &(ipv4->sin_addr), ipStr, INET_ADDRSTRLEN);
                         ipCString = ipStr;
                         family = @"IPv4";
                     } else {
-                        // IPv6地址
                         struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)currentInterface->ifa_addr;
                         inet_ntop(AF_INET6, &(ipv6->sin6_addr), ipStr, INET6_ADDRSTRLEN);
                         ipCString = ipStr;
@@ -281,16 +280,18 @@
                     
                     NSString *ipAddress = [NSString stringWithUTF8String:ipCString];
                     
-                    
-                    // 过滤掉本地回环地址和无效地址
                     if (![ipAddress hasPrefix:@"127."] &&
                         ![ipAddress hasPrefix:@"fe80:"] &&
                         ![ipAddress hasPrefix:@"169.254"] &&
                         ![ipAddress isEqualToString:@"::1"] &&
                         ![ipAddress isEqualToString:@"未知"]) {
+                        
                         NSString *interfaceType = [interfaceName hasPrefix:@"en"] ? @"wifi" : [self getCellularNetworkTypeWithRadioAccessTechnology:currentRadioAccessTechnology];
+                        
+                        // ========== 新增 "index" 字段返回网卡下标 ==========
                         [activeInterfaces addObject:@{
                             @"name": interfaceName,
+                            @"index": @(interfaceIndexFinal), // 网卡下标（数字）
                             @"ip": ipAddress,
                             @"family": family,
                             @"type": interfaceType,
@@ -661,6 +662,29 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
     }
     
     return YES;
+}
+
++ (NSDictionary *)buildEnhancedNetworkInfoWithInterfaceType:(NSString *)interfaceType
+                                             networkAppId:(NSString *)networkAppId
+                                                    appKey:(NSString *)appKey
+                                                      uin:(NSString *)uin
+                                                  endpoint:(NSString *)endpoint
+                                             interfaceDNS:(NSString *)interfaceDNS {
+    // 1. 空值兜底（核心参数为空时返回空字典）
+    if (!interfaceType) interfaceType = @"";
+    
+    // 2. 调用工具类获取基础网络信息
+    NSDictionary *baseNetworkInfo = [self getNetworkEnvironmentInfo:interfaceType
+                                                                networkAppId:networkAppId
+                                                                       appKey:appKey
+                                                                           uin:uin
+                                                                       endpoint:endpoint];
+    
+    // 3. 构建增强网络信息（补充DNS）
+    NSMutableDictionary *networkInfo = [NSMutableDictionary dictionaryWithDictionary:baseNetworkInfo ?: @{}];
+    networkInfo[@"dns"] = interfaceDNS ?: @""; // DNS地址空值兜底
+    
+    return [networkInfo copy];
 }
 
 @end

@@ -636,7 +636,6 @@ request.timeout = 60;  // 超时时间（秒）
 
 | 字段 | 类型 | 说明 |
 |-----|------|------|
-| `netType` | String | 网络类型（WiFi/Cellular） |
 | `netInfo` | Dictionary | 网络统计信息 |
 | `netInfo.latency_avg` | Number | 平均延迟（ms） |
 | `netInfo.latency_min` | Number | 最小延迟（ms） |

@@ -21,8 +21,6 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _netType = @"mtr";
-        _eventType = @"net_d";
         _success = NO;
         _paths = @[];
         _netOrigin = @{};
@@ -307,7 +305,12 @@
     result.totalTime = [self calculateTotalTime];
     result.netOrigin = [self buildNetOrigin];
     result.paths = [self buildPaths];
-    result.netInfo = [self buildEnhancedNetworkInfo];
+    result.netInfo = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interfaceInfo[@"type"]
+                                                                   networkAppId:self.networkAppId
+                                                                          appKey:self.appKey
+                                                                            uin:self.uin
+                                                                        endpoint:self.endPoint
+                                                                   interfaceDNS:self.interfaceInfo[@"dns"]];
     result.detectEx = self.request.detectEx ?: @{};
     result.userEx = self.request.userEx ?: @{};
     
@@ -374,12 +377,6 @@
     }
     
     return hopResults;
-}
-
-- (NSDictionary *)buildEnhancedNetworkInfo {
-//    NSMutableDictionary *networkInfo = [[CLSNetworkUtils getNetworkEnvironmentInfo:self.interfaceInfo[@"type"]] mutableCopy];
-//    return [networkInfo copy];
-    return nil;
 }
 
 #pragma mark - 工具方法
@@ -478,12 +475,12 @@
     return [reportData copy];
 }
 
-- (void)start:(CLSMtrRequest *) request complate:(CompleteCallback)complate{
+- (void)start:(CompleteCallback)complate{
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     for (NSDictionary *currentInterface in availableInterfaces) {
         NSLog(@"interface:%@", currentInterface);
         CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-        [builder setURL:request.domain];
+        [builder setURL:self.request.domain];
         [self startMtrWithCompletion:currentInterface completion:^(CLSMtrResult *result, NSError *error) {
             NSDictionary *reportData = [self buildReportDataFromMtrResult:result];
             CLSResponse *complateResult = [CLSResponse complateResultWithContent:reportData];
@@ -492,6 +489,10 @@
             }
             [builder report:self.topicId reportData:reportData];
         }];
+        
+        if(self.request.enableMultiplePortsDetect == NO){
+            break;
+        }
     }
 }
 

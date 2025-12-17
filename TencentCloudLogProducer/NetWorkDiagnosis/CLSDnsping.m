@@ -11,7 +11,7 @@
 #import <netinet/in.h>
 #import <sys/types.h>
 #import <netinet/in.h>
-#import <arpa/nameser.h> // 定义 NS_PACKETSZ
+#import <arpa/nameser.h>
 #import <resolv.h>
 #import <netdb.h>
 #import <arpa/inet.h>
@@ -20,559 +20,227 @@
 #import <sys/socket.h>
 #import "CLSIdGenerator.h"
 #import "CLSResponse.h"
-#import "CLSIdGenerator.h"
-#import "CLSNetworkUtils.h"
 #import "CLSSPanBuilder.h"
 #import "CLSCocoa.h"
 #import "CLSStringUtils.h"
+#import "network_ios/cls_dns_detector.h"
 
-@implementation CLSDnsResult
+// 常量定义
+static NSString *const kDNSLogPrefix = @"[DNS检测]";
+static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
 
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        _netType = @"dns";
-        _eventType = @"net_d";
-        _success = NO;
-        _flags = @"";
-        _querySection = @[];
-        _answerSection = @[];
-        _authoritySection = @[];
-        _additionalSection = @[];
-        _questionCount = 0;
-        _answerCount = 0;
-        _authorityCount = 0;
-        _additionalCount = 0;
-    }
-    return self;
-}
-
+@interface CLSMultiInterfaceDns () <NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
+@property (nonatomic, strong) NSDictionary *interfaceInfo;
 @end
 
-@implementation CLSMultiInterfaceDns {
-    NSMutableArray<NSNumber *> *_latencies;
-    NSUInteger _successCount;
-    NSUInteger _failureCount;
-    NSString *_currentInterface;
-    NSMutableArray<NSString *> *_resolvedIPs;
-    dispatch_source_t _timeoutTimer;
-    BOOL _isCompleted;
-}
-
+@implementation CLSMultiInterfaceDns
 
 - (instancetype)initWithRequest:(CLSDnsRequest *)request {
     self = [super init];
     if (self) {
         _request = request;
-        _latencies = [NSMutableArray array];
-        _resolvedIPs = [NSMutableArray array];
-        _currentInterface = @"unknown";
-        _isCompleted = NO;
     }
     return self;
 }
 
-- (int)performDnsQuery:(const char *)host
-                server:(const char *)dnsServer
-               latency:(NSTimeInterval *)latency
-           resolvedIPs:(NSMutableArray<NSString *> *)resolvedIPs
-                 flags:(NSString * __autoreleasing *)flags
-        questionSection:(NSMutableArray * __autoreleasing *)questionSection
-         answerSection:(NSMutableArray * __autoreleasing *)answerSection
-      authoritySection:(NSMutableArray * __autoreleasing *)authoritySection
-     additionalSection:(NSMutableArray * __autoreleasing *)additionalSection
-          questionCount:(int *)questionCount
-           answerCount:(int *)answerCount
-       authorityCount:(int *)authorityCount
-      additionalCount:(int *)additionalCount {
-    
-    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
-    
-    // 创建socket
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-        *latency = 0;
-        return -1;
+#pragma mark - DNS服务器地址转换
+- (const char **)convertNameServerToDnsServersArray {
+    // 1. 空值校验：无自定义DNS时返回 {NULL} 数组
+    if (!self.request || !self.request.nameServer || self.request.nameServer.length == 0) {
+        const char **emptyArray = (const char **)malloc(sizeof(const char *) * 1);
+        emptyArray[0] = NULL;
+        return emptyArray;
     }
     
-    // 绑定到指定接口
-    if (_currentInterface && ![_currentInterface isEqualToString:@"unknown"]) {
-        NSString *sourceIP = [CLSNetworkUtils getIPAddressForInterface:_currentInterface];
-        if (sourceIP) {
-            struct sockaddr_in localAddr;
-            memset(&localAddr, 0, sizeof(localAddr));
-            localAddr.sin_family = AF_INET;
-            localAddr.sin_port = 0;
-            inet_pton(AF_INET, sourceIP.UTF8String, &localAddr.sin_addr);
-            
-            if (bind(sock, (struct sockaddr *)&localAddr, sizeof(localAddr)) == -1) {
-                close(sock);
-                return -1;
-            }
+    // 2. 按逗号分割并清洗地址（去空格、过滤空值）
+    NSArray<NSString *> *dnsServerList = [self.request.nameServer componentsSeparatedByString:@","];
+    NSMutableArray<NSString *> *validServers = [NSMutableArray array];
+    for (NSString *server in dnsServerList) {
+        NSString *trimmedServer = [server stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (trimmedServer.length > 0) {
+            [validServers addObject:trimmedServer];
         }
     }
     
-    // DNS查询
-    struct __res_state res;
-    memset(&res, 0, sizeof(res));
-    
-    int result = res_ninit(&res);
-    if (result == 0) {
-        // 配置DNS服务器
-        if (dnsServer != NULL && strcmp(dnsServer, "system") != 0) {
-            struct in_addr addr;
-            if (inet_pton(AF_INET, dnsServer, &addr) == 1) {
-                res.nsaddr_list[0].sin_addr = addr;
-                res.nsaddr_list[0].sin_family = AF_INET;
-                res.nsaddr_list[0].sin_port = htons(53);
-                res.nscount = 1;
-            }
-        }
-        
-        res.retrans = (int)self.request.timeout;
-        res.retry = 1;
-        
-        unsigned char answer[NS_PACKETSZ];
-        int len = res_nsearch(&res, host, ns_c_in, ns_t_a, answer, sizeof(answer));
-        
-        CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
-        *latency = (endTime - startTime) * 1000;
-        
-        if (len > 0) {
-            // 解析DNS响应报文头部和各个部分[1,6](@ref)
-            [self parseDnsResponse:answer
-                             length:len
-                              flags:flags
-                    questionSection:questionSection
-                     answerSection:answerSection
-                  authoritySection:authoritySection
-                 additionalSection:additionalSection
-                     questionCount:questionCount
-                      answerCount:answerCount
-                  authorityCount:authorityCount
-                 additionalCount:additionalCount];
-            
-            // 解析回答部分获取IP地址
-            ns_msg handle;
-            if (ns_initparse(answer, len, &handle) == 0) {
-                int count = ns_msg_count(handle, ns_s_an);
-                for (int i = 0; i < count; i++) {
-                    ns_rr rr;
-                    if (ns_parserr(&handle, ns_s_an, i, &rr) == 0) {
-                        if (ns_rr_type(rr) == ns_t_a) {
-                            char ip[INET_ADDRSTRLEN];
-                            inet_ntop(AF_INET, ns_rr_rdata(rr), ip, sizeof(ip));
-                            NSString *ipString = [NSString stringWithUTF8String:ip];
-                            if (![resolvedIPs containsObject:ipString]) {
-                                [resolvedIPs addObject:ipString];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        res_ndestroy(&res);
-        close(sock);
-        return len;
+    // 3. 分配数组内存（元素数 + 1 用于NULL结尾）
+    NSUInteger arrayCount = validServers.count + 1;
+    const char **dnsServers = (const char **)malloc(sizeof(const char *) * arrayCount);
+    if (!dnsServers) {
+        NSLog(@"%@ 分配DNS服务器数组内存失败", kDNSLogPrefix);
+        // 兜底返回空数组
+        const char **emptyArray = (const char **)malloc(sizeof(const char *) * 1);
+        emptyArray[0] = NULL;
+        return emptyArray;
     }
     
-    close(sock);
-    *latency = 0;
-    return result;
+    // 4. 填充数组（拷贝字符串到堆内存，避免野指针）
+    for (NSUInteger i = 0; i < validServers.count; i++) {
+        NSString *serverStr = validServers[i];
+        const char *cStr = [serverStr UTF8String];
+        char *heapStr = (char *)malloc(strlen(cStr) + 1);
+        if (heapStr) {
+            strcpy(heapStr, cStr);
+            dnsServers[i] = heapStr;
+        } else {
+            NSLog(@"%@ 分配DNS地址字符串内存失败：%@", kDNSLogPrefix, serverStr);
+            dnsServers[i] = NULL;
+        }
+    }
+    
+    // 5. 末尾添加NULL（符合底层接口要求）
+    dnsServers[validServers.count] = NULL;
+    
+    return dnsServers;
 }
 
-- (void)performDnsResolution {
-    if (!self.request.domain) {
-        _failureCount++;
+- (void)freeDnsServersArray:(const char **)dnsServers {
+    if (!dnsServers) return;
+    
+    // 遍历释放每个字符串内存，直到NULL
+    for (int i = 0; dnsServers[i] != NULL; i++) {
+        free((void *)dnsServers[i]);
+    }
+    free(dnsServers);
+}
+
+#pragma mark - 单网卡DNS检测
+- (void)startDnsWithInterface:(NSDictionary *)interfaceInfo completion:(CompleteCallback)completion {
+    // 空值校验
+    if (!interfaceInfo) {
+        NSLog(@"%@ 网卡信息为空，跳过检测", kDNSLogPrefix);
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (completion) completion(emptyResult);
         return;
     }
     
-    const char *host = [self.request.domain UTF8String];
-    const char *dnsServer = [self.request.nameServer UTF8String];
+    self.interfaceInfo = [interfaceInfo copy];
+    NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
     
-    NSTimeInterval latency = 0;
-    NSMutableArray<NSString *> *resolvedIPs = [NSMutableArray array];
-    
-    // 使用局部变量接收解析结果
-    NSString *flags = nil;
-    NSMutableArray *questionSection = nil;
-    NSMutableArray *answerSection = nil;
-    NSMutableArray *authoritySection = nil;
-    NSMutableArray *additionalSection = nil;
-    int questionCount = 0, answerCount = 0, authorityCount = 0, additionalCount = 0;
-    
-    int result = [self performDnsQuery:host
-                                server:dnsServer
-                               latency:&latency
-                           resolvedIPs:resolvedIPs
-                                 flags:&flags
-                        questionSection:&questionSection
-                         answerSection:&answerSection
-                      authoritySection:&authoritySection
-                     additionalSection:&additionalSection
-                         questionCount:&questionCount
-                          answerCount:&answerCount
-                      authorityCount:&authorityCount
-                     additionalCount:&additionalCount];
-    
-    if (result > 0 && resolvedIPs.count > 0) {
-        [_latencies addObject:@(latency)];
-        [_resolvedIPs addObjectsFromArray:resolvedIPs];
-        _successCount++;
-        
-        // 将结果存入CLSDnsResult对象（示例逻辑）
-        if (self.completionHandler) {
-            CLSDnsResult *resultObj = [[CLSDnsResult alloc] init];
-            resultObj.flags = flags;
-            resultObj.querySection = questionSection;
-            resultObj.answerSection = answerSection;
-            resultObj.authoritySection = authoritySection;
-            resultObj.additionalSection = additionalSection;
-            resultObj.questionCount = questionCount;
-            resultObj.answerCount = answerCount;
-            resultObj.authorityCount = authorityCount;
-            resultObj.additionalCount = additionalCount;
-            
-            self.completionHandler(resultObj, nil);
-        }
-        
-        NSLog(@"✅ DNS解析成功: %@ -> %@, 延迟: %.3fms",
-              self.request.domain, [resolvedIPs componentsJoinedByString:@", "], latency);
-    } else {
-        _failureCount++;
-        NSLog(@"❌ DNS解析失败: %@, 错误码: %d", self.request.domain, result);
-    }
-}
-
-- (void)startDnsWithCompletion:(NSString *)currentInterface
-                    completion:(void (^)(CLSDnsResult *result, NSError *error))completion {
-    self.completionHandler = completion;
-    _isCompleted = NO;
-    _currentInterface = currentInterface;
-    
-    // 重置状态
-    _successCount = 0;
-    _failureCount = 0;
-    [_latencies removeAllObjects];
-    [_resolvedIPs removeAllObjects];
-    
-    // 设置超时控制
-    [self setupTimeoutTimer];
-    
-    // 启动异步DNS测试
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        for (NSUInteger i = 0; i < self.request.maxTimes && !self->_isCompleted; i++) {
-            [self performDnsResolution];
-        }
-        
-        if (!self->_isCompleted) {
-            [self completeDnsWithError:nil];
-        }
-    });
-}
-
-- (void)setupTimeoutTimer {
-    if (_timeoutTimer) {
-        dispatch_source_cancel(_timeoutTimer);
-    }
-    
-    _timeoutTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
-                                           dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
-    
-    dispatch_source_set_timer(_timeoutTimer,
-                              dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)),
-                              DISPATCH_TIME_FOREVER, 0);
-    
-    __weak typeof(self) weakSelf = self;
-    dispatch_source_set_event_handler(_timeoutTimer, ^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (strongSelf) {
-            [strongSelf handleTimeout];
-        }
-    });
-    
-    dispatch_resume(_timeoutTimer);
-}
-
-- (void)handleTimeout {
-    _isCompleted = YES;
-    [self cancelTimeoutTimer];
-    
-    NSError *error = [NSError errorWithDomain:@"CLSDnsErrorDomain"
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"DNS resolution timeout"}];
-    [self completeDnsWithError:error];
-}
-
-- (void)cancelTimeoutTimer {
-    if (_timeoutTimer) {
-        dispatch_source_cancel(_timeoutTimer);
-        _timeoutTimer = nil;
-    }
-}
-
-- (void)completeDnsWithError:(NSError *)error {
-    if (_isCompleted) return;
-    _isCompleted = YES;
-    
-    [self cancelTimeoutTimer];
-    
-    CLSDnsResult *result = [self buildDnsResult];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (self.completionHandler) {
-            self.completionHandler(result, error);
-            self.completionHandler = nil;
-        }
-    });
-}
-
-- (CLSDnsResult *)buildDnsResult {
-    CLSDnsResult *result = [[CLSDnsResult alloc] init];
-    result.netType = @"dns";
-    result.eventType = @"net_d";
-    result.success = (_failureCount == 0);
-    result.totalTime = [[_latencies valueForKeyPath:@"@sum.self"] doubleValue];
-    
-    // 构建netOrigin
-    result.netOrigin = [self buildNetOriginWithResult:result];
-    
-    // 构建netInfo
-    result.netInfo = [self buildEnhancedNetworkInfo];
-    
-    result.detectEx = self.request.detectEx ?: @{};
-    result.userEx = self.request.userEx ?: @{};
-    
-    return result;
-}
-
-- (void)parseDnsResponse:(unsigned char *)response
-                 length:(int)length
-                  flags:(NSString * __autoreleasing *)flags
-        questionSection:(NSMutableArray<NSDictionary *> * __autoreleasing *)questionSection
-         answerSection:(NSMutableArray<NSDictionary *> * __autoreleasing *)answerSection
-      authoritySection:(NSMutableArray<NSDictionary *> * __autoreleasing *)authoritySection
-     additionalSection:(NSMutableArray<NSDictionary *> * __autoreleasing *)additionalSection
-         questionCount:(int *)questionCount
-          answerCount:(int *)answerCount
-      authorityCount:(int *)authorityCount
-     additionalCount:(int *)additionalCount;{
-    
-    ns_msg handle;
-    if (ns_initparse(response, length, &handle) != 0) {
+    // 1. 准备检测参数
+    const char *domain = self.request ? [self.request.domain UTF8String] : NULL;
+    if (!domain) {
+        NSLog(@"%@ 网卡%@：检测域名为空", kDNSLogPrefix, interfaceName);
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (completion) completion(emptyResult);
         return;
     }
     
-    // 解析标志字段[6,8](@ref)
-    uint16_t flagsValue = ns_msg_getflag(handle, ns_f_opcode);
-    *flags = [NSString stringWithFormat:@"%04x", flagsValue];
+    const char **dnsServers = [self convertNameServerToDnsServersArray];
+    char json_buffer[8192] = {0};
     
-    // 获取各部分数量[6](@ref)
-    *questionCount = ns_msg_count(handle, ns_s_qd);
-    *answerCount = ns_msg_count(handle, ns_s_an);
-    *authorityCount = ns_msg_count(handle, ns_s_ns);
-    *additionalCount = ns_msg_count(handle, ns_s_ar);
+    // 2. 配置DNS检测参数
+    cls_dns_detector_config config;
+    memset(&config, 0, sizeof(config));
+    config.dns_servers = dnsServers;
+    config.timeout_ms = self.request ? self.request.timeout : 3000; // 默认超时3s
+    config.prefer = 0; // IPv4优先
     
-    // 解析问题区域
-    NSMutableArray *questions = [NSMutableArray array];
-    for (int i = 0; i < *questionCount; i++) {
-        ns_rr rr;
-        if (ns_parserr(&handle, ns_s_qd, i, &rr) == 0) {
-            char name[NS_MAXDNAME];
-            ns_name_uncompress(response, response + length, ns_rr_name(rr), name, NS_MAXDNAME);
-            
-            NSString *qname = [NSString stringWithUTF8String:name];
-            NSString *qtype = [self typeToString:ns_rr_type(rr)];
-            
-            [questions addObject:@{
-                @"name": qname ?: @"",
-                @"type": qtype ?: @""
-            }];
-        }
+    // 处理网卡下标
+    NSNumber *indexNum = interfaceInfo[@"index"];
+    unsigned int interfaceIndex = 0;
+    if (indexNum && [indexNum isKindOfClass:[NSNumber class]]) {
+        NSInteger tempIndex = [indexNum integerValue];
+        interfaceIndex = (tempIndex > 0) ? (unsigned int)tempIndex : 0;
     }
-    *questionSection = questions;
+    config.interface_index = interfaceIndex;
     
-    // 解析回答区域[1](@ref)
-    NSMutableArray *answers = [NSMutableArray array];
-    for (int i = 0; i < *answerCount; i++) {
-        ns_rr rr;
-        if (ns_parserr(&handle, ns_s_an, i, &rr) == 0) {
-            [answers addObject:[self parseResourceRecord:response length:length rr:rr]];
-        }
+    // 3. 执行DNS检测（保证内存释放）
+    cls_dns_detector_result result;
+    cls_dns_detector_error_code code = cls_dns_detector_error_unknown;
+    @try {
+        code = cls_dns_detector_perform_dns(domain, &config, &result);
+    } @catch (NSException *exception) {
+        NSLog(@"%@ 网卡%@：DNS检测异常：%@", kDNSLogPrefix, interfaceName, exception);
+    } @finally {
+        // 无论是否异常，都释放DNS服务器数组
+        [self freeDnsServersArray:dnsServers];
     }
-    *answerSection = answers;
     
-    // 解析权威区域
-    NSMutableArray *authorities = [NSMutableArray array];
-    for (int i = 0; i < *authorityCount; i++) {
-        ns_rr rr;
-        if (ns_parserr(&handle, ns_s_ns, i, &rr) == 0) {
-            [authorities addObject:[self parseResourceRecord:response length:length rr:rr]];
-        }
+    // 4. 转换检测结果
+    cls_dns_detector_result_to_json(&result, code, json_buffer, sizeof(json_buffer));
+    if (code != cls_dns_detector_error_success) {
+        NSLog(@"%@ 网卡%@：检测失败，错误码：%d", kDNSLogPrefix, interfaceName, code);
     }
-    *authoritySection = authorities;
     
-    // 解析附加区域
-    NSMutableArray *additionals = [NSMutableArray array];
-    for (int i = 0; i < *additionalCount; i++) {
-        ns_rr rr;
-        if (ns_parserr(&handle, ns_s_ar, i, &rr) == 0) {
-            [additionals addObject:[self parseResourceRecord:response length:length rr:rr]];
-        }
+    NSString *jsonString = [[NSString alloc] initWithCString:json_buffer encoding:NSUTF8StringEncoding];
+    NSLog(@"%@ 网卡%@：检测结果：%@", kDNSLogPrefix, interfaceName, jsonString);
+    
+    // 5. 构建上报数据并回调
+    NSDictionary *reportData = [self buildReportDataFromDnsResult:jsonString];
+    CLSResponse *callbackResult = [CLSResponse complateResultWithContent:reportData];
+    if (completion) {
+        completion(callbackResult);
     }
-    *additionalSection = additionals;
+    
+    // 6. 上报链路数据
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+    [builder setURL:self.request.domain];
+    [builder report:self.topicId reportData:reportData];
 }
 
-- (NSDictionary *)parseResourceRecord:(unsigned char *)response
-                               length:(int)length
-                                    rr:(ns_rr)rr {
-    char name[NS_MAXDNAME];
-    ns_name_uncompress(response, response + length, ns_rr_name(rr), name, NS_MAXDNAME);
-    
-    NSString *rrName = [NSString stringWithUTF8String:name];
-    NSString *rrType = [self typeToString:ns_rr_type(rr)];
-    uint32_t ttl = ns_rr_ttl(rr);
-    
-    NSMutableDictionary *record = [NSMutableDictionary dictionaryWithDictionary:@{
-        @"name": rrName ?: @"",
-        @"ttl": @(ttl),
-        @"atype": rrType ?: @"",
-        @"value": @""
-    }];
-    
-    // 根据记录类型解析值[7](@ref)
-    switch (ns_rr_type(rr)) {
-        case ns_t_a: {
-            // A记录：IPv4地址
-            if (ns_rr_rdlen(rr) == 4) {
-                const unsigned char *data = ns_rr_rdata(rr);
-                char ip[INET_ADDRSTRLEN];
-                snprintf(ip, sizeof(ip), "%d.%d.%d.%d", data[0], data[1], data[2], data[3]);
-                record[@"value"] = [NSString stringWithUTF8String:ip];
-            }
-            break;
-        }
-        case ns_t_aaaa: {
-            // AAAA记录：IPv6地址
-            if (ns_rr_rdlen(rr) == 16) {
-                char ip[INET6_ADDRSTRLEN];
-                const unsigned char *data = ns_rr_rdata(rr);
-                inet_ntop(AF_INET6, data, ip, sizeof(ip));
-                record[@"value"] = [NSString stringWithUTF8String:ip];
-            }
-            break;
-        }
-        case ns_t_cname: {
-            // CNAME记录：规范名称
-            char cname[NS_MAXDNAME];
-            ns_name_uncompress(response, response + length,
-                             ns_rr_rdata(rr), cname, sizeof(cname));
-            record[@"value"] = [NSString stringWithUTF8String:cname];
-            break;
-        }
-        default:
-            record[@"value"] = @"";
-            break;
+#pragma mark - 构建上报数据
+- (NSDictionary *)buildReportDataFromDnsResult:(NSString *)sectionResult {
+    // 1. 空值校验
+    if (!sectionResult || sectionResult.length == 0) {
+        NSLog(@"%@ 上报数据：JSON字符串为空", kDNSLogPrefix);
+        return @{};
     }
     
-    return [record copy];
-}
-
-- (NSString *)typeToString:(ns_type)type {
-    switch (type) {
-        case ns_t_a: return @"A";
-        case ns_t_aaaa: return @"AAAA";
-        case ns_t_cname: return @"CNAME";
-        case ns_t_mx: return @"MX";
-        case ns_t_ns: return @"NS";
-        case ns_t_soa: return @"SOA";
-        case ns_t_ptr: return @"PTR";
-        case ns_t_txt: return @"TXT";
-        default: return [NSString stringWithFormat:@"%d", type];
-    }
-}
-
-- (NSDictionary *)buildNetOriginWithResult:(CLSDnsResult *)result {
-    NSNumber *minLatency = [_latencies valueForKeyPath:@"@min.self"] ?: @0;
-    NSNumber *maxLatency = [_latencies valueForKeyPath:@"@max.self"] ?: @0;
-    NSNumber *avgLatency = [_latencies valueForKeyPath:@"@avg.self"] ?: @0;
-    
-    double lossRate = self.request.maxTimes > 0 ? (double)_failureCount / self.request.maxTimes : 0;
-    NSString *resolvedIPsString = [_resolvedIPs componentsJoinedByString:@","];
-    
-    return @{
-        @"method": @"dns",
-        @"trace_id": CLSIdGenerator.generateTraceId,
-        @"domain": self.request.domain ?: @"",
-        @"status": _failureCount == 0 ? @"success" : @"fail",
-        @"id": CLSIdGenerator.generateTraceId,
-        @"flags": result.flags ?: @"",
-        @"latency": avgLatency,
-        @"host_ip": resolvedIPsString ?: @"",
-        @"QUESTION-SECTION": result.querySection ?: @[],
-        @"ANSWER-SECTION": result.answerSection ?: @[],
-        @"QUERY": @(result.questionCount),
-        @"ANSWER": @(result.answerCount),
-        @"AUTHORITY": @(result.authorityCount),
-        @"ADDITIONAL": @(result.additionalCount),
-        @"appKey": self.request.appKey ?: @"",
-        @"src": @"app",
-        // 其他原有字段...
-    };
-}
-
-- (NSDictionary *)buildEnhancedNetworkInfo {
-//    NSMutableDictionary *networkInfo = [[CLSNetworkUtils getNetworkEnvironmentInfo:_currentInterface ] mutableCopy];
-//    return [networkInfo copy];
-    return nil;
-}
-
-- (NSNumber *)calculateStdDev {
-    if (_latencies.count == 0) return @0;
-    
-    double mean = [[_latencies valueForKeyPath:@"@avg.self"] doubleValue];
-    double sumOfSquaredDifferences = 0.0;
-    
-    for (NSNumber *latency in _latencies) {
-        double difference = [latency doubleValue] - mean;
-        sumOfSquaredDifferences += difference * difference;
+    // 2. JSON转Data
+    NSData *jsonData = [sectionResult dataUsingEncoding:NSUTF8StringEncoding];
+    if (!jsonData) {
+        NSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kDNSLogPrefix, sectionResult);
+        return @{};
     }
     
-    double variance = sumOfSquaredDifferences / _latencies.count;
-    return @(sqrt(variance));
-}
-
-- (NSDictionary *)buildReportDataFromDnsResult:(CLSDnsResult *)result {
-    NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:result.netOrigin];
+    // 3. 解析JSON
+    NSError *parseError = nil;
+    id jsonObject = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                    options:NSJSONReadingMutableContainers
+                                                      error:&parseError];
+    if (parseError) {
+        NSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kDNSLogPrefix, parseError.localizedDescription, sectionResult);
+        return @{};
+    }
     
-    // 添加网络信息
-    reportData[@"netInfo"] = result.netInfo ?: @{};
-    reportData[@"detectEx"] = result.detectEx ?: @{};
-    reportData[@"userEx"] = result.userEx ?: @{};
+    // 4. 校验解析结果类型
+    if (![jsonObject isKindOfClass:[NSMutableDictionary class]]) {
+        NSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kDNSLogPrefix, [jsonObject class]);
+        return @{};
+    }
     
-    // 添加时间戳
-    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
-    reportData[@"timestamp"] = @(timestamp);
-    reportData[@"startDate"] = @(timestamp);
+    NSMutableDictionary *reportData = (NSMutableDictionary *)jsonObject;
+    NSLog(@"%@ 上报数据：解析后的原始字典：%@", kDNSLogPrefix, reportData);
+    
+    // 5. 追加通用字段（空值兜底）
+    reportData[@"trace_id"] = CLSIdGenerator.generateTraceId ?: @"";
+    reportData[@"netInfo"] = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interfaceInfo[@"type"]
+                                                                           networkAppId:self.networkAppId
+                                                                                  appKey:self.appKey
+                                                                                    uin:self.uin
+                                                                                endpoint:self.endPoint
+                                                                           interfaceDNS:self.interfaceInfo[@"dns"]];
+    reportData[@"detectEx"] = self.request.detectEx ?: @{};
+    reportData[@"userEx"] = self.request.detectEx ?: @{};
     
     return [reportData copy];
 }
 
-- (void)start:(CLSDnsRequest *) request complate:(CompleteCallback)complate{
-    NSArray<NSString *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
-    for (NSString *currentInterface in availableInterfaces) {
-        NSLog(@"interface:%@",currentInterface);
-        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-        [builder setURL:request.domain];
-        [self startDnsWithCompletion:currentInterface completion:^(CLSDnsResult *result, NSError *error) {
-            NSDictionary *reportData = [self buildReportDataFromDnsResult:result];
-            CLSResponse *complateResult = [CLSResponse complateResultWithContent:reportData];
-            if (complate) {
-                complate(complateResult);
-            }
-            [builder report:self.topicId reportData:reportData];
-        }];
+#pragma mark - 启动多网卡DNS检测
+- (void)start:(CompleteCallback)completion {
+    NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
+    if (availableInterfaces.count == 0) {
+        NSLog(@"%@ 无可用网卡接口", kDNSLogPrefix);
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (completion) completion(emptyResult);
+        return;
+    }
+    
+    // 遍历网卡执行检测（修正循环变量类型）
+    for (NSDictionary *interfaceInfo in availableInterfaces) {
+        NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
+        NSLog(@"%@ 开始检测网卡：%@", kDNSLogPrefix, interfaceName);
+        [self startDnsWithInterface:interfaceInfo completion:completion];
     }
 }
 

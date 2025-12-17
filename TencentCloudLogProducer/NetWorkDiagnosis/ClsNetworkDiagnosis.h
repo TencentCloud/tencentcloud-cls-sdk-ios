@@ -19,8 +19,10 @@ NS_ASSUME_NONNULL_BEGIN
 @interface ClsNetworkDiagnosis : NSObject
 + (instancetype)sharedInstance;
 - (void)setupLogSenderWithConfig:(ClsLogSenderConfig *)config
-                         topicId:(NSString * _Nullable)topicId
                         netToken:(NSString * _Nullable)netToken;
+
+- (void)setupLogSenderWithConfig:(ClsLogSenderConfig *)config
+                         topicId:(NSString * _Nullable)topicId;
 /*****协议升级以下是v2接口****/
 - (void) httpingv2:(CLSHttpRequest *) request complate:(CompleteCallback)complate;
 - (void) tcpPingv2:(CLSTcpRequest *) request complate:(CompleteCallback)complate;

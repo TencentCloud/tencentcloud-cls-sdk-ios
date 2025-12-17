@@ -40,7 +40,7 @@ Pod::Spec.new do |s|
   s.subspec 'NetWorkDiagnosis' do |b|
       b.dependency 'TencentCloudLogProducer/Core' # 自动继承Core的所有依赖
       
-      b.source_files = 'TencentCloudLogProducer/NetWorkDiagnosis/*.{m,h}'
+      b.source_files = 'TencentCloudLogProducer/NetWorkDiagnosis/**/*.{m,h}'
       b.public_header_files = 'TencentCloudLogProducer/NetWorkDiagnosis/*.h'
       
       # 1. 网络诊断专属框架（Core未包含）
@@ -48,6 +48,7 @@ Pod::Spec.new do |s|
       # 2. 网络诊断专属系统库（Core未包含）
       b.libraries = 'resolv' # DNS解析依赖
       # 3. 宏定义（不影响Core，仅网络诊断使用）
+      b.frameworks = 'Network'
       b.pod_target_xcconfig = {
         'GCC_PREPROCESSOR_DEFINITIONS' => 'CLS_HAS_CORE_TELEPHONY=1'
       }

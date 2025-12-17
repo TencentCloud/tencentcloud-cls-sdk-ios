@@ -36,6 +36,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (BOOL)bindSocket:(int)socket toInterface:(NSString *)interfaceName;
 
++ (NSDictionary *)buildEnhancedNetworkInfoWithInterfaceType:(NSString *)interfaceType
+                                             networkAppId:(NSString *)networkAppId
+                                                    appKey:(NSString *)appKey
+                                                      uin:(NSString *)uin
+                                                  endpoint:(NSString *)endpoint
+                                               interfaceDNS:(NSString *)interfaceDNS;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -35,7 +35,7 @@
     ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:@"ap-guangzhou-open.cls.tencentcs.com"
                                                       accessKeyId:@""
                                                         accessKey:@""];
-    [[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config topicId:nil netToken:@""];
+    [[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config netToken:@""];
 }
 
 - (void)networkDetectBtnClick:(UIButton *)sender {
@@ -112,6 +112,7 @@
     CLSDnsRequest *request = [[CLSDnsRequest alloc] init];
     request.detectEx = @{@"key1":@"value1"};
     request.userEx = @{@"key2":@"valuoe2"};
+    request.domain = @"www.baidu.com";
     [[ClsNetworkDiagnosis sharedInstance] dns:request complate:^(CLSResponse *result){
         NSLog(@"result:%@",result);
     }];
