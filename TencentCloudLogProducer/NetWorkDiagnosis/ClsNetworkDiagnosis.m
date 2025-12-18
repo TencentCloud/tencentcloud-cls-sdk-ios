@@ -24,8 +24,8 @@
         _userEx = @{};
         _detectEx = @{};
         _size = 64;
-        _maxTimes = 1;
-        _timeout = 2*1000;
+        _maxTimes = 10;
+        _timeout = 60*1000;
         _pageName = @"";
         _enableMultiplePortsDetect = NO;
     }
@@ -52,7 +52,6 @@
     self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
     if (self) {
         // 2. 初始化子类自己的属性，port默认为0是一个合理的选择
-        _maxTTL = 64;
         _interval = 200;
     }
     return self;
@@ -90,7 +89,8 @@
     self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
     if (self) {
         // 2. 初始化子类自己的属性，设置为空字符串
-        _maxHops = 64;
+        _maxTTL = 64;
+        _protocol = @"icmp";
     }
     return self;
 }

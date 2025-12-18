@@ -2,7 +2,7 @@
 //  cls_mtr_detector.h
 //  network_ios
 //
-//  MTR 网络路径探测器 - 使用 Network.framework
+//  MTR 网络路径探测器 - 使用 BSD socket
 //  支持 ICMP、UDP 和 TCP 三种协议
 //
 
@@ -20,6 +20,17 @@ typedef NS_ENUM(NSInteger, cls_mtr_detector_error_code) {
     cls_mtr_detector_error_socket_create_error = -5,       // 套接字创建失败
     cls_mtr_detector_error_resolve_error = -6,             // 域名解析失败
     cls_mtr_detector_error_net_binding_failed = -7,        // 网卡绑定失败
+    cls_mtr_detector_error_invalid_param = -8,             // 无效参数（如不支持的协议）
+
+    // 更可解释的系统调用错误（便于上层区分权限/网络策略/资源耗尽/参数问题等）
+    cls_mtr_detector_error_setsockopt_failed = -9,         // setsockopt 失败（如 TTL/hops 设置失败）
+    cls_mtr_detector_error_send_failed = -10,              // send/sendto 失败
+    cls_mtr_detector_error_recv_failed = -11,              // recv/recvfrom/recvmsg/select 失败
+    cls_mtr_detector_error_connect_failed = -12,           // connect 失败（非预期/致命场景）
+    cls_mtr_detector_error_host_unreachable = -13,         // 主机不可达（更细分：EHOSTUNREACH 等）
+    cls_mtr_detector_error_resource_exhausted = -14,       // 资源耗尽（如 ENOBUFS/ENOMEM/EMFILE 等）
+    cls_mtr_detector_error_address_not_available = -15,    // 地址不可用（如 EADDRNOTAVAIL）
+    cls_mtr_detector_error_address_in_use = -16,           // 地址/端口已被占用（如 EADDRINUSE）
     cls_mtr_detector_error_unknown_error = -99              // 未知错误
 };
 
@@ -27,7 +38,7 @@ typedef NS_ENUM(NSInteger, cls_mtr_detector_error_code) {
 typedef struct {
     int hop;                    // 跳数
     char ip[128];               // 响应IP地址
-    double loss;                // 丢包率(%)
+    double loss;                // 丢包率(0~1)，0=无丢包，1=100%丢包
     double latency;             // 平均延迟(ms)
     double latency_min;         // 最小延迟(ms)
     double latency_max;         // 最大延迟(ms)
@@ -51,6 +62,8 @@ typedef struct {
     cls_mtr_hop_result *results; // 跳结果数组（动态分配）
     size_t results_count;       // 跳结果数量
     size_t results_capacity;    // 跳结果容量
+    int last_errno;             // 最近一次“致命错误”的 errno（0 表示无）
+    char last_error_op[32];     // 最近一次“致命错误”的操作（如 "sendto"/"setsockopt"/"connect"）
 } cls_mtr_path_result;
 
 /// MTR 探测结果结构
@@ -71,7 +84,7 @@ typedef struct {
     const char *protocol;       // 协议类型 "icmp"、"udp"、"tcp"
     int max_ttl;                // 最大TTL值（1-255），<=0 表示使用默认值 30
     int timeout_ms;             // 超时时间（毫秒），<=0 表示使用默认值 2000
-    int times;                  // 每跳探测次数，<=0 表示使用默认值 3
+    int times;                  // 每跳探测次数，<=0 表示使用默认值 10
     unsigned int interface_index; // 网卡索引，0 表示使用默认网卡
     int prefer;                 // IP版本偏好：0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only
 } cls_mtr_detector_config;

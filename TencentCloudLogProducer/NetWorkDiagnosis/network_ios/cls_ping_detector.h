@@ -3,7 +3,7 @@
 //  network_ios
 //
 //  Created by zhanxiangli on 2025/12/9.
-//  Ping 网络探测器 - 使用 Network.framework 实现
+//  Ping 网络探测器 - 使用 BSD socket 实现
 //
 
 #import <Foundation/Foundation.h>

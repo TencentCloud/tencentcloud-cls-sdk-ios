@@ -103,6 +103,7 @@
     CLSMtrRequest *request = [[CLSMtrRequest alloc] init];
     request.detectEx = @{@"key1":@"value1"};
     request.userEx = @{@"key2":@"valuoe2"};
+    request.domain = @"www.baidu.com";
     [[ClsNetworkDiagnosis sharedInstance] mtr:request complate:^(CLSResponse *result){
         NSLog(@"result:%@",result);
     }];

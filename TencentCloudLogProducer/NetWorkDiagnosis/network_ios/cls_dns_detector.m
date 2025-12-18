@@ -874,7 +874,10 @@ static int dns_result_to_json(const char *domain,
     else { n = snprintf(json_buffer + pos, buffer_size - pos, "  \"host_ip\": null,\n"); }
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
     const char *qtype_str = (prefer == 1 || prefer == 3) ? "AAAA" : "A";
-    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"QUESTION-SECTION\": [\n    {\"name\": \"%s.\", \"type\": \"%s\"}\n  ],\n", domain, qtype_str);
+    // 转义domain用于JSON输出
+    char escaped_domain[2048];
+    if (json_escape(domain, escaped_domain, sizeof(escaped_domain)) < 0) return -1;
+    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"QUESTION-SECTION\": [\n    {\"name\": \"%s.\", \"type\": \"%s\"}\n  ],\n", escaped_domain, qtype_str);
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
     n = snprintf(json_buffer + pos, buffer_size - pos, "  \"ANSWER-SECTION\": [\n"); if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
     for (size_t i = 0; i < answers->count; i++) {
@@ -2605,7 +2608,7 @@ int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
         return -1;
     }
     
-    // 如果出错，生成错误 JSON
+    // 如果出错，生成错误 JSON（对齐 ping：error_code / error_message 在末尾追加）
     if (error_code != cls_dns_detector_error_success) {
         const char *error_name = "unknown";
         switch (error_code) {
@@ -2618,15 +2621,48 @@ int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
             case cls_dns_detector_error_json_failed: error_name = "json_failed"; break;
             case cls_dns_detector_error_no_valid_server: error_name = "no_valid_server"; break;
             case cls_dns_detector_error_unknown: error_name = "unknown"; break;
-            default: 
-                // 对于未知错误码，使用数字作为错误名
+            default:
                 error_name = "unknown";
                 break;
         }
-        int len = snprintf(json_buffer, buffer_size,
-            "{\"error_code\":%ld,\"error_message\":\"%s\",\"domain\":\"%s\",\"method\":\"%s\"}",
-            (long)error_code, error_name, result->domain, result->method);
-        return (len >= 0 && (size_t)len < buffer_size) ? len : -1;
+        
+        // 按 ping 的风格输出：先业务字段，再追加 error_* 字段
+        char escaped_domain_err[2048];
+        char escaped_method_err[256];
+        char escaped_error_msg[256];
+        if (json_escape(result->domain, escaped_domain_err, sizeof(escaped_domain_err)) < 0) return -1;
+        if (json_escape(result->method, escaped_method_err, sizeof(escaped_method_err)) < 0) return -1;
+        if (json_escape(error_name, escaped_error_msg, sizeof(escaped_error_msg)) < 0) return -1;
+        
+        int pos = 0;
+        int n = snprintf(json_buffer + pos, buffer_size - pos, "{\n");
+        if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
+        pos += n;
+        
+        n = snprintf(json_buffer + pos, buffer_size - pos, "  \"method\": \"%s\",\n", escaped_method_err);
+        if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
+        pos += n;
+        
+        n = snprintf(json_buffer + pos, buffer_size - pos, "  \"domain\": \"%s\",\n", escaped_domain_err);
+        if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
+        pos += n;
+
+        if (error_code != cls_dns_detector_error_success || (escaped_error_msg[0] != '\0')){
+            // 末尾追加 errCode / errMsg ping 的输出位置）
+            n = snprintf(json_buffer + pos, buffer_size - pos, "  \"errCode\": %ld,\n", (long)error_code);
+            if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
+            pos += n;
+            
+            n = snprintf(json_buffer + pos, buffer_size - pos, "  \"errMsg\": \"%s\"\n", escaped_error_msg);
+            if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
+            pos += n;
+        }
+        
+        n = snprintf(json_buffer + pos, buffer_size - pos, "}");
+        if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
+        pos += n;
+        
+        return pos;
     }
     
     // 生成成功 JSON（简化版，完整版需要重新查询获取答案记录）
@@ -2671,17 +2707,11 @@ int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
     pos += n;
     
-    if (result->dns_source[0] != '\0') {
-        if (json_escape(result->dns_source, escaped, sizeof(escaped)) < 0) return -1; // 检查转义是否成功
-        n = snprintf(json_buffer + pos, buffer_size - pos, "  \"dns_source\": \"%s\",\n", escaped);
-    } else {
-        n = snprintf(json_buffer + pos, buffer_size - pos, "  \"dns_source\": null,\n");
-    }
-    if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
-    pos += n;
-    
     const char *qtype_str = (result->prefer == 1 || result->prefer == 3) ? "AAAA" : "A";
-    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"QUESTION-SECTION\": [\n    {\"name\": \"%s.\", \"type\": \"%s\"}\n  ],\n", result->domain, qtype_str);
+    // 转义domain用于JSON输出（注意：这里result->domain已经在前面转义过，但QUESTION-SECTION需要重新转义）
+    char escaped_domain_question[2048];
+    if (json_escape(result->domain, escaped_domain_question, sizeof(escaped_domain_question)) < 0) return -1;
+    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"QUESTION-SECTION\": [\n    {\"name\": \"%s.\", \"type\": \"%s\"}\n  ],\n", escaped_domain_question, qtype_str);
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
     pos += n;
     

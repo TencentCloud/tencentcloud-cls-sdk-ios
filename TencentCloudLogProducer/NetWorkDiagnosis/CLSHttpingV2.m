@@ -289,7 +289,7 @@ didReceiveData:(NSData *)data {
         @"remoteAddr": remoteAddr,
         @"interface": self.interfaceInfo[@"type"] ?: @"",
         @"src": @"app",
-        @"sdkVer": @"2.0.0",
+        @"sdkVer": [CLSStringUtils getSdkVersion],
         @"sdkBuild": [CLSNetworkUtils getSDKBuildTime] ?: @"",
         @"timestamp": @(timestamp),
         @"startDate": @(startDateMs),

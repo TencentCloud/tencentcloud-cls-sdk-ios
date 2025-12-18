@@ -67,7 +67,7 @@ static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
     cls_ping_detector_config config;
     memset(&config, 0, sizeof(config)); // 必须初始化，避免残留值
     config.packet_size = self.request.size;
-    config.ttl = self.request.maxTTL;
+    config.ttl = 64;
     config.timeout_ms = self.request.timeout;
     config.interval_ms = self.request.interval;
     config.times = self.request.maxTimes;
@@ -170,12 +170,6 @@ static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
 
 #pragma mark - 启动多网卡PING检测
 - (void)start:(CompleteCallback)completion {
-    // 空值校验：回调为空直接返回
-    if (!completion) {
-        NSLog(@"%@ 检测回调为空，终止检测", kPINGLogPrefix);
-        return;
-    }
-    
     // 获取可用网卡列表（空值兜底）
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {

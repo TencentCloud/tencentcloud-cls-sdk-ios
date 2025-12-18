@@ -3,7 +3,7 @@
 //  network_ios
 //
 //  Created by zhanxiangli on 2025/12/9.
-//  Ping 网络探测器实现 - 使用 Network.framework
+//  Ping 网络探测器实现 - 使用 BSD socket
 //
 
 #import "cls_ping_detector.h"
@@ -2219,9 +2219,9 @@ cls_ping_detector_error_code cls_ping_detector_perform_ping(const char *target,
     
     // 计算丢包率
     if (packets_sent > 0) {
-        result->packet_loss = ((double)(packets_sent - packets_received) * 100.0) / (double)packets_sent;
+        result->packet_loss = ((double)(packets_sent - packets_received) / (double)packets_sent);
         if (result->packet_loss < 0.0) result->packet_loss = 0.0;
-        if (result->packet_loss > 100.0) result->packet_loss = 100.0;
+        if (result->packet_loss > 1.0) result->packet_loss = 1.0;
     } else {
         result->packet_loss = 0.0;
     }
@@ -2307,49 +2307,61 @@ static int json_escape(const char *str, char *output, size_t output_size) {
     }
     
     size_t pos = 0;
-    for (const char *p = str; *p != '\0' && pos < output_size - 1; p++) {
+    for (const char *p = str; *p != '\0'; p++) {
+        // 检查是否有足够空间（至少需要1个字节用于null终止符）
+        if (pos >= output_size - 1) {
+            // 缓冲区不足，返回错误
+            return -1;
+        }
+        
         size_t remaining = output_size - pos - 1;
         
-        if (*p == '"') {
-            if (remaining >= 2) {
+        switch (*p) {
+            case '"':  // 双引号
+                if (remaining < 2) return -1;
                 output[pos++] = '\\';
                 output[pos++] = '"';
-            } else {
                 break;
-            }
-        } else if (*p == '\\') {
-            if (remaining >= 2) {
+            case '\\': // 反斜杠
+                if (remaining < 2) return -1;
                 output[pos++] = '\\';
                 output[pos++] = '\\';
-            } else {
                 break;
-            }
-        } else if (*p == '\n') {
-            if (remaining >= 2) {
+            case '\b': // 退格
+                if (remaining < 2) return -1;
+                output[pos++] = '\\';
+                output[pos++] = 'b';
+                break;
+            case '\f': // 换页
+                if (remaining < 2) return -1;
+                output[pos++] = '\\';
+                output[pos++] = 'f';
+                break;
+            case '\n': // 换行
+                if (remaining < 2) return -1;
                 output[pos++] = '\\';
                 output[pos++] = 'n';
-            } else {
                 break;
-            }
-        } else if (*p == '\r') {
-            if (remaining >= 2) {
+            case '\r': // 回车
+                if (remaining < 2) return -1;
                 output[pos++] = '\\';
                 output[pos++] = 'r';
-            } else {
                 break;
-            }
-        } else if (*p == '\t') {
-            if (remaining >= 2) {
+            case '\t': // 制表符
+                if (remaining < 2) return -1;
                 output[pos++] = '\\';
                 output[pos++] = 't';
-            } else {
                 break;
-            }
-        } else {
-            output[pos++] = *p;
+            default:
+                // 对于普通字符，检查是否有足够空间
+                if (pos >= output_size - 1) return -1;
+                output[pos++] = *p;
+                break;
         }
     }
     
+    // 确保有空间添加null终止符
+    if (pos >= output_size) return -1;
     output[pos] = '\0';
     return (int)pos;
 }
@@ -2405,7 +2417,7 @@ int cls_ping_detector_result_to_json(const cls_ping_detector_result *result,
     pos += ret;
     
     // host
-    json_escape(result->target, escaped, sizeof(escaped));
+    if (json_escape(result->target, escaped, sizeof(escaped)) < 0) return -1;
     ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"host\": \"%s\",\n", escaped);
     if (ret < 0 || (size_t)ret >= buffer_size - pos) {
         return -1;
@@ -2413,7 +2425,7 @@ int cls_ping_detector_result_to_json(const cls_ping_detector_result *result,
     pos += ret;
     
     // method
-    json_escape(result->method, escaped, sizeof(escaped));
+    if (json_escape(result->method, escaped, sizeof(escaped)) < 0) return -1;
     ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"method\": \"%s\",\n", escaped);
     if (ret < 0 || (size_t)ret >= buffer_size - pos) {
         return -1;
@@ -2421,14 +2433,14 @@ int cls_ping_detector_result_to_json(const cls_ping_detector_result *result,
     pos += ret;
     
     // host_ip (保留向后兼容)
-    json_escape(result->resolved_ip, escaped, sizeof(escaped));
+    if (json_escape(result->resolved_ip, escaped, sizeof(escaped)) < 0) return -1;
     ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"host_ip\": \"%s\",\n", escaped);
     if (ret < 0 || (size_t)ret >= buffer_size - pos) {
         return -1;
     }
     pos += ret;
     
-    json_escape(result->interface, escaped, sizeof(escaped));
+    if (json_escape(result->interface, escaped, sizeof(escaped)) < 0) return -1;
     ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"interface\": \"%s\",\n", escaped);
     if (ret < 0 || (size_t)ret >= buffer_size - pos) {
         return -1;
@@ -2458,7 +2470,7 @@ int cls_ping_detector_result_to_json(const cls_ping_detector_result *result,
     pos += ret;
     
     // loss: 丢包率 (转换为小数形式，0.0-1.0)
-    double loss_decimal = result->packet_loss / 100.0;
+    double loss_decimal = result->packet_loss / 1.0;
     if (loss_decimal < 0.0) loss_decimal = 0.0;
     if (loss_decimal > 1.0) loss_decimal = 1.0;
     ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"loss\": %.2f,\n", loss_decimal);
@@ -2541,14 +2553,14 @@ int cls_ping_detector_result_to_json(const cls_ping_detector_result *result,
     
     // 如果有错误，输出错误信息
     if (error_code != cls_ping_detector_error_success || (result->error_message[0] != '\0')) {
-        ret = snprintf(json_buffer + pos, buffer_size - pos, ",\n  \"error_code\": %ld,\n", (long)error_code);
+        ret = snprintf(json_buffer + pos, buffer_size - pos, ",\n  \"errCode\": %ld,\n", (long)error_code);
         if (ret < 0 || (size_t)ret >= buffer_size - pos) {
             return -1;
         }
         pos += ret;
         
         const char *error_desc = get_error_description(error_code);
-        json_escape(error_desc, escaped, sizeof(escaped));
+        if (json_escape(error_desc, escaped, sizeof(escaped)) < 0) return -1;
         ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"error\": \"%s\"", escaped);
         if (ret < 0 || (size_t)ret >= buffer_size - pos) {
             return -1;
@@ -2557,8 +2569,8 @@ int cls_ping_detector_result_to_json(const cls_ping_detector_result *result,
         
         // 如果有详细错误信息，也输出
         if (result->error_message[0] != '\0') {
-            json_escape(result->error_message, escaped, sizeof(escaped));
-            ret = snprintf(json_buffer + pos, buffer_size - pos, ",\n  \"error_message\": \"%s\"", escaped);
+            if (json_escape(result->error_message, escaped, sizeof(escaped)) < 0) return -1;
+            ret = snprintf(json_buffer + pos, buffer_size - pos, ",\n  \"errMsg\": \"%s\"", escaped);
             if (ret < 0 || (size_t)ret >= buffer_size - pos) {
                 return -1;
             }

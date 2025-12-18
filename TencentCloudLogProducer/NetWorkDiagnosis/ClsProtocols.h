@@ -32,7 +32,6 @@
 @end
 
 @interface CLSPingRequest : CLSRequest
-@property(atomic, assign) int maxTTL;
 @property(atomic, assign) int interval;
 @end
 
@@ -41,7 +40,8 @@
 @end
 
 @interface CLSMtrRequest : CLSRequest
-@property(atomic, assign) int maxHops;
+@property(atomic, assign) int maxTTL;
+@property(nonatomic, copy) NSString *protocol;
 @end
 
 @protocol CLSStopDelegate <NSObject>
