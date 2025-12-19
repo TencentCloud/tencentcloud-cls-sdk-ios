@@ -119,18 +119,65 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     }
     
     // 非阻塞connect
-    if (connect(sock, (struct sockaddr *)addr, sizeof(struct sockaddr)) < 0) {
-        struct timeval tv;
-        fd_set wset;
-        tv.tv_sec = 3; // 超时时间
-        tv.tv_usec = 0;
-        FD_ZERO(&wset);
-        FD_SET(sock, &wset);
-        int n = select(sock + 1, NULL, &wset, NULL, &tv);
-        if (n < 0 || n == 0) {
+    int connectResult = connect(sock, (struct sockaddr *)addr, sizeof(struct sockaddr));
+    if (connectResult < 0) {
+        // 非阻塞connect正常应该返回-1且errno=EINPROGRESS
+        if (errno != EINPROGRESS) {
+            // 如果不是EINPROGRESS，说明连接立即失败（如网络不可达）
+            NSLog(@"TCP connect immediate failure, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
             close(sock);
             return -1;
         }
+        
+        // errno=EINPROGRESS，使用select等待连接完成
+        struct timeval tv;
+        fd_set wset, eset;
+        tv.tv_sec = 3; // 超时时间
+        tv.tv_usec = 0;
+        FD_ZERO(&wset);
+        FD_ZERO(&eset);
+        FD_SET(sock, &wset);
+        FD_SET(sock, &eset);  // 同时监听异常
+        
+        int n = select(sock + 1, NULL, &wset, &eset, &tv);
+        if (n < 0) {
+            NSLog(@"TCP select failed, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
+            close(sock);
+            return -1;
+        }
+        if (n == 0) {
+            NSLog(@"TCP select timeout (3s), port: %d", self.request.port);
+            close(sock);
+            return -1;
+        }
+        
+        // select返回>0，检查是writeable还是exception
+        if (FD_ISSET(sock, &eset)) {
+            NSLog(@"TCP socket exception occurred, port: %d", self.request.port);
+            close(sock);
+            return -1;
+        }
+        
+        // 检查socket错误状态（核心修复）
+        int error = 0;
+        socklen_t len = sizeof(error);
+        if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &len) == 0) {
+            if (error != 0) { // error≠0 表示连接失败（如端口不存在、连接拒绝）
+                NSLog(@"TCP connect failed, error: %s (errno: %d, port: %d)", strerror(error), error, self.request.port);
+                close(sock);
+                return -1;
+            }
+        } else {
+            NSLog(@"getsockopt failed, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
+            close(sock);
+            return -1;
+        }
+        
+        // 连接成功
+        NSLog(@"TCP connect succeeded after select, port: %d", self.request.port);
+    } else {
+        // connectResult >= 0，立即连接成功（罕见情况，通常只发生在本地连接）
+        NSLog(@"TCP connect succeeded immediately (unusual), port: %d", self.request.port);
     }
     
     // 恢复阻塞模式
@@ -154,9 +201,17 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     
     if (addr.sin_addr.s_addr == INADDR_NONE) {
         struct hostent *host = gethostbyname(hostaddr);
-        if (host == NULL || host->h_addr == NULL) return;
+        if (host == NULL || host->h_addr == NULL) {
+            NSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d", hostaddr, self.request.port);
+            self.failureCount++;
+            return;
+        }
         addr.sin_addr = *(struct in_addr *)host->h_addr;
     }
+    
+    // 解析成功后记录IP
+    char ipStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(addr.sin_addr), ipStr, INET_ADDRSTRLEN);
     
     // 计算耗时
     CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
@@ -164,12 +219,14 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
     NSTimeInterval latency = (endTime - startTime) * 1000;
     
-    // 统计结果
+    // 统计结果（增加详细日志）
     if (result == 0) {
         [self.latencies addObject:@(latency)];
         self.successCount++;
+        NSLog(@"✅ TCP Ping SUCCESS: %s:%d, latency: %.2fms", ipStr, self.request.port, latency);
     } else {
         self.failureCount++;
+        NSLog(@"❌ TCP Ping FAILED: %s:%d, latency: %.2fms, result: %d", ipStr, self.request.port, latency, result);
     }
 }
 
@@ -213,7 +270,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     [self cancelTimeoutTimer];
     
     // 直接构建上报数据（不再生成CLSMultiInterfaceTcpingResult）
-    NSDictionary *reportData = [self buildReportDataFromTcpPingResult];
+    NSDictionary *reportData = [self buildReportDataFromTcpPingResultWithError:error];
     
     // 切回主线程回调
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -232,7 +289,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 // 核心方法：直接基于原始状态构建上报数据（移除buildResult后，所有逻辑集中在此）
-- (NSDictionary *)buildReportDataFromTcpPingResult {
+- (NSDictionary *)buildReportDataFromTcpPingResultWithError:(NSError *)error {
     // 1. 计算核心统计值
     NSNumber *minLatency = [self.latencies valueForKeyPath:@"@min.self"] ?: @0;
     NSNumber *maxLatency = [self.latencies valueForKeyPath:@"@max.self"] ?: @0;
@@ -240,10 +297,24 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     NSNumber *stddev = [self calculateStdDev] ?: @0;
     double totalLatency = [[self.latencies valueForKeyPath:@"@sum.self"] doubleValue];
     
-    // 2. 时间戳（毫秒级）
+    // 2. 计算丢包率（范围：0.0～1.0）
+    NSUInteger totalAttempts = self.successCount + self.failureCount;
+    double lossRate = totalAttempts > 0 ? (double)self.failureCount / (double)totalAttempts : 0.0;
+    // 确保范围在 [0.0, 1.0]
+    lossRate = MAX(0.0, MIN(1.0, lossRate));
+    
+    // 3. 时间戳（毫秒级）
     NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
     
-    // 3. 构建网络信息
+    // 4. 错误信息处理
+    NSInteger errorCode = 0;
+    NSString *errorMessage = @"";
+    if (error) {
+        errorCode = error.code;
+        errorMessage = error.localizedDescription ?: @"";
+    }
+    
+    // 5. 构建网络信息
     NSDictionary *netInfo = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interface[@"type"]
                                                                            networkAppId:self.networkAppId
                                                                                   appKey:self.appKey
@@ -251,7 +322,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                                                                                 endpoint:self.endPoint
                                                                            interfaceDNS:self.interface[@"dns"]];
     
-    // 4. 构建上报数据（一步到位，无中间对象）
+    // 6. 构建上报数据（一步到位，无中间对象）
     NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:@{
         // 基础信息
         @"host": [CLSStringUtils sanitizeString:self.request.domain] ?: @"",
@@ -264,7 +335,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         // 统计信息
         @"count": [CLSStringUtils sanitizeNumber:@(self.request.maxTimes)] ?: @0,
         @"total": [CLSStringUtils sanitizeNumber:@(totalLatency)] ?: @0,
-        @"loss": [CLSStringUtils sanitizeNumber:@(self.failureCount)] ?: @0,
+        @"loss": [CLSStringUtils sanitizeNumber:@(lossRate)] ?: @0,  // 修复：使用丢包率（0～1）
         @"latency_min": [CLSStringUtils sanitizeNumber:minLatency] ?: @0,
         @"latency_max": [CLSStringUtils sanitizeNumber:maxLatency] ?: @0,
         @"latency": [CLSStringUtils sanitizeNumber:avgLatency] ?: @0,
@@ -272,6 +343,9 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"responseNum": [CLSStringUtils sanitizeNumber:@(self.successCount)] ?: @0,
         @"exceptionNum": [CLSStringUtils sanitizeNumber:@(self.failureCount)] ?: @0,
         @"bindFailed": [CLSStringUtils sanitizeNumber:@(self.bindFailedCount)] ?: @0,
+        // 错误信息
+        @"err_code": @(errorCode),
+        @"error_message": errorMessage,
         // 通用字段
         @"src": kSrcApp,
         @"timestamp": @(timestamp),
@@ -304,14 +378,16 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         NSLog(@"availableInterfaces:%@", currentInterface);
         CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
         [builder setURL:self.request.domain];
-        
+        [builder setpageName:self.request.pageName];
         [self startPingWithCompletion:currentInterface completion:^(NSDictionary *reportData, NSError *error) {
+            // 上报并获取返回字典
+            NSDictionary *d = [builder report:self.topicId reportData:reportData ?: @{}];
+            
             // 封装为CLSResponse，兼容原有回调协议
-            CLSResponse *completeResult = [CLSResponse complateResultWithContent:reportData ?: @{}];
+            CLSResponse *completeResult = [CLSResponse complateResultWithContent:d ?: @{}];
             if (complete) {
                 complete(completeResult);
             }
-            [builder report:self.topicId reportData:reportData ?: @{}];
         }];
         
         if (!self.request.enableMultiplePortsDetect) {

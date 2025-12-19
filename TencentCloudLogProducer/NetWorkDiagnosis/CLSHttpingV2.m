@@ -277,6 +277,14 @@ didReceiveData:(NSData *)data {
     
     // 带宽计算（避免除0）
     double bandwidth = self.receivedBytes / MAX((totalTime / 1000), 0.001);
+    
+    // 错误信息处理
+    NSInteger errorCode = 0;
+    NSString *errorMessage = @"";
+    if (error) {
+        errorCode = error.code;
+        errorMessage = error.localizedDescription ?: @"";
+    }
 
     // 基础网络指标（原netOrigin）
     NSDictionary *netOrigin = @{
@@ -308,7 +316,9 @@ didReceiveData:(NSData *)data {
         @"httpProtocol": response.allHeaderFields[@"Version"] ?: @"unknown",
         @"interface_ip": self.interfaceInfo[@"ip"] ?: @"",
         @"interface_type": self.interfaceInfo[@"type"] ?: @"",
-        @"interface_family": self.interfaceInfo[@"family"] ?: @""
+        @"interface_family": self.interfaceInfo[@"family"] ?: @"",
+        @"err_code": @(errorCode),
+        @"error_message": errorMessage
     };
     
     // -------------------------- 2. 合并原resultDict的基础字段 --------------------------
@@ -385,18 +395,18 @@ didReceiveData:(NSData *)data {
         NSLog(@"interface:%@", currentInterface);
         CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
         [builder setURL:self.request.domain];
-        
+        [builder setpageName:self.request.pageName];
         [self startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
-            // 无需再调用buildReportDataFromResultDict，直接使用finalReportDict
-            CLSResponse *completionResult = [CLSResponse complateResultWithContent:finalReportDict];
+            // 上报并获取返回字典
+            NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
+            
+            // 使用report返回的字典构建响应
+            CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
             
             // 回调返回结果
             if (complate) {
                 complate(completionResult);
             }
-            
-            // 直接上报最终字典
-            [builder report:self.topicId reportData:finalReportDict];
         }];
         
         // 非多端口检测，仅执行第一个接口
