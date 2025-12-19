@@ -182,6 +182,11 @@
 }
 
 + (NSString *)getSdkVersion {
-    return @"3.0.0";
+    // 从 bundle 中读取版本号，与 podspec 保持同步
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+    NSString *version = [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    
+    // 如果无法从 bundle 读取（例如未打包场景），使用默认版本号
+    return version ?: @"3.0.0";
 }
 @end

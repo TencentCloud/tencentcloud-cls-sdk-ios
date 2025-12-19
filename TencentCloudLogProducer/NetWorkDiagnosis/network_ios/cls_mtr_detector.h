@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -64,6 +65,7 @@ typedef struct {
     size_t results_capacity;    // 跳结果容量
     int last_errno;             // 最近一次“致命错误”的 errno（0 表示无）
     char last_error_op[32];     // 最近一次“致命错误”的操作（如 "sendto"/"setsockopt"/"connect"）
+
 } cls_mtr_path_result;
 
 /// MTR 探测结果结构
@@ -87,6 +89,7 @@ typedef struct {
     int times;                  // 每跳探测次数，<=0 表示使用默认值 10
     unsigned int interface_index; // 网卡索引，0 表示使用默认网卡
     int prefer;                 // IP版本偏好：0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only
+    int tcp_dst_port;           // TCP 探测目的端口（1-65535），<=0 表示使用默认值 80
 } cls_mtr_detector_config;
 
 /**
@@ -102,14 +105,17 @@ cls_mtr_detector_error_code cls_mtr_detector_perform_mtr(const char *target,
 
 /**
  * 将 MTR 结果转换为 JSON 格式
- * @param result MTR 探测结果
- * @param error_code 错误码
+ * @param result MTR 探测结果（包含 error_code 字段）
  * @param json_buffer 输出缓冲区
  * @param buffer_size 缓冲区大小
- * @return 成功返回写入的字节数，失败返回-1
+ * @return 成功返回写入的字节数（不包括结尾的 '\0'），失败返回-1
+ * @note 当缓冲区不足时，函数会在写入过程中检测到空间不足并返回-1，不会发生缓冲区溢出。
+ *       调用者应确保提供足够大的缓冲区（建议至少 4KB 或更大，具体取决于 paths 数量和 hop 数量）。
+ *       如果返回-1，可能是以下原因：
+ *       - 参数无效（result 或 json_buffer 为 NULL，或 buffer_size 为 0）
+ *       - 缓冲区空间不足（在写入过程中检测到空间不足，已写入的数据可能不完整）
  */
 int cls_mtr_detector_result_to_json(const cls_mtr_detector_result *result,
-                                    cls_mtr_detector_error_code error_code,
                                     char *json_buffer,
                                     size_t buffer_size);
 

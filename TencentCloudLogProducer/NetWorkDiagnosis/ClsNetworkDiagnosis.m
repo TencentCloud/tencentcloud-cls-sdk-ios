@@ -53,6 +53,7 @@
     if (self) {
         // 2. 初始化子类自己的属性，port默认为0是一个合理的选择
         _interval = 200;
+        _prefer = -1;  // 默认自动检测
     }
     return self;
 }
@@ -78,6 +79,7 @@
     if (self) {
         // 2. 初始化子类自己的属性，设置为空字符串
         _nameServer = @"";
+        _prefer = -1;  // 默认自动检测
     }
     return self;
 }
@@ -91,6 +93,7 @@
         // 2. 初始化子类自己的属性，设置为空字符串
         _maxTTL = 64;
         _protocol = @"icmp";
+        _prefer = -1;  // 默认自动检测
     }
     return self;
 }
@@ -118,6 +121,14 @@
 @property (nonatomic, assign, getter=isLogSenderConfigured) BOOL logSenderConfigured;
 @property (nonatomic, copy) NSString *topicId;
 @property (nonatomic, copy) NSString *netToken;
+
+// ===== netToken 解析结果缓存（提前解析，避免重复解析）=====
+@property (nonatomic, copy) NSString *cachedNetworkAppId;
+@property (nonatomic, copy) NSString *cachedAppKey;
+@property (nonatomic, copy) NSString *cachedUin;
+@property (nonatomic, copy) NSString *cachedRegion;
+@property (nonatomic, copy) NSString *cachedTopicId;
+@property (nonatomic, assign) BOOL isNetTokenParsed; // 标记是否已解析 netToken
 @end
 
 @implementation ClsNetworkDiagnosis
@@ -132,6 +143,7 @@
         _sharedInstance.internalLogSender = nil;
         _sharedInstance.topicId = @"";
         _sharedInstance.netToken = @"";
+        _sharedInstance.isNetTokenParsed = NO;
         
     });
     return _sharedInstance;
@@ -189,8 +201,11 @@
         // 2. 设置二选一参数（根据实际需求将参数传递给LogSender）
         if (topicId.length > 0) {
             _topicId = topicId;
+            _isNetTokenParsed = NO; // 使用 topicId，不解析 netToken
         } else {
             _netToken = netToken;
+            // 【优化】提前解析 netToken，缓存解析结果
+            [self parseAndCacheNetToken:netToken];
         }
         
         // 3. 启动LogSender
@@ -199,6 +214,76 @@
         // 4. 标记已配置，禁止重复初始化
         self.logSenderConfigured = YES;
         NSLog(@"LogSender初始化完成（全局唯一），%@生效", topicId.length > 0 ? @"topicId" : @"netToken");
+    }
+}
+
+#pragma mark - netToken 解析与缓存（私有方法）
+
+/// 解析 netToken 并缓存结果（仅在初始化时调用一次）
+/// @param netToken 网络令牌
+- (void)parseAndCacheNetToken:(NSString *)netToken {
+    if (netToken.length == 0) {
+        NSLog(@"[ClsNetworkDiagnosis] netToken 为空，无法解析");
+        _isNetTokenParsed = NO;
+        return;
+    }
+    
+    // 调用工具类解析 netToken
+    NSDictionary *tokenInfo = [CLSNetworkUtils parseNetToken:netToken];
+    
+    if (tokenInfo.count == 0) {
+        NSLog(@"[ClsNetworkDiagnosis] netToken 解析失败，token: %@", netToken);
+        _isNetTokenParsed = NO;
+        return;
+    }
+    
+    // 缓存解析结果
+    _cachedNetworkAppId = tokenInfo[@"networkAppId"] ?: @"";
+    _cachedAppKey = tokenInfo[@"appKey"] ?: @"";
+    _cachedUin = tokenInfo[@"uin"] ?: @"";
+    _cachedRegion = tokenInfo[@"region"] ?: @"";
+    _cachedTopicId = tokenInfo[@"topic_id"] ?: @"";
+    _isNetTokenParsed = YES;
+    
+    NSLog(@"[ClsNetworkDiagnosis] netToken 解析成功并缓存，networkAppId=%@, topicId=%@", 
+          _cachedNetworkAppId, _cachedTopicId);
+}
+
+/// 填充探测器的 token 信息（使用缓存的解析结果）
+/// @param detector 探测器实例（CLSBaseFields 子类）
+- (void)fillTokenInfoToDetector:(CLSBaseFields *)detector {
+    if (!detector) {
+        return;
+    }
+    
+    // 使用 topicId 模式
+    if (_topicId.length > 0) {
+        detector.topicId = _topicId;
+        return;
+    }
+    
+    // 使用 netToken 模式
+    if (_isNetTokenParsed) {
+        // 使用缓存的解析结果，避免重复解析
+        detector.networkAppId = _cachedNetworkAppId;
+        detector.appKey = _cachedAppKey;
+        detector.uin = _cachedUin;
+        detector.region = _cachedRegion;
+        detector.topicId = _cachedTopicId;
+    } else {
+        // 如果缓存无效，尝试重新解析（兜底逻辑）
+        NSLog(@"[ClsNetworkDiagnosis] 警告：netToken 未解析或解析失败，尝试重新解析");
+        [self parseAndCacheNetToken:_netToken];
+        
+        if (_isNetTokenParsed) {
+            detector.networkAppId = _cachedNetworkAppId;
+            detector.appKey = _cachedAppKey;
+            detector.uin = _cachedUin;
+            detector.region = _cachedRegion;
+            detector.topicId = _cachedTopicId;
+        } else {
+            NSLog(@"[ClsNetworkDiagnosis] 错误：netToken 解析失败，无法填充探测器信息");
+        }
     }
 }
 
@@ -243,20 +328,8 @@
     }
     
     CLSMultiInterfaceHttping *httping = [[CLSMultiInterfaceHttping alloc] initWithRequest:request];
-    if(_netToken != nil && _netToken.length != 0){
-        NSDictionary *tokenInfo = [CLSNetworkUtils parseNetToken:_netToken];
-        if (tokenInfo.count == 0 && _topicId == nil) {
-            NSLog(@"token parse failed，token:%@", _netToken);
-            return;
-        }
-        httping.networkAppId = tokenInfo[@"networkAppId"];
-        httping.appKey = tokenInfo[@"appKey"];
-        httping.uin = tokenInfo[@"uin"];
-        httping.region = tokenInfo[@"region"];
-        httping.topicId = tokenInfo[@"topic_id"];
-    }else{
-        httping.topicId = _topicId;
-    }
+    // 使用统一的填充方法（基于缓存的解析结果）
+    [self fillTokenInfoToDetector:httping];
     httping.endPoint = _config.endpoint;
     [httping start:complate];
 }
@@ -268,20 +341,8 @@
     }
     
     CLSMultiInterfaceTcping *tcpPing = [[CLSMultiInterfaceTcping alloc] initWithRequest:request];
-    if(_netToken != nil && _netToken.length != 0){
-        NSDictionary *tokenInfo = [CLSNetworkUtils parseNetToken:_netToken];
-        if (tokenInfo.count == 0 && _topicId == nil) {
-            NSLog(@"token parse failed，token:%@", _netToken);
-            return;
-        }
-        tcpPing.networkAppId = tokenInfo[@"networkAppId"];
-        tcpPing.appKey = tokenInfo[@"appKey"];
-        tcpPing.uin = tokenInfo[@"uin"];
-        tcpPing.region = tokenInfo[@"region"];
-        tcpPing.topicId = tokenInfo[@"topic_id"];
-    }else{
-        tcpPing.topicId = _topicId;
-    }
+    // 使用统一的填充方法（基于缓存的解析结果）
+    [self fillTokenInfoToDetector:tcpPing];
     tcpPing.endPoint = _config.endpoint;
     [tcpPing start:complate];
 }
@@ -292,20 +353,8 @@
     }
     
     CLSMultiInterfacePing *ping = [[CLSMultiInterfacePing alloc] initWithRequest:request];
-    if(_netToken != nil && _netToken.length != 0){
-        NSDictionary *tokenInfo = [CLSNetworkUtils parseNetToken:_netToken];
-        if (tokenInfo.count == 0 && _topicId == nil) {
-            NSLog(@"token parse failed，token:%@", _netToken);
-            return;
-        }
-        ping.networkAppId = tokenInfo[@"networkAppId"];
-        ping.appKey = tokenInfo[@"appKey"];
-        ping.uin = tokenInfo[@"uin"];
-        ping.region = tokenInfo[@"region"];
-        ping.topicId = tokenInfo[@"topic_id"];
-    }else{
-        ping.topicId = _topicId;
-    }
+    // 使用统一的填充方法（基于缓存的解析结果）
+    [self fillTokenInfoToDetector:ping];
     ping.endPoint = _config.endpoint;
     [ping start:complate];
 }
@@ -317,20 +366,8 @@
     }
     
     CLSMultiInterfaceDns *dns = [[CLSMultiInterfaceDns alloc] initWithRequest:request];
-    if(_netToken != nil && _netToken.length != 0){
-        NSDictionary *tokenInfo = [CLSNetworkUtils parseNetToken:_netToken];
-        if (tokenInfo.count == 0 && _topicId == nil) {
-            NSLog(@"token parse failed，token:%@", _netToken);
-            return;
-        }
-        dns.networkAppId = tokenInfo[@"networkAppId"];
-        dns.appKey = tokenInfo[@"appKey"];
-        dns.uin = tokenInfo[@"uin"];
-        dns.region = tokenInfo[@"region"];
-        dns.topicId = tokenInfo[@"topic_id"];
-    }else{
-        dns.topicId = _topicId;
-    }
+    // 使用统一的填充方法（基于缓存的解析结果）
+    [self fillTokenInfoToDetector:dns];
     dns.endPoint = _config.endpoint;
     [dns start:complate];
 }
@@ -341,20 +378,8 @@
     }
     
     CLSMultiInterfaceMtr *mtr = [[CLSMultiInterfaceMtr alloc] initWithRequest:request];
-    if(_netToken != nil && _netToken.length != 0){
-        NSDictionary *tokenInfo = [CLSNetworkUtils parseNetToken:_netToken];
-        if (tokenInfo.count == 0 && _topicId == nil) {
-            NSLog(@"token parse failed，token:%@", _netToken);
-            return;
-        }
-        mtr.networkAppId = tokenInfo[@"networkAppId"];
-        mtr.appKey = tokenInfo[@"appKey"];
-        mtr.uin = tokenInfo[@"uin"];
-        mtr.region = tokenInfo[@"region"];
-        mtr.topicId = tokenInfo[@"topic_id"];
-    }else{
-        mtr.topicId = _topicId;
-    }
+    // 使用统一的填充方法（基于缓存的解析结果）
+    [self fillTokenInfoToDetector:mtr];
     mtr.endPoint = _config.endpoint;
     [mtr start:complate];
 }

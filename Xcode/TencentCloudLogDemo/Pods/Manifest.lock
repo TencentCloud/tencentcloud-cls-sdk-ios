@@ -2,22 +2,25 @@ PODS:
   - FMDB (2.7.5):
     - FMDB/standard (= 2.7.5)
   - FMDB/standard (2.7.5)
+  - OCMock (3.9.1)
   - Protobuf (3.29.5)
   - Reachability (3.2)
-  - TencentCloudLogProducer/Core (2.0.0):
+  - TencentCloudLogProducer/Core (3.0.0):
     - FMDB (~> 2.7.5)
     - Protobuf (~> 3.29.5)
     - Reachability (~> 3.2)
-  - TencentCloudLogProducer/NetWorkDiagnosis (2.0.0):
+  - TencentCloudLogProducer/NetWorkDiagnosis (3.0.0):
     - TencentCloudLogProducer/Core
 
 DEPENDENCIES:
+  - OCMock (~> 3.0)
   - TencentCloudLogProducer/Core (from `../../`)
   - TencentCloudLogProducer/NetWorkDiagnosis (from `../../`)
 
 SPEC REPOS:
   trunk:
     - FMDB
+    - OCMock
     - Protobuf
     - Reachability
 
@@ -27,10 +30,11 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
+  OCMock: 9491e4bec59e0b267d52a9184ff5605995e74be8
   Protobuf: 164aea2ae380c3951abdc3e195220c01d17400e0
   Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
-  TencentCloudLogProducer: 7b7d93fb8a4179b523f25dd5fd1a8c75edffc859
+  TencentCloudLogProducer: 1c1d94327a5d108d0d51fb65df84c570d451edcb
 
-PODFILE CHECKSUM: 82ccddc95751696dc2dd6baf11acdcd7fe818c38
+PODFILE CHECKSUM: 3f775c47e50ad3536928c938e94a5c8d505e1abe
 
 COCOAPODS: 1.16.2

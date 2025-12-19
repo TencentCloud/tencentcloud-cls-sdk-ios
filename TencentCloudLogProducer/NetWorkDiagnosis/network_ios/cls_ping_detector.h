@@ -43,6 +43,7 @@ typedef struct {
     double stddev;         // RTT标准差
     int bindFailed;          // 绑定失败次数
     int exceptionNum;        // 异常数（发送失败、接收超时等异常次数）
+    cls_ping_detector_error_code error_code; // 错误码（与错误信息保持一致）
     char error_message[512]; // 错误信息（如果有错误）
 } cls_ping_detector_result;
 
@@ -70,14 +71,13 @@ cls_ping_detector_error_code cls_ping_detector_perform_ping(const char *target,
 
 /**
  * 将 Ping 结果转换为 JSON 格式
- * @param result Ping 探测结果
- * @param error_code 错误码
+ * @param result Ping 探测结果（包含 error_code 字段）
  * @param json_buffer 输出缓冲区
  * @param buffer_size 缓冲区大小
  * @return 成功返回写入的字节数，失败返回-1
+ * @note 错误码从 result->error_code 字段获取，确保数据一致性
  */
 int cls_ping_detector_result_to_json(const cls_ping_detector_result *result, 
-                                     cls_ping_detector_error_code error_code,
                                      char *json_buffer, 
                                      size_t buffer_size);
 

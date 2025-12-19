@@ -133,7 +133,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     memset(&config, 0, sizeof(config));
     config.dns_servers = dnsServers;
     config.timeout_ms = self.request ? self.request.timeout : 3000; // 默认超时3s
-    config.prefer = 0; // IPv4优先
+    config.prefer = self.request ? self.request.prefer : -1;  // 使用 request 中的 prefer 配置，默认自动检测
     
     // 处理网卡下标
     NSNumber *indexNum = interfaceInfo[@"index"];
@@ -165,17 +165,20 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     NSString *jsonString = [[NSString alloc] initWithCString:json_buffer encoding:NSUTF8StringEncoding];
     NSLog(@"%@ 网卡%@：检测结果：%@", kDNSLogPrefix, interfaceName, jsonString);
     
-    // 5. 构建上报数据并回调
+    // 5. 构建上报数据
     NSDictionary *reportData = [self buildReportDataFromDnsResult:jsonString];
-    CLSResponse *callbackResult = [CLSResponse complateResultWithContent:reportData];
+    
+    // 6. 上报链路数据并获取返回字典
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+    [builder setURL:self.request.domain];
+    [builder setpageName:self.request.pageName];
+    NSDictionary *d = [builder report:self.topicId reportData:reportData];
+    
+    // 7. 构建响应并回调
+    CLSResponse *callbackResult = [CLSResponse complateResultWithContent:d ?: @{}];
     if (completion) {
         completion(callbackResult);
     }
-    
-    // 6. 上报链路数据
-    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-    [builder setURL:self.request.domain];
-    [builder report:self.topicId reportData:reportData];
 }
 
 #pragma mark - 构建上报数据
@@ -213,6 +216,8 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     NSLog(@"%@ 上报数据：解析后的原始字典：%@", kDNSLogPrefix, reportData);
     
     // 5. 追加通用字段（空值兜底）
+    reportData[@"appKey"] = self.request.appKey;
+    reportData[@"src"] = @"app";
     reportData[@"trace_id"] = CLSIdGenerator.generateTraceId ?: @"";
     reportData[@"netInfo"] = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interfaceInfo[@"type"]
                                                                            networkAppId:self.networkAppId
@@ -221,7 +226,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
                                                                                 endpoint:self.endPoint
                                                                            interfaceDNS:self.interfaceInfo[@"dns"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
-    reportData[@"userEx"] = self.request.detectEx ?: @{};
+    reportData[@"userEx"] = self.request.userEx ?: @{};
     
     return [reportData copy];
 }

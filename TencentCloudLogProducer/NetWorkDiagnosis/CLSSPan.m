@@ -173,7 +173,7 @@ typedef void (^_internal_Scope)(void);
     _isEnd = YES;
     _end = [[NSDate date] timeIntervalSince1970] * 1000000000;
     
-    _duration = (_end - _start) / 1000;
+    _duration = _end - _start;
     if (nil != _scope) {
         _scope();
     }

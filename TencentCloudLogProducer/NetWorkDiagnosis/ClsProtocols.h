@@ -33,15 +33,21 @@
 
 @interface CLSPingRequest : CLSRequest
 @property(atomic, assign) int interval;
+/// IP 协议偏好设置: 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only, <0=自动检测（默认）
+@property(atomic, assign) int prefer;
 @end
 
 @interface CLSDnsRequest : CLSRequest
 @property(nonatomic, copy) NSString* nameServer;
+/// IP 协议偏好设置: 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only, <0=自动检测（默认）
+@property(atomic, assign) int prefer;
 @end
 
 @interface CLSMtrRequest : CLSRequest
 @property(atomic, assign) int maxTTL;
 @property(nonatomic, copy) NSString *protocol;
+/// IP 协议偏好设置: 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only, <0=自动检测（默认）
+@property(atomic, assign) int prefer;
 @end
 
 @protocol CLSStopDelegate <NSObject>

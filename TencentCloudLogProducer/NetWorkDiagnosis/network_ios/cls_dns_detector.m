@@ -27,6 +27,10 @@
 #define DNS_DEFAULT_TIMEOUT_MS 5000
 #define DNS_MIN_TIMEOUT_MS 1000
 #define DNS_MAX_TIMEOUT_MS 30000
+// DNS 记录字段最大长度（与 cls_dns_answer_record 结构体定义保持一致）
+#define DNS_MAX_RECORD_NAME_LEN 1024   // 域名最大长度
+#define DNS_MAX_RECORD_TYPE_LEN 32     // 记录类型最大长度
+#define DNS_MAX_RECORD_VALUE_LEN 4096  // 记录值最大长度
 
 typedef struct {
     uint16_t id;
@@ -165,7 +169,7 @@ static int dns_answer_record_array_add(DnsAnswerRecordArray *array, const DnsAns
     // 注意：record->name, record->type, record->value 可能指向栈上的局部变量
     // 我们必须立即复制它们，因为栈变量在函数返回后就会失效
     if (record->name && record->name[0] != '\0') {
-        dst->name = safe_strdup(record->name, 1024);
+        dst->name = safe_strdup(record->name, DNS_MAX_RECORD_NAME_LEN);
         if (!dst->name) {
             // 内存分配失败，清理并返回
             memset(dst, 0, sizeof(DnsAnswerRecord));
@@ -177,7 +181,7 @@ static int dns_answer_record_array_add(DnsAnswerRecordArray *array, const DnsAns
     }
     
     if (record->type && record->type[0] != '\0') {
-        dst->type = safe_strdup(record->type, 32);
+        dst->type = safe_strdup(record->type, DNS_MAX_RECORD_TYPE_LEN);
         if (!dst->type) {
             // 内存分配失败，清理已分配的资源
             if (dst->name) {
@@ -193,7 +197,7 @@ static int dns_answer_record_array_add(DnsAnswerRecordArray *array, const DnsAns
     }
     
     if (record->value && record->value[0] != '\0') {
-        dst->value = safe_strdup(record->value, 4096);
+        dst->value = safe_strdup(record->value, DNS_MAX_RECORD_VALUE_LEN);
         if (!dst->value) {
             // 内存分配失败，清理已分配的资源
             if (dst->name) {
@@ -2591,6 +2595,33 @@ cls_dns_detector_error_code cls_dns_detector_perform_dns(const char *domain,
     return last_error;
 }
 
+size_t cls_dns_detector_result_json_size(const cls_dns_detector_result *result) {
+    if (!result) {
+        // 如果 result 为 NULL，返回最大可能估算值
+        // 基础字段(1000) + 最大域名长度转义(256*4=1024) + 最大记录数(100*500=50000)
+        return 1000 + 256 * 4 + 100 * 500;
+    }
+    
+    // 计算实际所需缓冲区大小
+    // 基础字段：约 1000 字节（包含 JSON 结构、固定字段等）
+    size_t base_size = 1000;
+    
+    // 域名长度（转义后可能翻倍，保守估计为 4 倍）
+    size_t domain_len = strlen(result->domain);
+    size_t domain_size = domain_len * 4;
+    
+    // 每个答案记录：约 500 字节（包含 name、type、value 的转义和 JSON 结构）
+    // name 最大 1024，转义后约 2048；type 最大 32，转义后约 64；value 最大 4096，转义后约 8192
+    // 加上 JSON 结构（逗号、引号、大括号等）约 100 字节
+    // 保守估计每条记录约 500 字节
+    size_t answer_size = result->answer_count * 500;
+    
+    // 额外预留空间（用于其他字段如 host_ip、status、flags 等）
+    size_t extra_size = 500;
+    
+    return base_size + domain_size + answer_size + extra_size;
+}
+
 int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
                                     cls_dns_detector_error_code error_code,
                                     char *json_buffer,
@@ -2598,10 +2629,8 @@ int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
     if (!result || !json_buffer || buffer_size == 0) return -1;
     
     // 预检查：估算所需缓冲区大小（更保守的估算）
-    // 基础字段 + 域名（转义后可能翻倍）+ 每个答案记录（更保守的估算）
-    size_t domain_len = strlen(result->domain);
-    // 使用更保守的估算：每个答案记录可能需要更多空间（包括转义字符）
-    size_t estimated_size = 1000 + domain_len * 4 + result->answer_count * 500;  // 更保守的估算
+    // 使用辅助函数计算所需大小
+    size_t estimated_size = cls_dns_detector_result_json_size(result);
     if (estimated_size > buffer_size) {
         // 缓冲区可能不够，返回错误而不是继续尝试
         // 这样可以避免生成不完整的JSON

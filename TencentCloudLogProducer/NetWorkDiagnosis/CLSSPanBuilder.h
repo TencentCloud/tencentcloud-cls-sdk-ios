@@ -28,9 +28,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (CLSSpanBuilder *) setService: (NSString *)service;
 - (CLSSpanBuilder *) setGlobal: (BOOL) global;
 - (CLSSpanBuilder *) setURL: (NSString *)url;
+- (CLSSpanBuilder *) setpageName: (NSString *)pageName;
 #pragma mark - build
 - (CLSSpan *) build;
-- (BOOL)report:(NSString*)topicId reportData:(NSDictionary *)reportData;
+- (NSDictionary *)report:(NSString*)topicId reportData:(NSDictionary *)reportData;
 @end
 
 NS_ASSUME_NONNULL_END

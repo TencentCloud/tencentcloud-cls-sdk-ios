@@ -1,239 +1,355 @@
-# NetWorkDiagnosis 测试用例运行指南
+# 网络诊断测试用例文档
 
-## 📁 测试文件
-- **测试类**: `TencentCloudLogDemoTests.m`
-- **测试框架**: XCTest
-- **测试类型**: 单元测试 + 集成测试
+## 📋 概述
+
+本测试套件基于**网络探测字段规范文档** (`field-specification.md`) 生成，全面验证 iOS SDK 网络诊断功能的字段完整性和数据正确性。
 
 ---
 
-## 🚀 快速开始
+## 🎯 测试覆盖范围
 
-### 1. 配置测试环境
+### 1️⃣ **ICMP Ping 测试** (`testPingFieldsCompleteness`)
+- ✅ 公共字段验证（纳秒时间戳）
+- ✅ Resource 字段验证（32个字段）
+- ✅ Ping 探测信息验证（15+字段，毫秒时间）
+- ✅ netInfo GEO 信息验证（9个字段）
+- ✅ 扩展字段验证（detectEx、userEx）
 
-打开 `TencentCloudLogDemoTests.m`，在 `setUp` 方法中配置你的 CLS 凭证：
+**关键验证点**:
+- `method` = `"ping"`
+- `src` = `"app"`
+- 时间单位：`total`, `latency_*` 均为毫秒
+- 统计字段：`count`, `loss`, `responseNum`, `exceptionNum`, `bindFailed`
+
+---
+
+### 2️⃣ **HTTP/HTTPS 测试** (`testHttpFieldsCompleteness`)
+- ✅ HTTP 基础信息验证（18+字段）
+- ✅ headers 响应头验证
+- ✅ **desc 生命周期打点验证（15个时间点）**
+- ✅ 时间顺序验证（`callStart` → `callEnd`）
+
+**关键验证点**:
+- `method` = `"http"`
+- HTTP 状态码、协议版本、带宽等
+- **desc 时间点**: `callStart`, `dnsStart`, `dnsEnd`, `connectStart`, `secureConnectStart`, `secureConnectEnd`, `connectionAcquired`, `requestHeaderStart`, `requestHeaderEnd`, `responseHeadersStart`, `responseHeaderEnd`, `responseBodyStart`, `responseBodyEnd`, `connectionReleased`, `callEnd`
+- headers 内容以服务端返回为准
+
+---
+
+### 3️⃣ **TCP Ping 测试** (`testTcpPingFieldsCompleteness`)
+- ✅ TCP 连接探测验证
+- ✅ 端口字段验证（`port`）
+- ✅ 延迟统计验证（`latency_min`, `latency_max`, `latency`, `stddev`）
+
+**关键验证点**:
+- `method` = `"tcpping"`
+- `port` 字段必填
+- 时间单位为毫秒
+
+---
+
+### 4️⃣ **DNS 解析测试** (`testDnsFieldsCompleteness`)
+- ✅ DNS 查询字段验证
+- ✅ QUESTION-SECTION / ANSWER-SECTION JSON 格式验证
+- ✅ DNS 统计字段验证（QUERY, ANSWER, AUTHORITY, ADDITIONAL）
+
+**关键验证点**:
+- `method` = `"dns"`
+- `status` = `"NOERROR"` 或其他状态
+- `QUESTION-SECTION` 和 `ANSWER-SECTION` 为 JSON 数组字符串
+- DNS 服务器地址在 `host_ip` 字段
+
+---
+
+### 5️⃣ **MTR (TraceRoute) 测试** (`testMtrFieldsCompleteness`)
+- ✅ 路径追踪基础信息验证
+- ✅ paths 数组验证（动态字段）
+- ✅ 每一跳详情验证（`hop`, `ip`, `latency_*`, `loss`, `responseNum`）
+
+**关键验证点**:
+- `method` = `"mtr"`
+- `paths` 数组包含路径详情
+- 每条路径的 `result` 数组包含每一跳的统计信息
+
+---
+
+## ⏰ 重要时间单位约定
+
+### 🔴 **纳秒 (nanosecond)** - 公共字段
+```objectivec
+data[@"start"]     // 纳秒时间戳（值 > 1000000000000）
+data[@"duration"]  // 纳秒耗时
+data[@"end"]       // 纳秒时间戳
+```
+
+### 🟢 **毫秒 (millisecond)** - 探测字段
+```objectivec
+origin[@"total"]          // Ping 总耗时（毫秒）
+origin[@"latency_min"]    // 最小延迟（毫秒）
+origin[@"requestTime"]    // HTTP 请求时间（毫秒）
+desc[@"callStart"]        // HTTP 生命周期时间点（毫秒）
+```
+
+**验证方法**:
+```objectivec
+// 公共字段：值应该很大（纳秒）
+XCTAssertGreaterThan(start, 1000000000000LL, @"start 应为纳秒时间戳");
+
+// 探测字段：值应该合理（毫秒，通常 < 10000）
+XCTAssertLessThan(total, 10000.0, @"total 应为毫秒");
+```
+
+---
+
+## 🧪 边界条件测试
+
+### `testTimeUnitConsistency` - 时间单位一致性
+验证公共字段（纳秒）与探测字段（毫秒）的时间一致性：
+```objectivec
+durationMs = duration / 1000000.0; // 纳秒转毫秒
+XCTAssertLessThan(fabs(durationMs - total), 1000.0, @"时间应接近");
+```
+
+### `testEmptyExtensionFields` - 空扩展字段
+验证未设置 `detectEx` 和 `userEx` 时，字段应为空对象 `{}`，而非 `nil`：
+```objectivec
+XCTAssertNotNil(detectEx, @"detectEx 应为 {}，而非 nil");
+XCTAssertTrue([detectEx isKindOfClass:[NSDictionary class]]);
+```
+
+### `testHttpDescTimeSequence` - HTTP 生命周期时间顺序
+验证 15 个时间点的顺序正确性：
+```objectivec
+callStart <= dnsStart <= dnsEnd <= connectStart <= ... <= callEnd
+```
+
+---
+
+## 🌍 GEO 信息验证 (`validateNetInfo`)
+
+所有探测方法的响应都应包含 `netInfo` 字段（GEO 信息）：
 
 ```objectivec
-- (void)setUp {
-    [super setUp];
-    
-    self.testConfig = [[ClsLogSenderConfig alloc] init];
-    self.testConfig.endpoint = @"ap-guangzhou.cls.tencentcs.com";
-    self.testConfig.accessKeyId = @"YOUR_ACCESS_KEY_ID";  // 替换为真实的 AccessKey
-    self.testConfig.accessKey = @"YOUR_ACCESS_KEY";        // 替换为真实的 AccessKey
-    
-    [[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:self.testConfig];
+netInfo[@"dns"]          // 本地 DNS
+netInfo[@"defaultNet"]   // 默认网络（WIFI/4G/5G）
+netInfo[@"usedNet"]      // 实际使用网络
+netInfo[@"client_ip"]    // 公网出口 IP
+
+// GEO 信息（由客户端调用接口获取）
+netInfo[@"country_id"]   // 国家 ID（如 CN）
+netInfo[@"isp_en"]       // 运营商（如 China-Unicom）
+netInfo[@"province_en"]  // 省份（如 Beijing）
+netInfo[@"city_en"]      // 城市（如 Beijing）
+netInfo[@"country_en"]   // 国家（如 China）
+```
+
+---
+
+## 📦 扩展字段验证 (`validateExtensionFields`)
+
+### detectEx（业务拓展字段）
+- **设置时机**: 调用探测方法时传入
+- **作用域**: 仅对当次探测生效
+- **示例**:
+```objectivec
+request.detectEx = @{@"scene": @"startup"};
+```
+
+### userEx（用户自定义字段）
+- **设置时机**: SDK 初始化时设置
+- **作用域**: 全局生效
+- **示例**:
+```objectivec
+request.userEx = @{@"user_id": @"12345"};
+```
+
+### 空字段处理
+如果未设置，应返回空对象 `{}`，而非 `nil`：
+```json
+{
+  "detectEx": {},
+  "userEx": {}
 }
 ```
 
-### 2. 运行测试
+---
 
-#### 方法 1: 运行所有测试
-1. 在 Xcode 中打开项目
-2. 选择 scheme: `TencentCloudLogDemo`
-3. 按 `Cmd + U` 或点击 `Product > Test`
+## 🔧 公共字段验证 (`validateCommonFields`)
 
-#### 方法 2: 运行单个测试用例
-1. 打开 `TencentCloudLogDemoTests.m`
-2. 点击测试方法左侧的 ◇ 图标
-3. 或右键点击测试方法 > `Run "testMethodName"`
+所有探测方法都会验证以下公共结构：
 
-#### 方法 3: 使用测试导航器
-1. 按 `Cmd + 6` 打开测试导航器
-2. 展开 `TencentCloudLogDemoTests`
-3. 点击任意测试用例运行
+### 1. 公共字段（6个）
+- `name`, `traceID`, `start`, `duration`, `end`, `service`
 
-#### 方法 4: 命令行运行
+### 2. Resource 字段（26个）
+#### 应用信息
+- `resource.app.name`, `resource.app.version`, `resource.app.versionCode`
+
+#### 设备信息
+- `resource.device.brand`, `resource.device.id`, `resource.device.manufacturer`
+- `resource.device.model.identifier`, `resource.device.model.name`, `resource.device.resolution`
+
+#### 系统信息
+- `resource.host.arch`, `resource.host.name`, `resource.host.type`
+- `resource.os.name`, `resource.os.version`, `resource.os.type`
+- `resource.os.root`, `resource.os.description`
+
+#### 网络信息
+- `resource.carrier`, `resource.net.access`, `resource.net.access_subtype`
+
+#### SDK 信息
+- `resource.sdk.language`, `resource.cls.sdk.version`
+
+---
+
+## 🚀 运行测试
+
+### 方法 1: Xcode GUI
+1. 打开 `TencentCloudLogDemo.xcodeproj`
+2. 选择测试 Target: `TencentCloudLogDemoTests`
+3. 选择测试类: `CLSNetworkDiagnosisTests`
+4. 点击 ▶️ 运行测试
+
+### 方法 2: 命令行
 ```bash
-cd /Users/haolv/WorkSpace/cls_team/sdk/tencentcloud-cls-sdk-ios/Xcode/TencentCloudLogDemo
-xcodebuild test -scheme TencentCloudLogDemo -destination 'platform=iOS Simulator,name=iPhone 14'
+cd Xcode/TencentCloudLogDemo
+
+# 运行所有网络诊断测试
+xcodebuild test \
+  -scheme TencentCloudLogDemo \
+  -destination 'platform=iOS Simulator,name=iPhone 14' \
+  -only-testing:TencentCloudLogDemoTests/CLSNetworkDiagnosisTests
+
+# 运行单个测试
+xcodebuild test \
+  -scheme TencentCloudLogDemo \
+  -destination 'platform=iOS Simulator,name=iPhone 14' \
+  -only-testing:TencentCloudLogDemoTests/CLSNetworkDiagnosisTests/testPingFieldsCompleteness
 ```
 
 ---
 
-## 📊 测试用例列表
+## 📊 测试统计
 
-### HTTP Ping 测试 (8 个)
-| 测试方法 | 测试内容 | 优先级 |
-|---------|---------|--------|
-| `testBasicHttpsRequest` | 基本 HTTPS 请求探测 | P0 |
-| `testBasicHttpRequest` | HTTP 请求探测（非加密） | P0 |
-| `testHttpingOnWiFi` | WiFi 网卡探测 | P0 |
-| `testMultipleInterfacesHttping` | 多网卡同时探测 | P0 |
-| `testCustomUserExtension` | 自定义用户扩展字段 | P1 |
-| `testInvalidDomain` | 无效域名处理 | P0 |
+### 基础功能测试
 
-### TCP Ping 测试 (3 个)
-| 测试方法 | 测试内容 | 优先级 |
-|---------|---------|--------|
-| `testBasicTcpPing` | 基本 TCP 端口连通性测试 | P0 |
-| `testTcpPingHttpsPort` | HTTPS 端口测试 (443) | P0 |
-| `testMultipleTcpPingStatistics` | 多次 Ping 统计 | P0 |
+| 测试类型 | 测试方法 | 验证字段数 | 超时时间 |
+|---------|---------|----------|---------|
+| Ping | `testPingFieldsCompleteness` | 50+ | 20s |
+| HTTP | `testHttpFieldsCompleteness` | 70+ | 20s |
+| TCP Ping | `testTcpPingFieldsCompleteness` | 45+ | 20s |
+| DNS | `testDnsFieldsCompleteness` | 35+ | 20s |
+| MTR | `testMtrFieldsCompleteness` | 40+ (动态) | 35s |
+| 边界测试 | `testTimeUnitConsistency` | - | 15s |
+| 边界测试 | `testEmptyExtensionFields` | - | 15s |
+| 边界测试 | `testHttpDescTimeSequence` | - | 20s |
 
-### ICMP Ping 测试 (2 个)
-| 测试方法 | 测试内容 | 优先级 |
-|---------|---------|--------|
-| `testBasicIcmpPing` | 基本 ICMP Ping | P0 |
-| `testCustomPacketSize` | 自定义包大小 | P1 |
+### 多网卡探测测试（新增 🆕）
 
-### DNS 解析测试 (2 个)
-| 测试方法 | 测试内容 | 优先级 |
-|---------|---------|--------|
-| `testBasicDnsResolution` | 基本 DNS 解析 | P0 |
-| `testCustomDnsServer` | 自定义 DNS 服务器 | P1 |
+| 测试类型 | 测试方法 | 验证重点 | 超时时间 |
+|---------|---------|---------|---------|
+| 多网卡 ICMP Ping | `testMultiInterfaceICMPPing` | 多网卡并发探测 | 20s |
+| 多网卡 TCP Ping | `testMultiInterfaceTCPPing` | 网卡绑定、连接统计 | 25s |
+| 多网卡 DNS | `testMultiInterfaceDNS` | DNS 解析正确性 | 20s |
+| 多网卡 HTTP | `testMultiInterfaceHTTP` | HTTP 请求完整性 | 30s |
+| 多网卡 MTR | `testMultiInterfaceMTR` | 路由追踪准确性 | 40s |
+| 单网卡降级 | `testMultiInterfaceFallbackToSingleInterface` | 降级逻辑正确性 | 15s |
+| 网卡绑定失败 | `testMultiInterfaceBindFailure` | 错误统计准确性 | 15s |
 
-### MTR 测试 (1 个)
-| 测试方法 | 测试内容 | 优先级 |
-|---------|---------|--------|
-| `testBasicMtr` | 基本 MTR 路由跟踪 | P0 |
+**总计**: 15 个测试方法，覆盖 280+ 字段验证 + 多网卡场景全覆盖
 
-### 性能测试 (1 个)
-| 测试方法 | 测试内容 | 优先级 |
-|---------|---------|--------|
-| `testPerformanceConcurrentHttping` | 并发 HTTP Ping 性能测试 | P2 |
-
-**总计**: 17 个测试用例
-
----
-
-## 🔧 测试环境要求
-
-### 必需条件
-- ✅ Xcode 12.0+
-- ✅ iOS 10.0+ 模拟器或真机
-- ✅ 有效的网络连接
-- ✅ 有效的 CLS AccessKey 配置
-
-### 推荐条件
-- ✅ 使用真机测试（某些网络功能模拟器可能受限）
-- ✅ 连接到 WiFi 网络（测试多网卡功能）
-- ✅ iOS 13.0+ 设备（完整功能支持）
-
----
-
-## 📝 测试结果查看
-
-### Xcode 测试报告
-1. 运行测试后，在 `Report Navigator (Cmd + 9)` 中查看
-2. 点击最新的测试报告
-3. 展开查看每个测试用例的详细结果
-
-### 控制台日志
-测试运行时，控制台会输出详细日志：
-```
-[HTTP] 网卡: 192.168.1.100, 类型: WiFi, 状态: 200, 耗时: 123ms
-[TCP] 网卡: 192.168.1.100, 平均延迟: 45ms, 成功/失败: 5/0
-[PING] 网卡: 192.168.1.100, 目标: 14.215.177.38, 平均延迟: 23ms, 丢包率: 0%
-[DNS] 查询主机: www.baidu.com, DNS 服务器: 8.8.8.8, 查询时间: 67ms
-[MTR] 跳 1: 192.168.1.1 (延迟: 2ms)
-```
-
-### 测试覆盖率
-1. 在 Xcode 中 `Product > Scheme > Edit Scheme`
-2. 选择 `Test` 标签
-3. 勾选 `Code Coverage` > 选择 `TencentCloudLogProducer`
-4. 运行测试后查看覆盖率报告
+📄 **详细文档**: [多网卡测试报告](../../../reports/multi_interface_test_report.md)
 
 ---
 
 ## ⚠️ 注意事项
 
 ### 1. 网络依赖
-- 某些测试需要真实的网络连接
-- 建议在稳定的网络环境下运行测试
-- WiFi 网卡测试需要设备连接到 WiFi
+测试需要访问真实网络（`www.tencentcloud.com`），确保：
+- ✅ 测试设备/模拟器有网络连接
+- ✅ 目标域名可访问
+- ✅ 防火墙/代理配置正确
 
 ### 2. 超时设置
-- 网络测试默认超时时间为 30-120 秒
-- 如果网络较慢，可能需要调整超时时间
-- 可在 `waitForExpectationsWithTimeout:` 中修改
+- 普通探测：15-20秒
+- MTR 测试：35秒（路径追踪耗时较长）
 
-### 3. 权限要求
-- ICMP Ping 可能需要特殊权限
-- 某些网络诊断功能在模拟器上可能受限
-- 建议在真机上运行完整测试
+### 3. GEO 信息依赖
+测试假设 SDK 已正确实现 GEO 信息获取接口调用。如果接口未实现，`netInfo` GEO 字段验证会失败。
 
-### 4. 测试数据
-- 测试使用公共域名（baidu.com, google.com 等）
-- 如果某些域名不可访问，测试可能失败
-- 可根据实际情况修改测试域名
+### 4. 动态字段
+以下字段为动态内容，测试仅验证存在性，不验证具体值：
+- `headers`（HTTP 响应头，依赖服务端返回）
+- `ANSWER-SECTION`（DNS 解析结果）
+- `paths[].result`（MTR 路径跳数，依赖网络拓扑）
 
 ---
 
-## 🐛 故障排查
+## 🐛 常见问题排查
 
-### 问题 1: 测试失败 - "响应为空"
-**原因**: 网络不可用或配置错误  
-**解决**: 
-- 检查网络连接
-- 检查 AccessKey 配置是否正确
-- 检查目标域名是否可访问
+### 问题 1: 测试超时
+**原因**: 网络连接慢或目标主机不可达  
+**解决**: 增加超时时间或更换测试域名
 
-### 问题 2: WiFi 测试被跳过
-**原因**: 设备未连接到 WiFi  
-**解决**: 
-- 连接到 WiFi 网络
-- 或修改测试用例跳过条件
+### 问题 2: JSON 解析失败
+**原因**: 响应 `content` 不是有效 JSON  
+**解决**: 检查 `CLSResponse` 的 `complateResultWithContent` 实现
 
-### 问题 3: 超时错误
-**原因**: 网络延迟较大或目标不可达  
-**解决**: 
-- 增加超时时间
-- 更换测试目标域名
-- 检查防火墙设置
+### 问题 3: 时间单位错误
+**原因**: 公共字段使用毫秒而非纳秒  
+**解决**: 检查时间戳生成代码，确保使用 `mach_absolute_time()` 或 `CFAbsoluteTimeGetCurrent() * 1e9`
 
-### 问题 4: 编译错误 - 找不到头文件
-**原因**: 依赖未正确安装  
-**解决**: 
-```bash
-cd Xcode/TencentCloudLogDemo
-pod install
-```
+### 问题 4: GEO 字段缺失
+**原因**: 未实现 GEO 信息获取接口  
+**解决**: 实现探测完成后调用 `DescribeGeoInfo` 接口
+
+### 问题 5: HTTP desc 时间顺序错误
+**原因**: 生命周期打点顺序错误或未打点  
+**解决**: 检查 `CLSHttpingV2.m` 中的打点代码，确保 15 个时间点按顺序记录
 
 ---
 
-## 📚 参考资源
+## 📚 参考文档
 
-- [完整测试用例文档](../../../NETWORK_DIAGNOSIS_TEST_CASES.md)
-- [项目上下文文档](../../../PROJECT_CONTEXT.md)
-- [代码审查报告](../../../CLSHttpingV2_CODE_REVIEW.md)
-- [官方文档](https://cloud.tencent.com/document/product/614)
-
----
-
-## 🔄 持续集成
-
-### GitHub Actions 示例配置
-
-```yaml
-name: iOS Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: macos-latest
-    
-    steps:
-    - uses: actions/checkout@v2
-    
-    - name: Install CocoaPods
-      run: |
-        cd Xcode/TencentCloudLogDemo
-        pod install
-    
-    - name: Run Tests
-      run: |
-        cd Xcode/TencentCloudLogDemo
-        xcodebuild test \
-          -workspace TencentCloudLogDemo.xcworkspace \
-          -scheme TencentCloudLogDemo \
-          -destination 'platform=iOS Simulator,name=iPhone 14' \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO
-```
+- **字段规范文档**: `.codebuddy/skills/cls-ios-sdk/references/field-specification.md`
+- **产品需求文档**: https://doc.weixin.qq.com/doc/w3_AWUAJgaUAFcCNM2vm7VdcQTCU5Xvx
+- **API 参考**: `.codebuddy/skills/cls-ios-sdk/references/api-reference.md`
+- **测试指南**: `.codebuddy/skills/cls-ios-sdk/references/testing-guide.md`
 
 ---
 
-**最后更新**: 2025-12-04  
-**维护者**: CLS iOS SDK Team
+## 🎯 下一步
+
+### 待补充测试
+1. **错误场景测试**
+   - 网络不可达
+   - 超时处理
+   - 无效参数
+
+2. **性能测试**
+   - 并发探测
+   - 内存使用
+   - 探测频率限制
+
+3. **线程安全测试**
+   - 多线程调用
+   - 回调线程验证
+
+### 持续改进
+- 添加测试覆盖率报告
+- 集成 CI/CD 自动化测试
+- 添加性能基准测试
+
+### ✅ 已完成
+- ✅ 多网卡探测全覆盖测试（2025-12-19）
+  - ICMP Ping、TCP Ping、DNS、HTTP、MTR 多网卡场景
+  - 单网卡降级测试
+  - 网卡绑定失败测试
+  - 详见 [多网卡测试报告](../../../reports/multi_interface_test_report.md)
+
+---
+
+**生成日期**: 2025-12-18  
+**基于规范**: CLS 网络探测字段规范 v1.0  
+**测试框架**: XCTest  

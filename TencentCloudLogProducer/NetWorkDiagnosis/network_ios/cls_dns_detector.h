@@ -68,12 +68,32 @@ cls_dns_detector_error_code cls_dns_detector_perform_dns(const char *domain,
                                                          cls_dns_detector_result *result);
 
 /**
+ * 计算将 DNS 结果转换为 JSON 格式所需的最小缓冲区大小
+ * @param result DNS 探测结果（可以为 NULL，使用最大估算值）
+ * @return 所需缓冲区大小（字节数），失败返回 0
+ * 
+ * 缓冲区大小计算公式：
+ * - 基础字段：约 1000 字节
+ * - 域名（转义后可能翻倍）：domain_len * 4
+ * - 每个答案记录：约 500 字节
+ * - 最大可能大小：约 52000 字节（100 条记录 + 最大域名长度）
+ * 
+ * 建议：为安全起见，建议分配至少 65536 字节（64KB）的缓冲区
+ */
+size_t cls_dns_detector_result_json_size(const cls_dns_detector_result * _Nullable result);
+
+/**
  * 将 DNS 结果转换为 JSON 格式
  * @param result DNS 探测结果
  * @param error_code 错误码
  * @param json_buffer 输出缓冲区
- * @param buffer_size 缓冲区大小
+ * @param buffer_size 缓冲区大小（建议使用 cls_dns_detector_result_json_size 计算所需大小）
  * @return 成功返回写入的字节数，失败返回-1
+ * 
+ * 缓冲区大小说明：
+ * - 最小建议大小：65536 字节（64KB）
+ * - 最大可能大小：约 52000 字节（100 条记录 + 最大域名长度）
+ * - 可使用 cls_dns_detector_result_json_size 函数计算精确大小
  */
 int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
                                     cls_dns_detector_error_code error_code,

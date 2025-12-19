@@ -14,7 +14,6 @@
 
 static NSString *const kMtrLogPrefix = @"[MTR检测]";
 static const NSUInteger kMTRJsonBufferSize = 65535;
-static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
 
 @interface CLSMultiInterfaceMtr ()
 @property (nonatomic, strong) NSDictionary *interfaceInfo;
@@ -67,7 +66,7 @@ static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
     config.max_ttl = self.request.maxTTL;
     config.timeout_ms = self.request.timeout;
     config.times = self.request.maxTimes;
-    config.prefer = kPreferIPv4; // 使用常量，语义清晰
+    config.prefer = self.request.prefer;  // 使用 request 中的 prefer 配置
     config.protocol = [self.request.protocol UTF8String];
     
     // 4. 处理网卡下标（unsigned int 类型适配，空值兜底）
@@ -91,7 +90,7 @@ static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
     
     // 6. 转换检测结果为JSON字符串
     char json_buffer[kMTRJsonBufferSize] = {0};
-    cls_mtr_detector_result_to_json(&result, code, json_buffer, sizeof(json_buffer));
+    cls_mtr_detector_result_to_json(&result,json_buffer, sizeof(json_buffer));
     
     // 7. 错误日志增强（补充上下文）
     if (code != cls_mtr_detector_error_success) {
@@ -103,16 +102,16 @@ static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
     NSLog(@"%@ 网卡%@（域名%@）：检测结果：%@", kMtrLogPrefix, interfaceName, domainStr, jsonString);
     NSDictionary *reportData = [self buildReportDataFromMtrResult:jsonString];
     
-    // 9. 回调结果（空值兜底）
-    CLSResponse *callbackResult = [CLSResponse complateResultWithContent:reportData ?: @{}];
+    // 9. 上报链路数据（语义化日志，避免冗余构建）
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+    [builder setURL:domainStr];
+    NSDictionary *d = [builder report:self.topicId reportData:reportData];
+    
+    // 10. 回调结果（空值兜底）
+    CLSResponse *callbackResult = [CLSResponse complateResultWithContent:d ?: @{}];
     if (completion) {
         completion(callbackResult);
     }
-    
-    // 10. 上报链路数据（语义化日志，避免冗余构建）
-    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-    [builder setURL:domainStr];
-    [builder report:self.topicId reportData:reportData];
 }
 
 #pragma mark - 公共接口
@@ -149,9 +148,10 @@ static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
     }
     
     NSMutableDictionary *reportData = (NSMutableDictionary *)jsonObject;
-    NSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kMtrLogPrefix, reportData);
     
     // 5. 追加通用字段（空值兜底，避免崩溃）
+    reportData[@"appKey"] = self.request.appKey;
+    reportData[@"src"] = @"app";
     reportData[@"trace_id"] = CLSIdGenerator.generateTraceId ?: @""; // 核心修复：nil兜底
     reportData[@"netInfo"] = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interfaceInfo[@"type"]
                                                                 networkAppId:self.networkAppId
@@ -160,8 +160,8 @@ static const NSInteger kPreferIPv4 = 0; // IPv4 优先标识
                                                                      endpoint:self.endPoint
                                                                 interfaceDNS:self.interfaceInfo[@"dns"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
-    reportData[@"userEx"] = self.request.detectEx ?: @{};
-    
+    reportData[@"userEx"] = self.request.userEx ?: @{};
+    NSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kMtrLogPrefix, reportData);
     return [reportData copy];
 }
 

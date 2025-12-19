@@ -5,12 +5,12 @@ target 'TencentCloudLogDemo' do
   # use_frameworks! # 动态库模式（必须保留，适配TencentCloudLogProducer）
   pod 'TencentCloudLogProducer/Core', :path => '../../'
   pod 'TencentCloudLogProducer/NetWorkDiagnosis', :path => '../../'
-#
-#  # 3. 测试Target：TencentCloudLogDemoTests（单元测试）
-#  target 'TencentCloudLogDemoTests' do
-#    inherit! :search_paths
-#    pod 'OCMock', '~> 3.0' # 
-#  end
+
+  # 3. 测试Target：TencentCloudLogDemoTests（单元测试）
+  target 'TencentCloudLogDemoTests' do
+    inherit! :search_paths
+    pod 'OCMock', '~> 3.0' # 
+  end
 #
 #  target 'TencentCloudLogDemoUITests' do
 #    inherit! :search_paths

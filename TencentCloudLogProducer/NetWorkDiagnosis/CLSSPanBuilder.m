@@ -18,6 +18,7 @@
 @interface CLSSpanBuilder ()
 @property(nonatomic, strong) NSString *name;
 @property(nonatomic, strong) NSString *url;
+@property(nonatomic, strong) NSString *pageName;
 @property(nonatomic, strong) id<CLSSpanProviderProtocol> spanProvider;
 @property(atomic, assign, readonly) BOOL active;
 @property(nonatomic, strong) NSMutableArray<CLSAttribute*> *attributes;
@@ -62,6 +63,12 @@
     return self;
 }
 
+- (CLSSpanBuilder *) setpageName: (NSString *)pageName {
+    _pageName = pageName;
+    return self;
+}
+
+
 - (CLSSpanBuilder *) addAttribute: (CLSAttribute *) attribute, ... NS_REQUIRES_NIL_TERMINATION {
     [_attributes addObject:attribute];
     
@@ -103,9 +110,9 @@
     span.service = _service;
     span.traceID = CLSIdGenerator.generateTraceId;
     
-    if (nil != _spanProvider) {
-        [_attributes addObjectsFromArray:[_spanProvider provideAttribute]];
-    }
+//    if (nil != _spanProvider) {
+//        [_attributes addObjectsFromArray:[_spanProvider provideAttribute]];
+//    }
     NSMutableDictionary<NSString *, NSString *> *dict = (NSMutableDictionary<NSString *, NSString *> *) span.attribute;
     for (CLSAttribute *attr in _attributes) {
         if (attr.key && attr.value) {
@@ -132,9 +139,9 @@
     return span;
 }
 
-- (BOOL)report:(NSString*)topicId reportData:(NSDictionary *)reportData{
+- (NSDictionary *)report:(NSString*)topicId reportData:(NSDictionary *)reportData{
     if (!reportData) {
-        return false;
+        return @{};
     }
     
     NSDictionary *dict = [reportData copy];
@@ -143,6 +150,7 @@
     [CLSPrivocyUtils setEnablePrivocy:YES];
     [self addAttribute:
          [CLSAttribute of:@"net.type" value:method],
+         [CLSAttribute of:@"page.name" value:self.pageName],
          [CLSAttribute of:@"net.origin" dictValue:dict],
          nil
     ];
@@ -171,7 +179,7 @@
             NSLog(@"日志写入失败，error：%@", error);
         }
     }];
-    return true;
+    return d;
 }
 
 @end

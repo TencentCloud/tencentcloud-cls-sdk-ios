@@ -9,6 +9,7 @@
 ## 📋 目录
 
 - [功能特点](#功能特点)
+- [最新更新](#最新更新)
 - [环境要求](#环境要求)
 - [安装](#安装)
 - [快速开始](#快速开始)
@@ -16,6 +17,33 @@
 - [网络诊断](#网络诊断)
 - [API 文档](#api-文档)
 - [示例代码](#示例代码)
+
+---
+
+## 🎉 最新更新
+
+### v2.1.0 (2025-12-19)
+
+#### 🆕 新增功能
+
+**1. IPv4/IPv6 协议偏好控制**
+- ✅ Ping、DNS、MTR 探测支持 IP 协议偏好设置
+- ✅ 新增 `prefer` 参数：支持 IPv4/IPv6 优先、仅 IPv4/IPv6、自动检测
+- ✅ 适配双栈网络环境，提供更灵活的网络诊断能力
+
+**2. 初始化方式优化**
+- ✅ 支持 `topicId` 和 `netToken` 两种初始化方式
+- ✅ netToken 自动提前解析并缓存，避免重复解析
+- ✅ 性能提升：解析次数减少 99%+
+
+**3. 测试覆盖增强**
+- ✅ 新增 14 个测试用例（IPv4/IPv6 偏好测试 9 个 + topicId 模式测试 5 个）
+- ✅ 覆盖各种网络环境和协议场景
+
+#### 📚 参考文档
+- [IP 协议偏好参数更新](reports/prefer_parameter_update.md)
+- [netToken 解析优化](reports/nettoken_parse_optimization.md)
+- [测试用例文档](reports/new_test_cases_documentation.md)
 
 ---
 
@@ -386,6 +414,10 @@ pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 2.0.0'
 
 ### 初始化网络诊断
 
+> ⚠️ **重要提示**：`ClsNetworkDiagnosis` 是单例模式，应在应用启动时初始化一次。支持两种初始化方式：使用 `topicId` 或 `netToken`。
+
+#### 方式一：使用 topicId（推荐）
+
 ```objectivec
 // 1. 配置日志上报
 ClsLogSenderConfig *config = [[ClsLogSenderConfig alloc] init];
@@ -393,9 +425,27 @@ config.endpoint = @"ap-guangzhou.cls.tencentcs.com";
 config.accessKeyId = @"YOUR_ACCESS_KEY_ID";
 config.accessKey = @"YOUR_ACCESS_KEY";
 
-// 2. 初始化网络诊断模块
-[[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config];
+// 2. 使用 topicId 初始化（推荐方式）
+[[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config 
+                                                       topicId:@"YOUR_TOPIC_ID"];
 ```
+
+#### 方式二：使用 netToken
+
+```objectivec
+// 1. 配置日志上报
+ClsLogSenderConfig *config = [[ClsLogSenderConfig alloc] init];
+config.endpoint = @"ap-guangzhou.cls.tencentcs.com";
+config.accessKeyId = @"YOUR_ACCESS_KEY_ID";
+config.accessKey = @"YOUR_ACCESS_KEY";
+
+// 2. 使用 netToken 初始化
+// netToken 会在初始化时自动解析并缓存，避免后续重复解析
+[[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config 
+                                                       netToken:@"YOUR_NET_TOKEN"];
+```
+
+> 💡 **性能优化**：使用 `netToken` 方式时，SDK 会在初始化时自动解析并缓存 token 信息，避免每次探测时重复解析，提升性能。
 
 ### 探测功能说明
 
@@ -510,7 +560,7 @@ request.enableMultiplePortsDetect = YES;  // 多网卡探测
 
 ### 3️⃣ ICMP Ping（网络连通性）
 
-使用 ICMP 协议检测网络连通性和延迟。
+使用 ICMP 协议检测网络连通性和延迟，支持 IPv4/IPv6 协议偏好设置。
 
 #### 基础用法
 
@@ -527,6 +577,9 @@ request.size = 64;  // 数据包大小（字节）
 request.timeout = 5;  // 超时时间（秒）
 request.enableMultiplePortsDetect = YES;  // 多网卡探测
 
+// ✨ 新增：IP 协议偏好设置
+request.prefer = -1;  // -1=自动检测（默认）, 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only
+
 // 执行探测
 [[ClsNetworkDiagnosis sharedInstance] pingv2:request complate:^(CLSResponse *response) {
     if (response.success) {
@@ -542,11 +595,39 @@ request.enableMultiplePortsDetect = YES;  // 多网卡探测
 }];
 ```
 
+#### IPv4/IPv6 协议控制
+
+```objc
+// 示例 1: 强制使用 IPv4（适用于纯 IPv4 环境）
+CLSPingRequest *request1 = [[CLSPingRequest alloc] init];
+request1.domain = @"cloud.tencent.com";
+request1.prefer = 2;  // IPv4 only
+[[ClsNetworkDiagnosis sharedInstance] pingv2:request1 complate:^(CLSResponse *response) {
+    NSLog(@"IPv4 Ping 结果: %@", response);
+}];
+
+// 示例 2: IPv6 优先（在双栈网络环境下优先使用 IPv6）
+CLSPingRequest *request2 = [[CLSPingRequest alloc] init];
+request2.domain = @"cloud.tencent.com";
+request2.prefer = 1;  // IPv6 优先
+[[ClsNetworkDiagnosis sharedInstance] pingv2:request2 complate:^(CLSResponse *response) {
+    NSLog(@"IPv6 优先 Ping 结果: %@", response);
+}];
+
+// 示例 3: 自动检测（默认行为，推荐）
+CLSPingRequest *request3 = [[CLSPingRequest alloc] init];
+request3.domain = @"cloud.tencent.com";
+// request3.prefer 默认为 -1，自动检测
+[[ClsNetworkDiagnosis sharedInstance] pingv2:request3 complate:^(CLSResponse *response) {
+    NSLog(@"自动检测 Ping 结果: %@", response);
+}];
+```
+
 ---
 
 ### 4️⃣ DNS 解析
 
-测试 DNS 域名解析功能，支持自定义 DNS 服务器。
+测试 DNS 域名解析功能，支持自定义 DNS 服务器和 IPv4/IPv6 协议偏好。
 
 #### 基础用法
 
@@ -561,6 +642,9 @@ request.appKey = @"YOUR_APP_KEY";
 // request.nameServer = @"8.8.8.8";  // Google DNS
 // request.nameServer = @"119.29.29.29";  // DNSPod
 
+// ✨ 新增：IP 协议偏好设置
+request.prefer = 0;  // 0=IPv4优先（返回 A 记录）, 1=IPv6优先（返回 AAAA 记录）
+
 // 执行解析
 [[ClsNetworkDiagnosis sharedInstance] dns:request complate:^(CLSResponse *response) {
     if (response.success) {
@@ -570,6 +654,28 @@ request.appKey = @"YOUR_APP_KEY";
     } else {
         NSLog(@"❌ DNS 解析失败: %@", response.errorMessage);
     }
+}];
+```
+
+#### DNS 记录类型控制
+
+```objc
+// 示例 1: 仅查询 A 记录（IPv4）
+CLSDnsRequest *request1 = [[CLSDnsRequest alloc] init];
+request1.domain = @"www.qq.com";
+request1.prefer = 2;  // IPv4 only - 仅返回 A 记录
+[[ClsNetworkDiagnosis sharedInstance] dns:request1 complate:^(CLSResponse *response) {
+    NSArray *answers = response.data[@"ANSWER-SECTION"];
+    // 预期返回：[{"type": "A", "data": "203.205.158.53"}]
+}];
+
+// 示例 2: 仅查询 AAAA 记录（IPv6）
+CLSDnsRequest *request2 = [[CLSDnsRequest alloc] init];
+request2.domain = @"www.qq.com";
+request2.prefer = 3;  // IPv6 only - 仅返回 AAAA 记录
+[[ClsNetworkDiagnosis sharedInstance] dns:request2 complate:^(CLSResponse *response) {
+    NSArray *answers = response.data[@"ANSWER-SECTION"];
+    // 预期返回：[{"type": "AAAA", "data": "2408:871a:2100:15::53"}]
 }];
 ```
 
@@ -586,7 +692,7 @@ request.appKey = @"YOUR_APP_KEY";
 
 ### 5️⃣ MTR 路由跟踪
 
-My TraceRoute (MTR) 结合了 Traceroute 和 Ping 的功能，用于网络路径诊断。
+My TraceRoute (MTR) 结合了 Traceroute 和 Ping 的功能，用于网络路径诊断，支持 IPv4/IPv6 协议选择。
 
 #### 基础用法
 
@@ -598,8 +704,11 @@ request.topicId = @"YOUR_TOPIC_ID";
 request.appKey = @"YOUR_APP_KEY";
 
 // 可选配置
-request.maxTimes = 30;  // 最大跳数
+request.maxTTL = 30;  // 最大跳数
 request.timeout = 60;  // 超时时间（秒）
+
+// ✨ 新增：IP 协议偏好设置
+request.prefer = 0;  // 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only
 
 // 执行 MTR
 [[ClsNetworkDiagnosis sharedInstance] mtr:request complate:^(CLSResponse *response) {
@@ -614,6 +723,24 @@ request.timeout = 60;  // 超时时间（秒）
         }
     } else {
         NSLog(@"❌ MTR 失败: %@", response.errorMessage);
+    }
+}];
+```
+
+#### 协议选择示例
+
+```objc
+// 示例：IPv4 only MTR（确保使用 IPv4 路由）
+CLSMtrRequest *request = [[CLSMtrRequest alloc] init];
+request.domain = @"cloud.tencent.com";
+request.maxTTL = 15;
+request.prefer = 2;  // IPv4 only - 确保路径使用 IPv4
+[[ClsNetworkDiagnosis sharedInstance] mtr:request complate:^(CLSResponse *response) {
+    NSArray *paths = response.data[@"paths"];
+    for (NSDictionary *hop in paths) {
+        NSString *ip = hop[@"ip"];
+        // ip 格式：203.205.158.53（IPv4 点分十进制）
+        NSLog(@"IPv4 路径跳数 %@: %@", hop[@"hop"], ip);
     }
 }];
 ```
@@ -803,7 +930,9 @@ request.timeout = 60;  // 超时时间（秒）
 
 ```objectivec
 @interface CLSPingRequest : CLSRequest
-// 继承自 CLSRequest，无额外属性
+@property(atomic, assign) int interval;  // Ping 间隔时间（毫秒）
+/// IP 协议偏好设置: 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only, <0=自动检测（默认）
+@property(atomic, assign) int prefer;
 @end
 ```
 
@@ -811,7 +940,9 @@ request.timeout = 60;  // 超时时间（秒）
 
 ```objectivec
 @interface CLSDnsRequest : CLSRequest
-@property (nonatomic, copy) NSString *nameServer;   // DNS 服务器地址
+@property (nonatomic, copy) NSString *nameServer;  // DNS 服务器地址
+/// IP 协议偏好设置: 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only, <0=自动检测（默认）
+@property(atomic, assign) int prefer;
 @end
 ```
 
@@ -819,7 +950,10 @@ request.timeout = 60;  // 超时时间（秒）
 
 ```objectivec
 @interface CLSMtrRequest : CLSRequest
-// 继承自 CLSRequest，无额外属性
+@property(atomic, assign) int maxTTL;        // 最大跳数
+@property(nonatomic, copy) NSString *protocol;  // 协议类型（"icmp" 或 "udp"）
+/// IP 协议偏好设置: 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only, <0=自动检测（默认）
+@property(atomic, assign) int prefer;
 @end
 ```
 
@@ -1099,6 +1233,69 @@ SDK 内部使用 `NSLog` 输出调试信息，可以在 Xcode Console 查看。
 ### 9. 日志会丢失吗？
 
 不会。SDK 采用本地 SQLite 数据库缓存，网络异常时日志会保存在本地，网络恢复后自动重试上报。
+
+### 10. 如何选择 IPv4 还是 IPv6？
+
+使用 `prefer` 参数控制 IP 协议偏好：
+
+```objectivec
+CLSPingRequest *request = [[CLSPingRequest alloc] init];
+request.prefer = 0;  // IPv4 优先（默认：-1 自动检测）
+// 0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only, <0=自动检测
+```
+
+**推荐设置**：
+- ✅ **自动检测（-1）** - 默认值，适用于大多数场景
+- ✅ **IPv4 only（2）** - 纯 IPv4 环境或需要严格控制协议时
+- ✅ **IPv6 only（3）** - 纯 IPv6 环境（如某些运营商网络）
+
+### 11. topicId 和 netToken 有什么区别？
+
+| 特性 | topicId 模式 | netToken 模式 |
+|-----|------------|--------------|
+| **使用场景** | 单一日志主题 | 需要动态切换主题或包含多个参数 |
+| **初始化** | 直接传入 topicId | 传入 Base64 编码的 token |
+| **性能** | 无需解析，直接使用 | 初始化时解析 1 次并缓存 |
+| **灵活性** | 简单直接 | 可包含更多配置信息 |
+
+**推荐做法**：
+- ✅ **固定 topicId** - 使用 topicId 模式（更简单）
+- ✅ **动态配置** - 使用 netToken 模式（更灵活）
+
+### 12. netToken 如何生成？
+
+netToken 是包含网络诊断配置的 Base64 编码字符串，格式如下：
+
+```json
+{
+  "networkAppId": "your_app_id",
+  "appKey": "your_app_key",
+  "uin": "user_id",
+  "region": "ap-guangzhou",
+  "topic_id": "your_topic_id"
+}
+```
+
+生成方式：
+```objectivec
+// 1. 构造 JSON 对象
+NSDictionary *tokenDict = @{
+    @"networkAppId": @"your_app_id",
+    @"appKey": @"your_app_key",
+    @"uin": @"user_id",
+    @"region": @"ap-guangzhou",
+    @"topic_id": @"your_topic_id"
+};
+
+// 2. 转换为 JSON 字符串
+NSData *jsonData = [NSJSONSerialization dataWithJSONObject:tokenDict options:0 error:nil];
+NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+// 3. Base64 编码
+NSString *netToken = [jsonData base64EncodedStringWithOptions:0];
+```
+
+> 💡 **性能优化**：SDK 会在初始化时自动解析并缓存 netToken，后续探测直接使用缓存，无需重复解析。
 
 ---
 
