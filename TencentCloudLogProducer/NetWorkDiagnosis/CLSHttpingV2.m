@@ -60,10 +60,8 @@
 - (void)startHttpingWithCompletion:(NSDictionary *)currentInterface
                         completion:(void (^)(NSDictionary *finalReportDict, NSError *error))completion {
     self.completionHandler = completion;
-    self.startTime = CFAbsoluteTimeGetCurrent();
-    self.requestPreparationTime = CFAbsoluteTimeGetCurrent();
     self.interfaceInfo = [currentInterface copy];
-
+    self.processStartTime = CFAbsoluteTimeGetCurrent();
     // 构建Session配置
     NSURLSessionConfiguration *sessionConfig = [self createSessionConfigurationForInterface];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -94,6 +92,7 @@
     [self setupTimeoutTimer];
     
     // 启动任务
+    self.taskStartTime = CFAbsoluteTimeGetCurrent();
     NSURLSessionDataTask *task = [self.urlSession dataTaskWithRequest:request];
     [task resume];
 }
@@ -129,10 +128,8 @@
         _timeoutTimer = nil;
     }
 
-    CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
-    NSTimeInterval totalTime = (endTime - self.startTime) * 1000;
     // 直接生成最终上报字典
-    NSDictionary *finalReportDict = [self buildFinalReportDictWithTask:nil error:error totalTime:totalTime];
+    NSDictionary *finalReportDict = [self buildFinalReportDictWithTask:nil error:error];
 
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.completionHandler) {
@@ -162,10 +159,8 @@ didCompleteWithError:(NSError *)error {
         _timeoutTimer = nil;
     }
 
-    CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
-    NSTimeInterval totalTime = (endTime - self.startTime) * 1000;
     // 直接生成最终上报字典
-    NSDictionary *finalReportDict = [self buildFinalReportDictWithTask:task error:error totalTime:totalTime];
+    NSDictionary *finalReportDict = [self buildFinalReportDictWithTask:task error:error];
 
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.completionHandler) {
@@ -199,7 +194,7 @@ didReceiveData:(NSData *)data {
         metrics[@"dnsTime"] = @(dnsResolutionTime);
 
         CFAbsoluteTime dnsStartAbsoluteTime = [transaction.domainLookupStartDate timeIntervalSinceReferenceDate];
-        NSTimeInterval waitDnsTime = (dnsStartAbsoluteTime - self.requestPreparationTime) * 1000;
+        NSTimeInterval waitDnsTime = (dnsStartAbsoluteTime - self.taskStartTime) * 1000;
         metrics[@"waitDnsTime"] = @(waitDnsTime);
 
         metrics[@"dnsStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.domainLookupStartDate];
@@ -207,11 +202,25 @@ didReceiveData:(NSData *)data {
     }
 
     // TCP耗时
-    if (transaction.connectStartDate && transaction.connectEndDate) {
-        NSTimeInterval tcpTime = [transaction.connectEndDate timeIntervalSinceDate:transaction.connectStartDate] * 1000;
+    if (transaction.connectStartDate) {
+        NSTimeInterval tcpTime = 0;
+        // HTTPS场景：纯TCP耗时 = SSL开始时间 - TCP开始时间
+        if (transaction.secureConnectionStartDate) {
+            tcpTime = [transaction.secureConnectionStartDate timeIntervalSinceDate:transaction.connectStartDate] * 1000;
+        }
+        // HTTP场景：TCP耗时 = 连接结束时间 - TCP开始时间
+        else if (transaction.connectEndDate) {
+            tcpTime = [transaction.connectEndDate timeIntervalSinceDate:transaction.connectStartDate] * 1000;
+        }
         metrics[@"tcpTime"] = @(tcpTime);
         metrics[@"connectStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.connectStartDate];
-        metrics[@"connectEnd"] = [CLSStringUtils formatDateToMillisecondString:transaction.connectEndDate];
+        // TCP结束时间：HTTPS=SSL开始时间，HTTP=connectEndDate
+        NSDate *tcpEndDate = transaction.secureConnectionStartDate ?: transaction.connectEndDate;
+        metrics[@"connectEnd"] = [CLSStringUtils formatDateToMillisecondString:tcpEndDate];
+    } else {
+        metrics[@"tcpTime"] = @(0);
+        metrics[@"connectStart"] = @"";
+        metrics[@"connectEnd"] = @"";
     }
 
     // SSL耗时
@@ -220,22 +229,48 @@ didReceiveData:(NSData *)data {
         metrics[@"sslTime"] = @(sslTime);
         metrics[@"secureConnectStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.secureConnectionStartDate];
         metrics[@"secureConnectEnd"] = [CLSStringUtils formatDateToMillisecondString:transaction.secureConnectionEndDate];
+    }else{
+        metrics[@"sslTime"] = @(0);
+        metrics[@"secureConnectStart"] = @"";
+        metrics[@"secureConnectEnd"] = @"";
     }
 
     // 请求耗时
     if (transaction.requestStartDate && transaction.requestEndDate) {
-        NSDate *preparationDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.requestPreparationTime];
+        NSDate *preparationDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.taskStartTime];
         metrics[@"callStart"] = [CLSStringUtils formatDateToMillisecondString:preparationDate];
         metrics[@"requestHeaderStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.requestStartDate];
         metrics[@"requestHeaderEnd"] = [CLSStringUtils formatDateToMillisecondString:transaction.requestEndDate];
     }
 
+    // 计算firstByteTime
+    if (transaction.secureConnectionEndDate && transaction.responseStartDate) {
+        // HTTPS场景：连接建立 = SSL结束时间
+        NSTimeInterval firstByteTime = [transaction.responseStartDate timeIntervalSinceDate:transaction.secureConnectionEndDate] * 1000;
+        metrics[@"firstByteTime"] = @(firstByteTime);
+    } else if (transaction.connectEndDate && transaction.responseStartDate) {
+        // HTTP场景：连接建立 = TCP结束时间
+        NSTimeInterval firstByteTime = [transaction.responseStartDate timeIntervalSinceDate:transaction.connectEndDate] * 1000;
+        metrics[@"firstByteTime"] = @(firstByteTime);
+    } else {
+        metrics[@"firstByteTime"] = @(0); // 无有效数据
+    }
+    
+    // 2. 新增allByteTime独立计算（连接建立 → 所有响应）
+    if (transaction.secureConnectionEndDate && transaction.responseEndDate) {
+        // HTTPS场景
+        NSTimeInterval allByteTime = [transaction.responseEndDate timeIntervalSinceDate:transaction.secureConnectionEndDate] * 1000;
+        metrics[@"allByteTime"] = @(allByteTime);
+    } else if (transaction.connectEndDate && transaction.responseEndDate) {
+        // HTTP场景
+        NSTimeInterval allByteTime = [transaction.responseEndDate timeIntervalSinceDate:transaction.connectEndDate] * 1000;
+        metrics[@"allByteTime"] = @(allByteTime);
+    } else {
+        metrics[@"allByteTime"] = @(0); // 无有效数据
+    }
+    
     // 响应耗时
     if (transaction.responseStartDate && transaction.responseEndDate) {
-        CFAbsoluteTime firstAbsoluteTime = [transaction.responseStartDate timeIntervalSinceReferenceDate];
-        NSTimeInterval firstByteTime = (firstAbsoluteTime - self.requestPreparationTime) * 1000;
-        metrics[@"firstByteTime"] = @(firstByteTime);
-
         metrics[@"callEnd"] = [CLSStringUtils formatDateToMillisecondString:transaction.responseEndDate];
         metrics[@"responseHeadersStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.responseStartDate];
         metrics[@"responseHeaderEnd"] = [CLSStringUtils formatDateToMillisecondString:transaction.responseStartDate];
@@ -255,11 +290,11 @@ didReceiveData:(NSData *)data {
 
 #pragma mark - 核心：合并结果构建+上报数据清洗为一个函数
 - (NSDictionary *)buildFinalReportDictWithTask:(NSURLSessionTask *)task
-                                         error:(NSError *)error
-                                     totalTime:(NSTimeInterval)totalTime {
+                                         error:(NSError *)error{
     NSHTTPURLResponse *response = (NSHTTPURLResponse *)task.response;
     NSMutableDictionary *finalReportDict = [NSMutableDictionary dictionary];
-
+    CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
+    NSTimeInterval totalTime = (endTime - self.processStartTime) * 1000;
     // -------------------------- 1. 构建原netOrigin核心字段 --------------------------
     NSString *remoteAddr = self.timingMetrics[@"remoteAddr"] ?: @"";
     NSURL *requestURL = [NSURL URLWithString:self.request.domain];
@@ -273,7 +308,7 @@ didReceiveData:(NSData *)data {
     
     // 时间戳统一计算
     NSTimeInterval timestamp = [NSDate date].timeIntervalSince1970 * 1000;
-    NSTimeInterval startDateMs = self.startTime * 1000;
+    NSTimeInterval startDateMs = self.taskStartTime * 1000;
     
     // 带宽计算（避免除0）
     double bandwidth = self.receivedBytes / MAX((totalTime / 1000), 0.001);
@@ -309,7 +344,7 @@ didReceiveData:(NSData *)data {
         @"firstByteTime": self.timingMetrics[@"firstByteTime"] ?: @0,
         @"sendBytes": self.timingMetrics[@"sendBytes"] ?: @0,
         @"receiveBytes": @(self.receivedBytes),
-        @"allByteTime": @(totalTime),
+        @"allByteTime": self.timingMetrics[@"allByteTime"] ?: @0,
         @"bandwidth": @(bandwidth),
         @"requestTime": @(totalTime),
         @"httpCode": @(statusCode),

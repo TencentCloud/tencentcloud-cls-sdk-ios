@@ -33,8 +33,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface CLSMultiInterfaceHttping : CLSBaseFields
 @property (nonatomic, strong) NSURLSession *urlSession;
 @property (nonatomic, strong) NSMutableDictionary *timingMetrics;
-@property (nonatomic, assign) CFAbsoluteTime startTime;
-@property (nonatomic, assign) CFAbsoluteTime requestPreparationTime;
+@property (nonatomic, assign) CFAbsoluteTime taskStartTime;
+@property (nonatomic, assign) CFAbsoluteTime processStartTime;
 @property (nonatomic, assign) NSUInteger receivedBytes;
 @property (nonatomic, strong) NSMutableData *responseData;
 @property (nonatomic, copy) void (^completionHandler)(NSDictionary *resultDict, NSError *error);

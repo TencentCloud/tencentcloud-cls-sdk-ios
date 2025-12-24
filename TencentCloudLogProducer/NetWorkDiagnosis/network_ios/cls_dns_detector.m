@@ -2740,12 +2740,12 @@ int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
     // 转义domain用于JSON输出（注意：这里result->domain已经在前面转义过，但QUESTION-SECTION需要重新转义）
     char escaped_domain_question[2048];
     if (json_escape(result->domain, escaped_domain_question, sizeof(escaped_domain_question)) < 0) return -1;
-    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"QUESTION-SECTION\": [\n    {\"name\": \"%s.\", \"type\": \"%s\"}\n  ],\n", escaped_domain_question, qtype_str);
+    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"QUESTION_SECTION\": [\n    {\"name\": \"%s.\", \"type\": \"%s\"}\n  ],\n", escaped_domain_question, qtype_str);
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
     pos += n;
     
     // 输出 ANSWER-SECTION
-    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"ANSWER-SECTION\": [\n");
+    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"ANSWER_SECTION\": [\n");
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
     pos += n;
     
