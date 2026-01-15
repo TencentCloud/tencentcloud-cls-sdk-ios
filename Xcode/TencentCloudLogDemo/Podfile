@@ -1,8 +1,8 @@
 # 1. 统一工程最低部署版本（匹配Xcode 15+，避免版本冲突）
-platform :ios, '10.0'
+platform :ios, '12.0'
 
 target 'TencentCloudLogDemo' do
-  # use_frameworks! # 动态库模式（必须保留，适配TencentCloudLogProducer）
+  use_frameworks! # 动态库模式（必须保留，适配TencentCloudLogProducer）
   pod 'TencentCloudLogProducer/Core', :path => '../../'
   pod 'TencentCloudLogProducer/NetWorkDiagnosis', :path => '../../'
 
