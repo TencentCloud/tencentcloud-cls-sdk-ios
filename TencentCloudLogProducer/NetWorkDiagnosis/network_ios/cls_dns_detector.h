@@ -24,27 +24,27 @@ typedef NS_ENUM(NSInteger, cls_dns_detector_error_code) {
 
 /// DNS 答案记录
 typedef struct {
-    char name[1024];          // 域名
-    char type[32];            // 记录类型（A、AAAA、CNAME、TXT 等）
+    char name[256];          // 域名
+    char type[8];            // 记录类型（A、AAAA、CNAME、TXT 等）
     uint32_t ttl;             // 生存时间
-    char value[4096];         // 记录值
+    char value[512];         // 记录值
 } cls_dns_answer_record;
 
 /// DNS 网络探测基础信息
 typedef struct {
     char domain[256];         // 查询的域名
-    char method[32];          // 探测协议（"dns"）
-    char host_ip[128];        // 使用的 DNS 服务器地址
-    char dns_source[32];      // DNS 来源（"specified"=用户指定，"public"=公共备用）
+    char method[4];          // 探测协议（"dns"）
+    char host_ip[64];        // 使用的 DNS 服务器地址
+    char dns_source[16];      // DNS 来源（"specified"=用户指定，"public"=公共备用）
     int query_id;             // DNS 查询 ID
-    char status[32];          // DNS 状态（"NOERROR", "NXDOMAIN" 等）
-    char flags[128];          // DNS 标志位（"qr rd ra" 等）
+    char status[16];          // DNS 状态（"NOERROR", "NXDOMAIN" 等）
+    char flags[32];          // DNS 标志位（"qr rd ra" 等）
     double latency;           // 查询耗时（毫秒）
     int query_count;          // 查询数量 (QUERY / qdcount)
     int answer_count;         // 回答数量 (ANSWER / ancount)
     int authority_count;      // 权威记录数量 (AUTHORITY / nscount)
     int additional_count;     // 附加记录数量 (ADDITIONAL / arcount)
-    cls_dns_answer_record answers[100];  // 答案记录数组（最多100条）
+    cls_dns_answer_record answers[30];  // 答案记录数组（最多30条）
     int prefer;               // IP 版本偏好：0=IPv4优先, 1=IPv6优先, 2=IPv4 only, 3=IPv6 only
 } cls_dns_detector_result;
 

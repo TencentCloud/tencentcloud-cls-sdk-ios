@@ -130,7 +130,7 @@ static char *safe_strdup(const char *src, size_t max_len) {
     return dst;
 }
 
-#define DNS_MAX_RECORD_CAPACITY 100  // 与 cls_dns_answer_record answers[100] 保持一致
+#define DNS_MAX_RECORD_CAPACITY 30  // 与 cls_dns_answer_record answers[30] 保持一致
 
 /**
  * 向答案记录数组添加一条记录
@@ -561,7 +561,7 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
         } else if (type == 16) { // TXT
             if (rdlength > 0) {
                 // TXT记录可以包含多个字符串，每个字符串前面有一个长度字节
-                char txt[2048] = {0};  // 增大缓冲区以支持多个字符串
+                char txt[512] = {0};  // 缓冲区大小与存储结构体一致
                 size_t txt_pos = 0;
                 size_t txt_offset = offset;
                 size_t remaining = rdlength;
@@ -2611,7 +2611,7 @@ size_t cls_dns_detector_result_json_size(const cls_dns_detector_result *result) 
     size_t domain_size = domain_len * 4;
     
     // 每个答案记录：约 500 字节（包含 name、type、value 的转义和 JSON 结构）
-    // name 最大 1024，转义后约 2048；type 最大 32，转义后约 64；value 最大 4096，转义后约 8192
+    // name 最大 256，转义后约 512；type 最大 8，转义后约 16；value 最大 512，转义后约 1024
     // 加上 JSON 结构（逗号、引号、大括号等）约 100 字节
     // 保守估计每条记录约 500 字节
     size_t answer_size = result->answer_count * 500;
