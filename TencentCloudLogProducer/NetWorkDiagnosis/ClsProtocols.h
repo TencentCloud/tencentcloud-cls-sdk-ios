@@ -21,6 +21,7 @@
 @property (nonatomic, copy, nullable) NSString *pageName;
 @property(nonatomic, strong) NSDictionary<NSString*, NSString*> *userEx;
 @property(nonatomic, strong) NSDictionary<NSString*, NSString*> *detectEx;
+@property(nonatomic, copy, nullable) NSString *traceId;
 @end
 
 @interface CLSHttpRequest : CLSRequest

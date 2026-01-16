@@ -159,7 +159,7 @@ void cls_http_ping(const char* host, unsigned int maxTimes, unsigned int timeout
 // DNS 解析探测
 void cls_dns_ping(const char* host, const char* nameServer, unsigned int timeout, 
                   int prefer, const char* appKey, const char* pageName,
-                  void(*callback)(const char*), NSDictionary* userEx, NSDictionary* detectEx)
+                  void(*callback)(const char*), NSDictionary* userEx, NSDictionary* detectEx, const char* traceId)
 {
     if (!host || !appKey) {
         return;
@@ -177,6 +177,10 @@ void cls_dns_ping(const char* host, const char* nameServer, unsigned int timeout
     
     if (pageName) {
         request.pageName = [NSString stringWithUTF8String:pageName];
+    }
+    
+    if (traceId) {
+        request.traceId = [NSString stringWithUTF8String:traceId];
     }
     
     // 直接设置自定义字段
