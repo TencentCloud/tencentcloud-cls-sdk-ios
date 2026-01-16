@@ -379,6 +379,10 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
         [builder setURL:self.request.domain];
         [builder setpageName:self.request.pageName];
+        // 设置自定义traceId
+        if (self.request.traceId) {
+            [builder setTraceId:self.request.traceId];
+        }
         [self startPingWithCompletion:currentInterface completion:^(NSDictionary *reportData, NSError *error) {
             // 上报并获取返回字典
             NSDictionary *d = [builder report:self.topicId reportData:reportData ?: @{}];

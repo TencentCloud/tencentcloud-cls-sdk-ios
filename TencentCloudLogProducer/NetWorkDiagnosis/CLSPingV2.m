@@ -109,6 +109,10 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
     [builder setURL:domainStr];
     [builder setpageName:self.request.pageName];
+    // 设置自定义traceId
+    if (self.request.traceId) {
+        [builder setTraceId:self.request.traceId];
+    }
     NSDictionary *d = [builder report:self.topicId reportData:reportData];
     
     // 10. 回调结果（空值兜底）
