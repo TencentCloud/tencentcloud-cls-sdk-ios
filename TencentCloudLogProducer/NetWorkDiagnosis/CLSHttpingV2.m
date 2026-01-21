@@ -1,4 +1,5 @@
 #import "CLSHttpingV2.h"
+#import "CLSRequestValidator.h"
 #import "CLSNetworkUtils.h"
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <Foundation/Foundation.h>
@@ -31,18 +32,26 @@
 
 - (NSURLSessionConfiguration *)createSessionConfigurationForInterface {
     NSURLSessionConfiguration *sessionConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
+    // 配置网络超时参数（timeout 从秒转换为秒，NSURLSession 使用秒单位）
     sessionConfig.timeoutIntervalForRequest = self.request.timeout;
     sessionConfig.timeoutIntervalForResource = self.request.timeout;
     NSString *currentInterfaceName = self.interfaceInfo[@"name"];
     
     if ([currentInterfaceName hasPrefix:@"en"]) {
+        // Wi-Fi 接口（en0, en1...）
         sessionConfig.networkServiceType = NSURLNetworkServiceTypeVideo;
-        sessionConfig.allowsCellularAccess = NO;
+        sessionConfig.allowsCellularAccess = NO;  // 禁用蜂窝网络
+        NSLog(@"[HTTP] 配置 Wi-Fi 接口: %@", currentInterfaceName);
     } else if ([currentInterfaceName hasPrefix:@"pdp_ip"]) {
+        // 蜂窝网络接口（pdp_ip0, pdp_ip1...）
         sessionConfig.networkServiceType = NSURLNetworkServiceTypeVoIP;
-        sessionConfig.allowsCellularAccess = YES;
+        sessionConfig.allowsCellularAccess = YES;  // 允许蜂窝网络
+        NSLog(@"[HTTP] 配置蜂窝接口: %@", currentInterfaceName);
     } else {
+        // 其他接口（回环、VPN、桥接等）- 兜底配置
         sessionConfig.networkServiceType = NSURLNetworkServiceTypeDefault;
+        sessionConfig.allowsCellularAccess = YES;  // ✅ 修复：允许所有网络类型
+        NSLog(@"[HTTP] 配置其他接口: %@ (使用默认配置)", currentInterfaceName);
     }
 
     if (@available(iOS 11.0, *)) {
@@ -88,10 +97,11 @@
     [request setValue:@"CLSHttping/2.0.0" forHTTPHeaderField:@"User-Agent"];
     [request setValue:self.interfaceInfo[@"name"] forHTTPHeaderField:@"X-Network-Interface"];
 
-    // 设置超时定时器
-    [self setupTimeoutTimer];
+    // ✅ 移除外层定时器，只依赖 NSURLSession 的超时控制
+    // NSURLSession 的 timeoutIntervalForRequest 已提供系统级超时机制
+    // 外层定时器会与重试逻辑冲突，且在重试时不会正确重置
     
-    // 启动任务
+    // 启动任务（依赖 NSURLSession 超时，外层控制 maxRetries 重试）
     self.taskStartTime = CFAbsoluteTimeGetCurrent();
     NSURLSessionDataTask *task = [self.urlSession dataTaskWithRequest:request];
     [task resume];
@@ -159,6 +169,22 @@ didCompleteWithError:(NSError *)error {
         _timeoutTimer = nil;
     }
 
+    // ✅ 增强错误日志：输出详细错误信息
+    if (error) {
+        NSLog(@"[HTTP] 请求失败 - Domain: %@, Code: %ld, Description: %@", 
+              error.domain, (long)error.code, error.localizedDescription);
+        NSLog(@"[HTTP] 请求 URL: %@", task.originalRequest.URL.absoluteString);
+        NSLog(@"[HTTP] 网卡接口: %@", self.interfaceInfo[@"name"]);
+        
+        // 特殊错误：unsupported URL
+        if ([error.domain isEqualToString:NSURLErrorDomain] && error.code == NSURLErrorUnsupportedURL) {
+            NSLog(@"[HTTP] ⚠️ 检测到 unsupported URL 错误，可能原因：");
+            NSLog(@"  1. URL Scheme 不支持（应为 http:// 或 https://）");
+            NSLog(@"  2. Session 配置限制（allowsCellularAccess/networkServiceType）");
+            NSLog(@"  3. 系统网络策略限制");
+        }
+    }
+
     // 直接生成最终上报字典
     NSDictionary *finalReportDict = [self buildFinalReportDictWithTask:task error:error];
 
@@ -187,6 +213,13 @@ didReceiveData:(NSData *)data {
 #pragma mark - 指标记录
 - (void)recordTimingMetrics:(NSURLSessionTaskTransactionMetrics *)transaction {
     NSMutableDictionary *metrics = [NSMutableDictionary dictionary];
+    
+    // HTTP 协议版本（iOS 10+）
+    if (@available(iOS 10.0, *)) {
+        metrics[@"httpProtocol"] = transaction.networkProtocolName ?: @"unknown";
+    } else {
+        metrics[@"httpProtocol"] = @"unknown";
+    }
     
     // DNS耗时
     if (transaction.domainLookupStartDate && transaction.domainLookupEndDate) {
@@ -313,12 +346,40 @@ didReceiveData:(NSData *)data {
     // 带宽计算（避免除0）
     double bandwidth = self.receivedBytes / MAX((totalTime / 1000), 0.001);
     
-    // 错误信息处理
+    // 错误信息处理（增强逻辑）
     NSInteger errorCode = 0;
     NSString *errorMessage = @"";
+    
     if (error) {
-        errorCode = error.code;
-        errorMessage = error.localizedDescription ?: @"";
+        // 场景1：网络错误（超时、连接失败等）
+        if ([error.domain isEqualToString:NSURLErrorDomain]) {
+            errorCode = 2000 + error.code;  // 网络错误基础码 2000 + NSURLError code
+            errorMessage = [NSString stringWithFormat:@"Network error: %@", error.localizedDescription];
+        } else if ([error.domain isEqualToString:@"CLSHttpingErrorDomain"]) {
+            // 自定义错误（超时=-1, 无效URL=-2）
+            errorCode = error.code;
+            errorMessage = error.localizedDescription ?: @"";
+        } else {
+            // 其他未知错误
+            errorCode = 3000 + error.code;
+            errorMessage = [NSString stringWithFormat:@"Unknown error: %@", error.localizedDescription];
+        }
+    } else if (statusCode >= 400) {
+        // 场景2：HTTP错误状态码（4xx/5xx）
+        errorCode = 1000 + statusCode;  // HTTP错误基础码 1000 + statusCode
+        errorMessage = [NSString stringWithFormat:@"HTTP %ld", (long)statusCode];
+    } else if (statusCode == -2) {
+        // 场景3：无响应
+        errorCode = -3;
+        errorMessage = @"No response";
+    } else if (statusCode >= 200 && statusCode < 400) {
+        // 场景4：成功（2xx/3xx）
+        errorCode = 0;
+        errorMessage = @"Success";
+    } else {
+        // 场景5：异常状态码
+        errorCode = -4;
+        errorMessage = [NSString stringWithFormat:@"Invalid status code: %ld", (long)statusCode];
     }
 
     // 基础网络指标（原netOrigin）
@@ -348,7 +409,7 @@ didReceiveData:(NSData *)data {
         @"bandwidth": @(bandwidth),
         @"requestTime": @(totalTime),
         @"httpCode": @(statusCode),
-        @"httpProtocol": response.allHeaderFields[@"Version"] ?: @"unknown",
+        @"httpProtocol": self.timingMetrics[@"httpProtocol"] ?: @"unknown",
         @"interface_ip": self.interfaceInfo[@"ip"] ?: @"",
         @"interface_type": self.interfaceInfo[@"type"] ?: @"",
         @"interface_family": self.interfaceInfo[@"family"] ?: @"",
@@ -425,24 +486,79 @@ didReceiveData:(NSData *)data {
 
 #pragma mark - 对外暴露的启动方法
 - (void)start:(CompleteCallback)complate {
+    // 参数合法性校验
+    NSError *validationError = nil;
+    if (![CLSRequestValidator validateHttpRequest:self.request error:&validationError]) {
+        NSLog(@"❌ HTTP探测参数校验失败: %@", validationError.localizedDescription);
+        if (complate) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"参数校验失败",
+                @"error_message": validationError.localizedDescription,
+                @"error_code": @(validationError.code)
+            }];
+            complate(errorResponse);
+        }
+        return;
+    }
+    
+    // maxTimes 表示最大尝试次数（包含首次尝试）
+    int maxRetries = self.request.maxTimes;
+    NSLog(@"✅ HTTP探测参数: maxRetries=%d, timeout=%ds, size=%d bytes", maxRetries, self.request.timeout, self.request.size);
+    
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     for (NSDictionary *currentInterface in availableInterfaces) {
         NSLog(@"interface:%@", currentInterface);
-        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-        [builder setURL:self.request.domain];
-        [builder setpageName:self.request.pageName];
-        [self startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
-            // 上报并获取返回字典
-            NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
+        
+        // 使用串行队列和信号量实现同步重试逻辑
+        dispatch_queue_t retryQueue = dispatch_queue_create("com.tencent.cls.httpping.retry", DISPATCH_QUEUE_SERIAL);
+        
+        dispatch_async(retryQueue, ^{
+            __block BOOL hasSucceeded = NO;
             
-            // 使用report返回的字典构建响应
-            CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
-            
-            // 回调返回结果
-            if (complate) {
-                complate(completionResult);
+            // 执行 maxRetries 次尝试（首次 + 失败后的重试）
+            for (int i = 0; i < maxRetries && !hasSucceeded; i++) {
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                
+                int attemptCount = i + 1;
+                NSLog(@"🔄 HTTP Ping 尝试 %d/%d", attemptCount, maxRetries);
+                
+                CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+                [builder setURL:self.request.domain];
+                [builder setpageName:self.request.pageName];
+                
+                [self startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
+                    // ✅ 修复：HTTP Ping 判断成功标准
+                    // HTTP Ping 没有 responseNum 字段，应该根据 httpCode 和 error 判断
+                    NSInteger httpCode = [finalReportDict[@"httpCode"] integerValue];
+                    BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);  // 2xx/3xx 为成功
+                    
+                    if (!error && isHttpSuccess) {
+                        hasSucceeded = YES;
+                        NSLog(@"✅ HTTP Ping 成功（第 %d 次尝试）- HTTP %ld", attemptCount, (long)httpCode);
+                    } else {
+                        NSLog(@"❌ HTTP Ping 失败（第 %d 次尝试）- HTTP %ld, Error: %@", 
+                              attemptCount, (long)httpCode, error.localizedDescription ?: @"无响应");
+                    }
+                    
+                    // 上报并获取返回字典
+                    NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
+                    
+                    // 使用report返回的字典构建响应
+                    CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
+                    
+                    // 回调返回结果
+                    if (complate) {
+                        complate(completionResult);
+                    }
+                    
+                    // 释放信号量
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                
+                // 等待当前尝试完成
+                dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
             }
-        }];
+        });
         
         // 非多端口检测，仅执行第一个接口
         if (!self.request.enableMultiplePortsDetect) {

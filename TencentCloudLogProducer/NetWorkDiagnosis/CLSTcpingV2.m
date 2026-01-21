@@ -12,6 +12,7 @@
 #import <netinet/in.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import "CLSTcpingV2.h"
+#import "CLSRequestValidator.h"
 #import "CLSNetworkUtils.h"
 #import "CLSIdGenerator.h"
 #import "netinet/tcp.h"
@@ -52,16 +53,15 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     // 设置网卡
     self.interface = [currentInterface copy];
     
-    // 设置超时控制
-    [self setupTimeoutTimer];
+    // ✅ 移除外层定时器，只依赖 Socket 层的 select() 超时控制
+    // Socket 的 select(sock, ..., timeout) 已提供精准的超时机制
+    // 外层定时器会与重试逻辑冲突，导致 _isCompleted 提前设置，阻止重试
     
-    // 启动异步Ping测试
+    // 执行单次TCP Ping（依赖 Socket 超时，外层控制 maxTimes 重试）
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        for (NSUInteger i = 0; i < self.request.maxTimes && !_isCompleted; i++) {
-            [self performTcpPing];
-        }
+        [self performTcpPing];
         
-        // 所有请求完成且未超时的情况下主动完成
+        // 探测完成（成功或 Socket 层超时），主动回调
         if (!_isCompleted) {
             [self completePingWithError:nil];
         }
@@ -132,7 +132,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         // errno=EINPROGRESS，使用select等待连接完成
         struct timeval tv;
         fd_set wset, eset;
-        tv.tv_sec = 3; // 超时时间
+        tv.tv_sec = self.request.timeout; // 超时时间
         tv.tv_usec = 0;
         FD_ZERO(&wset);
         FD_ZERO(&eset);
@@ -146,7 +146,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
             return -1;
         }
         if (n == 0) {
-            NSLog(@"TCP select timeout (3s), port: %d", self.request.port);
+            NSLog(@"TCP select timeout, port: %d", self.request.port);
             close(sock);
             return -1;
         }
@@ -237,23 +237,28 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 - (void)setupTimeoutTimer {
     [self cancelTimeoutTimer];
     
-    __weak typeof(self) weakSelf = self;
     _timeoutTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
                                          dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
     
+    // 单次探测超时（与HTTP Ping保持一致）
     dispatch_source_set_timer(_timeoutTimer,
                              dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)),
-                             DISPATCH_TIME_FOREVER, 0);
+                             DISPATCH_TIME_FOREVER,
+                             0.1 * NSEC_PER_SEC);  // leeway: 100ms，提高定时器精度
     
+    // 使用 __unsafe_unretained 代替 __weak（MRC 环境）
+    __unsafe_unretained typeof(self) unretainedSelf = self;
     dispatch_source_set_event_handler(_timeoutTimer, ^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleTimeout];
+        [unretainedSelf handleTimeout];
     });
     
     dispatch_resume(_timeoutTimer);
 }
 
 - (void)handleTimeout {
+    NSLog(@"⏰ TCP Ping 超时触发: domain=%@, port=%d, timeout=%ds",
+          self.request.domain, self.request.port, self.request.timeout);
+    
     _isCompleted = YES;
     [self cancelTimeoutTimer];
     
@@ -264,10 +269,20 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 - (void)completePingWithError:(NSError *)error {
-    if (_isCompleted) return;
+    if (_isCompleted) {
+        NSLog(@"⚠️ TCP Ping 已完成，忽略重复回调");
+        return;
+    }
     _isCompleted = YES;
     
     [self cancelTimeoutTimer];
+    
+    NSLog(@"📊 TCP Ping 结束: domain=%@, success=%lu, failure=%lu, bindFailed=%lu, error=%@",
+          self.request.domain,
+          (unsigned long)self.successCount,
+          (unsigned long)self.failureCount,
+          (unsigned long)self.bindFailedCount,
+          error.localizedDescription ?: @"无");
     
     // 直接构建上报数据（不再生成CLSMultiInterfaceTcpingResult）
     NSDictionary *reportData = [self buildReportDataFromTcpPingResultWithError:error];
@@ -275,8 +290,11 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     // 切回主线程回调
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.completionHandler) {
+            NSLog(@"✅ TCP Ping 回调执行: domain=%@, port=%d", self.request.domain, self.request.port);
             self.completionHandler(reportData, error);
             self.completionHandler = nil;
+        } else {
+            NSLog(@"⚠️ TCP Ping 回调为 nil，无法执行");
         }
     });
 }
@@ -306,12 +324,45 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     // 3. 时间戳（毫秒级）
     NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
     
-    // 4. 错误信息处理
+    // 4. 错误信息处理（增强逻辑）
     NSInteger errorCode = 0;
     NSString *errorMessage = @"";
+    
     if (error) {
-        errorCode = error.code;
-        errorMessage = error.localizedDescription ?: @"";
+        // 场景1：有明确错误对象（超时、网络错误等）
+        if ([error.domain isEqualToString:kTcpPingErrorDomain]) {
+            errorCode = error.code;  // 超时=-1, 其他自定义错误
+            errorMessage = error.localizedDescription ?: @"";
+        } else {
+            // 其他域的错误
+            errorCode = 3000 + error.code;
+            errorMessage = [NSString stringWithFormat:@"Unknown error: %@", error.localizedDescription];
+        }
+    } else {
+        // 场景2：无错误对象，根据统计信息判断
+        if (totalAttempts == 0) {
+            // 未进行任何探测
+            errorCode = -5;
+            errorMessage = @"No attempts made";
+        } else if (self.bindFailedCount > 0 && self.successCount == 0) {
+            // 所有尝试都因 bind 失败
+            errorCode = -20;
+            errorMessage = [NSString stringWithFormat:@"Interface bind failed (%lu attempts)", (unsigned long)self.bindFailedCount];
+        } else if (lossRate >= 1.0) {
+            // 完全丢包
+            errorCode = -11;
+            errorMessage = [NSString stringWithFormat:@"Total packet loss (0/%lu)", (unsigned long)totalAttempts];
+        } else if (lossRate > 0.0) {
+            // 部分丢包
+            errorCode = -10;
+            errorMessage = [NSString stringWithFormat:@"Partial packet loss (%.1f%%, %lu/%lu)", 
+                            lossRate * 100, (unsigned long)self.successCount, (unsigned long)totalAttempts];
+        } else {
+            // 成功（无丢包）
+            errorCode = 0;
+            errorMessage = [NSString stringWithFormat:@"Success (%lu/%lu)", 
+                            (unsigned long)self.successCount, (unsigned long)totalAttempts];
+        }
     }
     
     // 5. 构建网络信息
@@ -373,22 +424,79 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 - (void)start:(CompleteCallback)complete {
+    // 参数合法性校验
+    NSError *validationError = nil;
+    if (![CLSRequestValidator validateTcpRequest:self.request error:&validationError]) {
+        NSLog(@"❌ TCP探测参数校验失败: %@", validationError.localizedDescription);
+        if (complete) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"参数校验失败",
+                @"error_message": validationError.localizedDescription,
+                @"error_code": @(validationError.code)
+            }];
+            complete(errorResponse);
+        }
+        return;
+    }
+    
+    // maxTimes 表示最大尝试次数（包含首次尝试）
+    int maxRetries = self.request.maxTimes;
+    NSLog(@"✅ TCP探测参数: port=%ld, maxRetries=%d, timeout=%ds, size=%d bytes", 
+          (long)self.request.port, maxRetries, self.request.timeout, self.request.size);
+    
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     for (NSDictionary *currentInterface in availableInterfaces) {
         NSLog(@"availableInterfaces:%@", currentInterface);
-        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-        [builder setURL:self.request.domain];
-        [builder setpageName:self.request.pageName];
-        [self startPingWithCompletion:currentInterface completion:^(NSDictionary *reportData, NSError *error) {
-            // 上报并获取返回字典
-            NSDictionary *d = [builder report:self.topicId reportData:reportData ?: @{}];
+        
+        // 使用串行队列和信号量实现同步重试逻辑
+        dispatch_queue_t retryQueue = dispatch_queue_create("com.tencent.cls.tcpping.retry", DISPATCH_QUEUE_SERIAL);
+        
+        dispatch_async(retryQueue, ^{
+            __block BOOL hasSucceeded = NO;
             
-            // 封装为CLSResponse，兼容原有回调协议
-            CLSResponse *completeResult = [CLSResponse complateResultWithContent:d ?: @{}];
-            if (complete) {
-                complete(completeResult);
+            // 执行 maxRetries 次尝试（首次 + 失败后的重试）
+            for (int i = 0; i < maxRetries && !hasSucceeded; i++) {
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                
+                int attemptCount = i + 1;
+                NSLog(@"🔄 TCP Ping 尝试 %d/%d", attemptCount, maxRetries);
+                
+                CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+                [builder setURL:self.request.domain];
+                [builder setpageName:self.request.pageName];
+                
+                [self startPingWithCompletion:currentInterface completion:^(NSDictionary *reportData, NSError *error) {
+                    // ✅ TCP Ping 判断成功标准：无错误且有成功响应
+                    NSInteger responseNum = [reportData[@"responseNum"] integerValue];
+                    NSInteger totalCount = [reportData[@"count"] integerValue];
+                    
+                    if (!error && responseNum > 0) {
+                        hasSucceeded = YES;
+                        NSLog(@"✅ TCP Ping 成功（第 %d 次尝试）- 响应 %ld/%ld", 
+                              attemptCount, (long)responseNum, (long)totalCount);
+                    } else {
+                        NSLog(@"❌ TCP Ping 失败（第 %d 次尝试）- 响应 %ld/%ld, Error: %@", 
+                              attemptCount, (long)responseNum, (long)totalCount, 
+                              error.localizedDescription ?: @"无响应");
+                    }
+                    
+                    // 上报并获取返回字典
+                    NSDictionary *d = [builder report:self.topicId reportData:reportData ?: @{}];
+                    
+                    // 封装为CLSResponse，兼容原有回调协议
+                    CLSResponse *completeResult = [CLSResponse complateResultWithContent:d ?: @{}];
+                    if (complete) {
+                        complete(completeResult);
+                    }
+                    
+                    // 释放信号量
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                
+                // 等待当前尝试完成
+                dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
             }
-        }];
+        });
         
         if (!self.request.enableMultiplePortsDetect) {
             break;

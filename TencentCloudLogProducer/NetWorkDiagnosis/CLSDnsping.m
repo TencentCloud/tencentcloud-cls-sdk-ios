@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "CLSDnsping.h"
+#import "CLSRequestValidator.h"
 #import "CLSNetworkUtils.h"
 #import <netinet/in.h>
 #import <sys/types.h>
@@ -132,7 +133,8 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     cls_dns_detector_config config;
     memset(&config, 0, sizeof(config));
     config.dns_servers = dnsServers;
-    config.timeout_ms = self.request ? self.request.timeout : 3000; // 默认超时3s
+    // 配置参数（timeout 从秒转换为毫秒）
+    config.timeout_ms = self.request ? (self.request.timeout * 1000) : 3000; // 默认超时3s
     config.prefer = self.request ? self.request.prefer : -1;  // 使用 request 中的 prefer 配置，默认自动检测
     
     // 处理网卡下标
@@ -233,6 +235,24 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
 
 #pragma mark - 启动多网卡DNS检测
 - (void)start:(CompleteCallback)completion {
+    // 参数合法性校验
+    NSError *validationError = nil;
+    if (![CLSRequestValidator validateDnsRequest:self.request error:&validationError]) {
+        NSLog(@"❌ DNS探测参数校验失败: %@", validationError.localizedDescription);
+        if (completion) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"参数校验失败",
+                @"error_message": validationError.localizedDescription,
+                @"error_code": @(validationError.code)
+            }];
+            completion(errorResponse);
+        }
+        return;
+    }
+    
+    NSLog(@"✅ DNS探测参数: maxTimes=%d, timeout=%ds, prefer=%d", 
+          self.request.maxTimes, self.request.timeout, self.request.prefer);
+    
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {
         NSLog(@"%@ 无可用网卡接口", kDNSLogPrefix);

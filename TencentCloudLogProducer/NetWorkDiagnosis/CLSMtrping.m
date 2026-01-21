@@ -1,4 +1,5 @@
 #import "CLSMtrping.h"
+#import "CLSRequestValidator.h"
 #import "CLSNetworkUtils.h"
 #import <netinet/in.h>
 #import <netinet/ip.h>
@@ -64,7 +65,8 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     cls_mtr_detector_config config;
     memset(&config, 0, sizeof(config)); // 必须初始化，避免残留值
     config.max_ttl = self.request.maxTTL;
-    config.timeout_ms = self.request.timeout;
+    // 配置参数（timeout 从秒转换为毫秒）
+    config.timeout_ms = self.request.timeout * 1000;
     config.times = self.request.maxTimes;
     config.prefer = self.request.prefer;  // 使用 request 中的 prefer 配置
     config.protocol = [self.request.protocol UTF8String];
@@ -166,6 +168,24 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
 }
 
 - (void)start:(CompleteCallback)complate{
+    // 参数合法性校验
+    NSError *validationError = nil;
+    if (![CLSRequestValidator validateMtrRequest:self.request error:&validationError]) {
+        NSLog(@"❌ MTR探测参数校验失败: %@", validationError.localizedDescription);
+        if (complate) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"参数校验失败",
+                @"error_message": validationError.localizedDescription,
+                @"error_code": @(validationError.code)
+            }];
+            complate(errorResponse);
+        }
+        return;
+    }
+    
+    NSLog(@"✅ MTR探测参数: maxTimes=%d, timeout=%ds, maxTTL=%d, protocol=%@, prefer=%d", 
+          self.request.maxTimes, self.request.timeout, self.request.maxTTL, self.request.protocol, self.request.prefer);
+    
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {
         NSLog(@"%@ 无可用网卡接口", kMtrLogPrefix);
@@ -185,6 +205,6 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
             break;
         }
     }
-    }
+}
 
 @end

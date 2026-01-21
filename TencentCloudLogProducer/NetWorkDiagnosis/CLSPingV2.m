@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "CLSPingV2.h"
+#import "CLSRequestValidator.h"
 #import "CLSNetworkUtils.h"
 #import <netinet/in.h>
 #import <arpa/inet.h>
@@ -67,7 +68,8 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     memset(&config, 0, sizeof(config)); // 必须初始化，避免残留值
     config.packet_size = self.request.size;
     config.ttl = 64;
-    config.timeout_ms = self.request.timeout;
+    // 配置参数（timeout 从秒转换为毫秒）
+    config.timeout_ms = self.request.timeout * 1000;
     config.interval_ms = self.request.interval;
     config.times = self.request.maxTimes;
     config.prefer = self.request.prefer;  // 使用 request 中的 prefer 配置
@@ -172,6 +174,24 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
 
 #pragma mark - 启动多网卡PING检测
 - (void)start:(CompleteCallback)completion {
+    // 参数合法性校验
+    NSError *validationError = nil;
+    if (![CLSRequestValidator validatePingRequest:self.request error:&validationError]) {
+        NSLog(@"❌ Ping探测参数校验失败: %@", validationError.localizedDescription);
+        if (completion) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"参数校验失败",
+                @"error_message": validationError.localizedDescription,
+                @"error_code": @(validationError.code)
+            }];
+            completion(errorResponse);
+        }
+        return;
+    }
+    
+    NSLog(@"✅ Ping探测参数: maxTimes=%d, timeout=%ds, size=%d bytes, interval=%dms, prefer=%d", 
+          self.request.maxTimes, self.request.timeout, self.request.size, self.request.interval, self.request.prefer);
+    
     // 获取可用网卡列表（空值兜底）
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {

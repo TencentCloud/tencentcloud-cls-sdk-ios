@@ -18,14 +18,17 @@
 - (instancetype)init {
     self = [super init]; // 1. 调用父类(NSObject)的初始化方法[3,5](@ref)
     if (self) { // 2. 检查初始化是否成功[3,6](@ref)
-        // 3. 为属性设置默认空值，避免nil带来的潜在问题
+        // 3. 为属性设置默认值，避免nil带来的潜在问题
         _domain = @"";
         _appKey = @"";
         _userEx = @{};
         _detectEx = @{};
-        _size = 64;
-        _maxTimes = 10;
-        _timeout = 60*1000;
+        
+        // 核心参数默认值
+        _size = 64;         // 包大小默认 64 字节 (范围: 8-1024)
+        _maxTimes = 1;      // 探测次数默认 1 次 (范围: 1-100)
+        _timeout = 60;      // 超时时间默认 60 秒 (范围: 1-60)
+        
         _pageName = @"";
         _enableMultiplePortsDetect = NO;
     }
