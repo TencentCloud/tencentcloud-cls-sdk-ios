@@ -51,7 +51,8 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
     // ⚙️ 配置网络探测实例
     // netToken: 网络探测鉴权令牌（可选，测试环境可传空字符串 @""）
     self.diagnosis = [ClsNetworkDiagnosis sharedInstance];
-    [self.diagnosis setupLogSenderWithConfig:config netToken:@"eyJuX2FfaWQiOiI4MzBkMzRjMS0yN2ViLTRmNjAtOWYxMi1mMzUyNjY3Njk0MTkiLCJ1aW4iOjEwMDAwMTEyNzU4OSwia2V5IjoiNWM4NmQxZGQtYWIyNi00ZmJhLTk3ZTMtNTRmNDZkMWZiZmRhIiwicmVnaW9uIjoiYXAtZ3Vhbmd6aG91LW9wZW4iLCJ0b3BpY19pZCI6ImJiNTA5NDYzLWFlZGEtNDgyZi1hZjg3LTc5NTAwN2Q5MjYzMSJ9"];  // ⚠️ 替换为你的 netToken（或留空）
+    [self.diagnosis setUserEx:@{@"key1":@"value1"}];
+    [self.diagnosis setupLogSenderWithConfig:config netToken:@""];  // ⚠️ 替换为你的 netToken（或留空）
     
     // 💡 建议：为了安全，不要将密钥硬编码到代码中
     // 推荐使用：
@@ -314,7 +315,6 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
     request.interval = 100;
     request.pageName = @"test_page";
     request.detectEx = @{@"scene": @"startup"};
-    request.userEx = @{@"user_id": @"12345"};
     
     [self.diagnosis pingv2:request complate:^(CLSResponse *response) {
         NSDictionary *data = [self parseResponseContent:response];
@@ -357,7 +357,7 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
         // 验证扩展字段
         [self validateExtensionFields:origin
                       expectedDetectEx:@{@"scene": @"startup"}
-                        expectedUserEx:@{@"user_id": @"12345"}];
+                       expectedUserEx:@{@"key1": @"value1"}];
         
         [expectation fulfill];
     }];
@@ -378,7 +378,6 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
     request.enableSSLVerification = YES;
     request.pageName = @"http_test_page";
     request.detectEx = @{@"http_scene": @"api_call"};
-    request.userEx = @{@"session_id": @"session_12345"};
     
     [self.diagnosis httpingv2:request complate:^(CLSResponse *response) {
         NSDictionary *data = [self parseResponseContent:response];
@@ -424,7 +423,7 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
         // 验证扩展字段
         [self validateExtensionFields:origin
                       expectedDetectEx:@{@"http_scene": @"api_call"}
-                        expectedUserEx:@{@"session_id": @"session_12345"}];
+                        expectedUserEx:@{@"key1": @"value1"}];
         
         [expectation fulfill];
     }];
@@ -446,7 +445,6 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
     request.timeout = 15;
     request.pageName = @"tcp_test_page";
     request.detectEx = @{@"tcp_scene": @"connection_test"};
-    request.userEx = @{@"game_version": @"1.2.3"};
     
     [self.diagnosis tcpPingv2:request complate:^(CLSResponse *response) {
         NSDictionary *data = [self parseResponseContent:response];
@@ -484,7 +482,7 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
         // 验证扩展字段
         [self validateExtensionFields:origin
                       expectedDetectEx:@{@"tcp_scene": @"connection_test"}
-                        expectedUserEx:@{@"game_version": @"1.2.3"}];
+                        expectedUserEx:@{@"key1": @"value1"}];
         
         [expectation fulfill];
     }];
@@ -505,7 +503,6 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
     request.nameServer = @"8.8.8.8"; // Google DNS
     request.pageName = @"dns_test_page";
     request.detectEx = @{@"dns_scene": @"resolution_test"};
-    request.userEx = @{@"app_env": @"production"};
     
     [self.diagnosis dns:request complate:^(CLSResponse *response) {
         NSDictionary *data = [self parseResponseContent:response];
@@ -545,7 +542,7 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
         // 验证扩展字段
         [self validateExtensionFields:origin
                       expectedDetectEx:@{@"dns_scene": @"resolution_test"}
-                        expectedUserEx:@{@"app_env": @"production"}];
+                       expectedUserEx:@{@"key1": @"value1"}];
         
         [expectation fulfill];
     }];
@@ -577,7 +574,6 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
     request.protocol = @"icmp";
     request.pageName = @"mtr_test_page";
     request.detectEx = @{@"mtr_scene": @"traceroute_test"};
-    request.userEx = @{@"network_mode": @"wifi"};
     
     [self.diagnosis mtr:request complate:^(CLSResponse *response) {
         NSDictionary *data = [self parseResponseContent:response];
@@ -641,7 +637,7 @@ static NSString *const kUnreachableIP = @"192.0.2.1";
         // 验证扩展字段
         [self validateExtensionFields:origin
                       expectedDetectEx:@{@"mtr_scene": @"traceroute_test"}
-                        expectedUserEx:@{@"network_mode": @"wifi"}];
+                       expectedUserEx:@{@"key1": @"value1"}];
         
         [expectation fulfill];
     }];

@@ -21,13 +21,12 @@
         // 3. 为属性设置默认值，避免nil带来的潜在问题
         _domain = @"";
         _appKey = @"";
-        _userEx = @{};
         _detectEx = @{};
         
         // 核心参数默认值
         _size = 64;         // 包大小默认 64 字节 (范围: 8-1024)
         _maxTimes = 1;      // 探测次数默认 1 次 (范围: 1-100)
-        _timeout = 60;      // 超时时间默认 60 秒 (范围: 1-60)
+        _timeout = 60;      // 单次探测超时时间默认 60 秒 (范围: 1-60)
         
         _pageName = @"";
         _enableMultiplePortsDetect = NO;
@@ -132,6 +131,9 @@
 @property (nonatomic, copy) NSString *cachedRegion;
 @property (nonatomic, copy) NSString *cachedTopicId;
 @property (nonatomic, assign) BOOL isNetTokenParsed; // 标记是否已解析 netToken
+
+// ===== 全局 userEx（所有探测共享）=====
+@property (nonatomic, strong) NSDictionary<NSString*, NSString*> *globalUserEx;
 @end
 
 @implementation ClsNetworkDiagnosis
@@ -147,6 +149,7 @@
         _sharedInstance.topicId = @"";
         _sharedInstance.netToken = @"";
         _sharedInstance.isNetTokenParsed = NO;
+        _sharedInstance.globalUserEx = @{};  // 默认空字典
         
     });
     return _sharedInstance;
@@ -155,6 +158,22 @@
 #pragma mark - 禁止外部初始化
 + (instancetype)allocWithZone:(struct _NSZone *)zone {
     return [self sharedInstance];
+}
+
+#pragma mark - 全局 userEx 设置
+/// 设置全局 userEx，后续所有探测上报时会携带此字段
+- (void)setUserEx:(NSDictionary<NSString*, NSString*> *)userEx {
+    @synchronized (self) {
+        _globalUserEx = userEx ?: @{};  // nil 安全处理
+        NSLog(@"[ClsNetworkDiagnosis] 全局 userEx 已更新: %@", _globalUserEx);
+    }
+}
+
+/// 获取全局 userEx（线程安全）
+- (NSDictionary<NSString*, NSString*> *)getUserEx {
+    @synchronized (self) {
+        return [_globalUserEx copy];  // 返回副本，避免外部修改
+    }
 }
 
 #pragma mark - LogSender 配置（仅首次调用有效）

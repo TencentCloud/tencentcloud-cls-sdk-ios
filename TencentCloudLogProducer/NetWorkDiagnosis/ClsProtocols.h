@@ -19,8 +19,7 @@
 @property(atomic, assign) int timeout;
 @property(nonatomic, assign) BOOL enableMultiplePortsDetect;
 @property (nonatomic, copy, nullable) NSString *pageName;
-@property(nonatomic, strong) NSDictionary<NSString*, NSString*> *userEx;
-@property(nonatomic, strong) NSDictionary<NSString*, NSString*> *detectEx;
+@property(nonatomic, strong) NSDictionary<NSString*, NSString*> *detectEx;  // userEx 已移除，统一从 ClsNetworkDiagnosis 获取
 @end
 
 @interface CLSHttpRequest : CLSRequest

@@ -18,6 +18,7 @@
 #import "netinet/tcp.h"
 #import "CLSSPanBuilder.h"
 #import "CLSCocoa.h"
+#import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
 #import "CLSStringUtils.h"
 
 // 常量抽取（统一维护）
@@ -402,8 +403,142 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"timestamp": @(timestamp),
         @"netInfo": [CLSStringUtils sanitizeDictionary:netInfo] ?: @{},
         @"detectEx": [CLSStringUtils sanitizeDictionary:self.request.detectEx] ?: @{},
-        @"userEx": [CLSStringUtils sanitizeDictionary:self.request.userEx] ?: @{}
+        @"userEx": [CLSStringUtils sanitizeDictionary:[[ClsNetworkDiagnosis sharedInstance] getUserEx]] ?: @{}  // 从全局获取
     }];
+    
+    return [reportData copy];
+}
+
+#pragma mark - 单次探测方法（用于多次汇总）
+/// 执行单次 TCP 探测（不重置全局计数器）
+- (void)performSingleProbeWithInterface:(NSDictionary *)currentInterface
+                             completion:(void (^)(BOOL success, NSTimeInterval latency, NSError *error))completion {
+    // 设置网卡
+    self.interface = [currentInterface copy];
+    
+    // 执行单次 TCP 连接
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_len = sizeof(addr);
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(self.request.port);
+        
+        // 解析域名/IP
+        const char *hostaddr = [self.request.domain UTF8String];
+        if (hostaddr == NULL) hostaddr = "\0";
+        addr.sin_addr.s_addr = inet_addr(hostaddr);
+        
+        if (addr.sin_addr.s_addr == INADDR_NONE) {
+            struct hostent *host = gethostbyname(hostaddr);
+            if (host == NULL || host->h_addr == NULL) {
+                NSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d", hostaddr, self.request.port);
+                NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain code:-2 userInfo:@{NSLocalizedDescriptionKey: @"DNS resolution failed"}];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    completion(NO, 0, error);
+                });
+                return;
+            }
+            addr.sin_addr = *(struct in_addr *)host->h_addr;
+        }
+        
+        // 计算耗时
+        CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
+        int result = [self connect:&addr];
+        CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
+        NSTimeInterval latency = (endTime - startTime) * 1000;  // ms
+        
+        // 回调结果
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (result == 0) {
+                completion(YES, latency, nil);
+            } else {
+                NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain 
+                                                     code:result 
+                                                 userInfo:@{NSLocalizedDescriptionKey: @"TCP connect failed"}];
+                completion(NO, latency, error);
+            }
+        });
+    });
+}
+
+#pragma mark - 汇总上报数据构建
+/// 构建多次探测汇总后的上报数据
+- (NSDictionary *)buildAggregatedReportDictForProbeCount:(NSUInteger)totalProbes {
+    // ===== 1. 计算延迟统计（仅基于成功的探测）=====
+    double minLatency = 0.0;
+    double maxLatency = 0.0;
+    double avgLatency = 0.0;
+    double stddev = 0.0;
+    double totalLatency = 0.0;
+    
+    if (self.latencies.count > 0) {
+        minLatency = [[self.latencies valueForKeyPath:@"@min.self"] doubleValue];
+        maxLatency = [[self.latencies valueForKeyPath:@"@max.self"] doubleValue];
+        avgLatency = [[self.latencies valueForKeyPath:@"@avg.self"] doubleValue];
+        stddev = [[self calculateStdDev] doubleValue];
+        totalLatency = [[self.latencies valueForKeyPath:@"@sum.self"] doubleValue];
+    }
+    
+    // ===== 2. 计算丢包相关指标 =====
+    // count: 探测次数（用户设置的 maxTimes）
+    // responseNum: 响应次数（成功次数）
+    // exceptionNum: 异常数（失败次数，包含超时、连接失败等）
+    // loss: 丢包数量（不是丢包率！）= 失败次数
+    NSUInteger count = totalProbes;
+    NSUInteger responseNum = self.successCount;
+    NSUInteger exceptionNum = self.failureCount;
+    NSUInteger loss = self.failureCount;  // 丢包数量 = 失败次数
+    
+    // ===== 3. 构建网络信息 =====
+    NSDictionary *netInfo = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interface[@"type"]
+                                                                           networkAppId:self.networkAppId
+                                                                                  appKey:self.appKey
+                                                                                    uin:self.uin
+                                                                                endpoint:self.endPoint
+                                                                           interfaceDNS:self.interface[@"dns"]];
+    
+    // ===== 4. 时间戳（毫秒级）=====
+    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
+    
+    // ===== 5. 构建上报数据 =====
+    NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:@{
+        // 基础信息
+        @"host": [CLSStringUtils sanitizeString:self.request.domain] ?: @"",
+        @"method": kTcpPingMethod,
+        @"trace_id": [CLSStringUtils sanitizeString:CLSIdGenerator.generateTraceId] ?: @"",
+        @"appKey": [CLSStringUtils sanitizeString:self.request.appKey] ?: @"",
+        @"host_ip": [CLSStringUtils sanitizeString:[self resolvedIP]] ?: @"",
+        @"port": [CLSStringUtils sanitizeNumber:@(self.request.port)] ?: @0,
+        @"interface": [CLSStringUtils sanitizeString:self.interface[@"type"]] ?: kInterfaceDefault,
+        
+        // ⚠️ 核心统计字段（注意字段含义！）
+        @"count": @(count),                    // 探测次数（总共探测了多少次）
+        @"total": @(totalLatency),             // 总延迟（所有成功探测的延迟之和，单位ms）
+        @"loss": @(loss),                      // 丢包数量（失败次数，不是丢包率！）
+        @"latency_min": @(minLatency),         // 最小延迟（ms）
+        @"latency_max": @(maxLatency),         // 最大延迟（ms）
+        @"latency": @(avgLatency),             // 平均延迟（ms）
+        @"stddev": @(stddev),                  // 延迟标准差（ms）
+        @"responseNum": @(responseNum),        // 响应次数（成功次数）
+        @"exceptionNum": @(exceptionNum),      // 异常数（失败次数）
+        @"bindFailed": @(self.bindFailedCount), // 绑定失败次数
+        
+        // 错误信息（根据汇总结果判断）
+        @"err_code": @(responseNum > 0 ? 0 : -11),  // 有成功则0，否则-11（完全失败）
+        @"error_message": responseNum > 0 ? [NSString stringWithFormat:@"Success (%lu/%lu)", (unsigned long)responseNum, (unsigned long)count] 
+                                          : [NSString stringWithFormat:@"All failed (0/%lu)", (unsigned long)count],
+        
+        // 通用字段
+        @"src": kSrcApp,
+        @"timestamp": @(timestamp),
+        @"netInfo": [CLSStringUtils sanitizeDictionary:netInfo] ?: @{},
+        @"detectEx": [CLSStringUtils sanitizeDictionary:self.request.detectEx] ?: @{},
+        @"userEx": [CLSStringUtils sanitizeDictionary:[[ClsNetworkDiagnosis sharedInstance] getUserEx]] ?: @{}
+    }];
+    
+    NSLog(@"📊 TCP Ping 汇总上报: count=%lu, responseNum=%lu, loss=%lu, avgLatency=%.2fms, total=%.2fms", 
+          (unsigned long)count, (unsigned long)responseNum, (unsigned long)loss, avgLatency, totalLatency);
     
     return [reportData copy];
 }
@@ -439,62 +574,73 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         return;
     }
     
-    // maxTimes 表示最大尝试次数（包含首次尝试）
-    int maxRetries = self.request.maxTimes;
-    NSLog(@"✅ TCP探测参数: port=%ld, maxRetries=%d, timeout=%ds, size=%d bytes", 
-          (long)self.request.port, maxRetries, self.request.timeout, self.request.size);
+    // ⚠️ 重要：maxTimes 表示固定探测次数（无论成功失败都探测 N 次）
+    int totalProbes = self.request.maxTimes;
+    NSLog(@"✅ TCP探测参数: port=%ld, totalProbes=%d（固定探测次数）, timeout=%ds（单次超时）", 
+          (long)self.request.port, totalProbes, self.request.timeout);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     for (NSDictionary *currentInterface in availableInterfaces) {
         NSLog(@"availableInterfaces:%@", currentInterface);
         
-        // 使用串行队列和信号量实现同步重试逻辑
-        dispatch_queue_t retryQueue = dispatch_queue_create("com.tencent.cls.tcpping.retry", DISPATCH_QUEUE_SERIAL);
+        // 使用串行队列执行多次探测
+        dispatch_queue_t probeQueue = dispatch_queue_create("com.tencent.cls.tcpping.probe", DISPATCH_QUEUE_SERIAL);
         
-        dispatch_async(retryQueue, ^{
-            __block BOOL hasSucceeded = NO;
+        dispatch_async(probeQueue, ^{
+            // ===== 重置全局汇总数据（每个接口独立统计）=====
+            [self.latencies removeAllObjects];
+            self.successCount = 0;
+            self.failureCount = 0;
+            self.bindFailedCount = 0;
             
-            // 执行 maxRetries 次尝试（首次 + 失败后的重试）
-            for (int i = 0; i < maxRetries && !hasSucceeded; i++) {
+            // ===== 执行 totalProbes 次探测（无论成功失败都继续）=====
+            for (int i = 0; i < totalProbes; i++) {
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
                 
-                int attemptCount = i + 1;
-                NSLog(@"🔄 TCP Ping 尝试 %d/%d", attemptCount, maxRetries);
+                int probeIndex = i + 1;
+                NSLog(@"🔄 TCP Ping 探测 %d/%d", probeIndex, totalProbes);
                 
-                CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-                [builder setURL:self.request.domain];
-                [builder setpageName:self.request.pageName];
-                
-                [self startPingWithCompletion:currentInterface completion:^(NSDictionary *reportData, NSError *error) {
-                    // ✅ TCP Ping 判断成功标准：无错误且有成功响应
-                    NSInteger responseNum = [reportData[@"responseNum"] integerValue];
-                    NSInteger totalCount = [reportData[@"count"] integerValue];
-                    
-                    if (!error && responseNum > 0) {
-                        hasSucceeded = YES;
-                        NSLog(@"✅ TCP Ping 成功（第 %d 次尝试）- 响应 %ld/%ld", 
-                              attemptCount, (long)responseNum, (long)totalCount);
+                // 执行单次探测（注意：这里会重置内部计数，所以需要在外层汇总）
+                [self performSingleProbeWithInterface:currentInterface completion:^(BOOL success, NSTimeInterval latency, NSError *error) {
+                    if (success) {
+                        // 成功：记录延迟
+                        [self.latencies addObject:@(latency)];
+                        self.successCount++;
+                        NSLog(@"✅ TCP Ping 成功（%d/%d）- 延迟 %.2fms", probeIndex, totalProbes, latency);
                     } else {
-                        NSLog(@"❌ TCP Ping 失败（第 %d 次尝试）- 响应 %ld/%ld, Error: %@", 
-                              attemptCount, (long)responseNum, (long)totalCount, 
-                              error.localizedDescription ?: @"无响应");
+                        // 失败：仅计数
+                        self.failureCount++;
+                        NSLog(@"❌ TCP Ping 失败（%d/%d）- Error: %@", probeIndex, totalProbes, error.localizedDescription ?: @"连接失败");
                     }
                     
-                    // 上报并获取返回字典
-                    NSDictionary *d = [builder report:self.topicId reportData:reportData ?: @{}];
-                    
-                    // 封装为CLSResponse，兼容原有回调协议
-                    CLSResponse *completeResult = [CLSResponse complateResultWithContent:d ?: @{}];
-                    if (complete) {
-                        complete(completeResult);
-                    }
-                    
-                    // 释放信号量
+                    // 释放信号量（继续下一次探测）
                     dispatch_semaphore_signal(semaphore);
                 }];
                 
-                // 等待当前尝试完成
+                // 等待当前探测完成
                 dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            }
+            
+            // ===== 所有探测完成，构建汇总结果并上报 =====
+            NSLog(@"📊 TCP Ping 汇总: 总次数=%d, 成功=%lu, 失败=%lu, bind失败=%lu", 
+                  totalProbes, (unsigned long)self.successCount, (unsigned long)self.failureCount, (unsigned long)self.bindFailedCount);
+            
+            NSDictionary *aggregatedResult = [self buildAggregatedReportDictForProbeCount:totalProbes];
+            
+            // 上报汇总结果
+            CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" 
+                                                                   provider:[[CLSSpanProviderDelegate alloc] init]];
+            [builder setURL:self.request.domain];
+            [builder setpageName:self.request.pageName];
+            
+            NSDictionary *reportDict = [builder report:self.topicId reportData:aggregatedResult];
+            CLSResponse *completionResult = [CLSResponse complateResultWithContent:reportDict ?: @{}];
+            
+            // 回调返回汇总结果（切回主线程）
+            if (complete) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    complete(completionResult);
+                });
             }
         });
         

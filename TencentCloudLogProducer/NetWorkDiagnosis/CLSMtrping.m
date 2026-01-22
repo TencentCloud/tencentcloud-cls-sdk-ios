@@ -12,6 +12,7 @@
 #import "CLSSPanBuilder.h"
 #import "CLSCocoa.h"
 #import "network_ios/cls_mtr_detector.h"
+#import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
 
 static NSString *const kMtrLogPrefix = @"[MTR检测]";
 static const NSUInteger kMTRJsonBufferSize = 65535;
@@ -162,7 +163,7 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
                                                                      endpoint:self.endPoint
                                                                 interfaceDNS:self.interfaceInfo[@"dns"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
-    reportData[@"userEx"] = self.request.userEx ?: @{};
+    reportData[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取
     NSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kMtrLogPrefix, reportData);
     return [reportData copy];
 }

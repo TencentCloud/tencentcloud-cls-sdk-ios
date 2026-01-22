@@ -16,6 +16,7 @@
 #import "CLSSPanBuilder.h"
 #import "CLSCocoa.h"
 #import "network_ios/cls_ping_detector.h"
+#import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
 
 // 常量定义（统一维护，便于修改）
 static NSString *const kPINGLogPrefix = @"[PING检测]";
@@ -167,7 +168,7 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
                                                                      endpoint:self.endPoint
                                                                 interfaceDNS:self.interfaceInfo[@"dns"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
-    reportData[@"userEx"] = self.request.userEx ?: @{};
+    reportData[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取
     
     return [reportData copy];
 }

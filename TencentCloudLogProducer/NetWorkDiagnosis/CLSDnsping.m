@@ -25,6 +25,7 @@
 #import "CLSCocoa.h"
 #import "CLSStringUtils.h"
 #import "network_ios/cls_dns_detector.h"
+#import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
 
 // 常量定义
 static NSString *const kDNSLogPrefix = @"[DNS检测]";
@@ -228,7 +229,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
                                                                                 endpoint:self.endPoint
                                                                            interfaceDNS:self.interfaceInfo[@"dns"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
-    reportData[@"userEx"] = self.request.userEx ?: @{};
+    reportData[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取
     
     return [reportData copy];
 }

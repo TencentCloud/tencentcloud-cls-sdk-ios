@@ -33,9 +33,10 @@
     
     //初始化网络探测发送接口
     ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:@"ap-guangzhou-open.cls.tencentcs.com"
-                                                      accessKeyId:@""
-                                                        accessKey:@""];
+                                                       accessKeyId:@""
+                                                         accessKey:@""];
     [[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config netToken:@""];
+    [[ClsNetworkDiagnosis sharedInstance] setUserEx:@{@"user_key1":@"user_value1"}];
 }
 
 - (void)networkDetectBtnClick:(UIButton *)sender {
@@ -71,7 +72,6 @@
 - (void)callHttppingAPI {
     CLSHttpRequest *request = [[CLSHttpRequest alloc] init];
     request.detectEx = @{@"key1":@"value1"};
-    request.userEx = @{@"key2":@"valuoe2"};
     request.domain = @"https://sa-saopaulo.cls.tencentcs.com/ping";
     [[ClsNetworkDiagnosis sharedInstance] httpingv2: request complate:^(CLSResponse *result){
         NSLog(@"%@",result);
@@ -81,9 +81,9 @@
 - (void)callTcppingAPI {
     CLSTcpRequest *request = [[CLSTcpRequest alloc] init];
     request.detectEx = @{@"key1":@"value1"};
-    request.userEx = @{@"key2":@"valuoe2"};
-    request.domain = @"127.0.0.1";
-    request.port = 80;
+    request.domain = @"www.tencentcloud.com";
+    request.port = 443;
+    request.maxTimes = 10;
     [[ClsNetworkDiagnosis sharedInstance] tcpPingv2:request complate:^(CLSResponse *result){
         NSLog(@"result:%@",result);
     }];
@@ -92,7 +92,6 @@
 - (void)callPingAPI {
     CLSPingRequest *request = [[CLSPingRequest alloc] init];
     request.detectEx = @{@"key1":@"value1"};
-    request.userEx = @{@"key2":@"valuoe2"};
     request.domain = @"127.0.0.1";
     [[ClsNetworkDiagnosis sharedInstance] pingv2:request complate:^(CLSResponse *result){
         NSLog(@"result:%@",result);
@@ -102,7 +101,6 @@
 - (void)callMtrAPI {
     CLSMtrRequest *request = [[CLSMtrRequest alloc] init];
     request.detectEx = @{@"key1":@"value1"};
-    request.userEx = @{@"key2":@"valuoe2"};
     request.domain = @"www.baidu.com";
     [[ClsNetworkDiagnosis sharedInstance] mtr:request complate:^(CLSResponse *result){
         NSLog(@"result:%@",result);
@@ -112,7 +110,6 @@
 - (void)callDnsAPI {
     CLSDnsRequest *request = [[CLSDnsRequest alloc] init];
     request.detectEx = @{@"key1":@"value1"};
-    request.userEx = @{@"key2":@"valuoe2"};
     request.domain = @"www.baidu.com";
     [[ClsNetworkDiagnosis sharedInstance] dns:request complate:^(CLSResponse *result){
         NSLog(@"result:%@",result);

@@ -9,6 +9,7 @@
 #import "CLSSPanBuilder.h"
 #import "CLSCocoa.h"
 #import "CLSStringUtils.h"
+#import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
 
 @implementation CLSMultiInterfaceHttping
 
@@ -465,7 +466,7 @@ didReceiveData:(NSData *)data {
     finalReportDict[@"desc"] = timeDesc;
     finalReportDict[@"netInfo"] = netInfo ?: @{};
     finalReportDict[@"detectEx"] = self.request.detectEx ?: @{};
-    finalReportDict[@"userEx"] = self.request.userEx ?: @{};
+    finalReportDict[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取
     
     // -------------------------- 4. 合并netOrigin所有字段（平铺，也可保留层级，按需调整） --------------------------
     [finalReportDict addEntriesFromDictionary:netOrigin];
@@ -501,64 +502,42 @@ didReceiveData:(NSData *)data {
         return;
     }
     
-    // maxTimes 表示最大尝试次数（包含首次尝试）
-    int maxRetries = self.request.maxTimes;
-    NSLog(@"✅ HTTP探测参数: maxRetries=%d, timeout=%ds, size=%d bytes", maxRetries, self.request.timeout, self.request.size);
+    // ⚠️ HTTPing 不支持多次探测，单次探测后立即上报（无论成功失败）
+    NSLog(@"✅ HTTP探测参数: timeout=%ds, size=%d bytes", self.request.timeout, self.request.size);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     for (NSDictionary *currentInterface in availableInterfaces) {
         NSLog(@"interface:%@", currentInterface);
         
-        // 使用串行队列和信号量实现同步重试逻辑
-        dispatch_queue_t retryQueue = dispatch_queue_create("com.tencent.cls.httpping.retry", DISPATCH_QUEUE_SERIAL);
+        // 执行单次探测
+        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" 
+                                                               provider:[[CLSSpanProviderDelegate alloc] init]];
+        [builder setURL:self.request.domain];
+        [builder setpageName:self.request.pageName];
         
-        dispatch_async(retryQueue, ^{
-            __block BOOL hasSucceeded = NO;
+        [self startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
+            // 记录探测结果（无论成功失败）
+            NSInteger httpCode = [finalReportDict[@"httpCode"] integerValue];
+            BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);
             
-            // 执行 maxRetries 次尝试（首次 + 失败后的重试）
-            for (int i = 0; i < maxRetries && !hasSucceeded; i++) {
-                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-                
-                int attemptCount = i + 1;
-                NSLog(@"🔄 HTTP Ping 尝试 %d/%d", attemptCount, maxRetries);
-                
-                CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
-                [builder setURL:self.request.domain];
-                [builder setpageName:self.request.pageName];
-                
-                [self startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
-                    // ✅ 修复：HTTP Ping 判断成功标准
-                    // HTTP Ping 没有 responseNum 字段，应该根据 httpCode 和 error 判断
-                    NSInteger httpCode = [finalReportDict[@"httpCode"] integerValue];
-                    BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);  // 2xx/3xx 为成功
-                    
-                    if (!error && isHttpSuccess) {
-                        hasSucceeded = YES;
-                        NSLog(@"✅ HTTP Ping 成功（第 %d 次尝试）- HTTP %ld", attemptCount, (long)httpCode);
-                    } else {
-                        NSLog(@"❌ HTTP Ping 失败（第 %d 次尝试）- HTTP %ld, Error: %@", 
-                              attemptCount, (long)httpCode, error.localizedDescription ?: @"无响应");
-                    }
-                    
-                    // 上报并获取返回字典
-                    NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
-                    
-                    // 使用report返回的字典构建响应
-                    CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
-                    
-                    // 回调返回结果
-                    if (complate) {
-                        complate(completionResult);
-                    }
-                    
-                    // 释放信号量
-                    dispatch_semaphore_signal(semaphore);
-                }];
-                
-                // 等待当前尝试完成
-                dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            if (!error && isHttpSuccess) {
+                NSLog(@"✅ HTTP Ping 成功 - HTTP %ld", (long)httpCode);
+            } else {
+                NSLog(@"❌ HTTP Ping 失败 - HTTP %ld, Error: %@", 
+                      (long)httpCode, error.localizedDescription ?: @"连接失败");
             }
-        });
+            
+            // 立即上报结果
+            NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
+            
+            // 封装为 CLSResponse 返回
+            CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
+            
+            // 回调返回结果
+            if (complate) {
+                complate(completionResult);
+            }
+        }];
         
         // 非多端口检测，仅执行第一个接口
         if (!self.request.enableMultiplePortsDetect) {
