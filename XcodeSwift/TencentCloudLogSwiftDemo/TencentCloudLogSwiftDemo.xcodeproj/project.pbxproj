@@ -19,6 +19,7 @@
 		996E3FA02859913600982B7E /* sendcallback.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F972859913600982B7E /* sendcallback.m */; };
 		996E3FA12859913600982B7E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F9A2859913600982B7E /* LaunchScreen.storyboard */; };
 		996E3FA22859913600982B7E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F9C2859913600982B7E /* Main.storyboard */; };
+		EBB259712F231D89001DD66E /* NetworkDiagnosisViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB259702F231D89001DD66E /* NetworkDiagnosisViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +41,7 @@
 		996E3F982859913600982B7E /* TencentCloundLogSwiftDemo-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "TencentCloundLogSwiftDemo-Bridging-Header.h"; sourceTree = "<group>"; };
 		996E3F9B2859913600982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		996E3F9D2859913600982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Main.storyboard; sourceTree = "<group>"; };
+		EBB259702F231D89001DD66E /* NetworkDiagnosisViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDiagnosisViewController.swift; sourceTree = "<group>"; };
 		FAD29D1F64337BA273504E71 /* Pods-TencentCloudLogSwiftDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogSwiftDemo.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogSwiftDemo/Pods-TencentCloudLogSwiftDemo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -107,6 +109,7 @@
 				996E3F8A2859906000982B7E /* LaunchScreen.storyboard */,
 				996E3F8D2859906000982B7E /* Info.plist */,
 				996E3F932859913600982B7E /* TencentCloudLogSwiftDemo-Bridging-Header.h */,
+				EBB259702F231D89001DD66E /* NetworkDiagnosisViewController.swift */,
 			);
 			path = TencentCloudLogSwiftDemo;
 			sourceTree = "<group>";
@@ -242,6 +245,7 @@
 				996E3F842859905E00982B7E /* ViewController.swift in Sources */,
 				996E3F802859905E00982B7E /* AppDelegate.swift in Sources */,
 				996E3F822859905E00982B7E /* SceneDelegate.swift in Sources */,
+				EBB259712F231D89001DD66E /* NetworkDiagnosisViewController.swift in Sources */,
 				996E3FA02859913600982B7E /* sendcallback.m in Sources */,
 				996E3F9E2859913600982B7E /* utils.swift in Sources */,
 			);

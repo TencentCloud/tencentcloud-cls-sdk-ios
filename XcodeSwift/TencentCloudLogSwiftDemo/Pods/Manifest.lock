@@ -5,14 +5,18 @@ PODS:
   - GMOpenSSL (2.2.9)
   - Protobuf (3.29.5)
   - Reachability (3.2)
-  - TencentCloudLogProducer/Core (1.3.1):
+  - TencentCloudLogProducer/Core (2.0.0):
     - FMDB (~> 2.7.5)
     - GMOpenSSL (~> 2.2.6)
     - Protobuf (~> 3.29.5)
     - Reachability (~> 3.2)
+  - TencentCloudLogProducer/NetWorkDiagnosis (2.0.0):
+    - Reachability (~> 3.2)
+    - TencentCloudLogProducer/Core
 
 DEPENDENCIES:
   - TencentCloudLogProducer/Core (from `../../`)
+  - TencentCloudLogProducer/NetWorkDiagnosis (from `../../`)
 
 SPEC REPOS:
   trunk:
@@ -30,8 +34,8 @@ SPEC CHECKSUMS:
   GMOpenSSL: d6d119ff8f00d4e03c2cdf733fb61e98e22da9c7
   Protobuf: 164aea2ae380c3951abdc3e195220c01d17400e0
   Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
-  TencentCloudLogProducer: 702b24f09c3512955e58e8d41165460f5871e0b6
+  TencentCloudLogProducer: fbc131e04bb4599bdf2cb61f7cebf871a7de4bcd
 
-PODFILE CHECKSUM: 0995036c9d784b620ade96d6b84902b1f252640e
+PODFILE CHECKSUM: 09e83db93fd284c8ba3bef4821b558affcd8fcde
 
 COCOAPODS: 1.16.2

@@ -33,6 +33,19 @@
 #import "cls_log_producer_client.h"
 #import "cls_log_error.h"
 #import "cls_log_producer_config.h"
+#import "ClsHttping.h"
+#import "ClsNetDiag.h"
+#import "ClsNetWorkDataSender.h"
+#import "ClsNetworkDiagnosis.h"
+#import "ClsNetworkDiagnosisPlugin.h"
+#import "ClsNetWorkScheme.h"
+#import "ClsPing.h"
+#import "ClsProtocols.h"
+#import "ClsQueue.h"
+#import "ClsSystemCapabilities.h"
+#import "ClsTcpPing.h"
+#import "ClsTraceRoute.h"
+#import "ClsUtils.h"
 
 FOUNDATION_EXPORT double TencentCloudLogProducerVersionNumber;
 FOUNDATION_EXPORT const unsigned char TencentCloudLogProducerVersionString[];

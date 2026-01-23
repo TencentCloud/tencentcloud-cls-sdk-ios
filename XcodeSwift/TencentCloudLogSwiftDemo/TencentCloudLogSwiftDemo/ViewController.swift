@@ -21,7 +21,55 @@ class ViewController: UIViewController {
         self.showparam.sizeToFit()
         self.initLogProducer();
         
+        // 添加网络探测导航按钮
+        setupNetworkDiagnosisButton()
+        
+        // 添加模拟器测试按钮
+        setupSimulatorTestButton()
+        
         NotificationCenter.default.addObserver(self , selector: #selector(changeText), name: Notification.Name(rawValue: "test"), object: nil);
+    }
+    
+    // 设置网络探测导航按钮
+    private func setupNetworkDiagnosisButton() {
+        // 使用导航栏右侧按钮
+        let button = UIBarButtonItem(
+            title: "🌐 网络探测",
+            style: .plain,
+            target: self,
+            action: #selector(openNetworkDiagnosis)
+        )
+        navigationItem.rightBarButtonItem = button
+    }
+    
+    // 打开网络探测页面
+    @objc private func openNetworkDiagnosis() {
+        let networkVC = NetworkDiagnosisViewController()
+        navigationController?.pushViewController(networkVC, animated: true)
+    }
+    
+    // 设置模拟器测试按钮
+    private func setupSimulatorTestButton() {
+        // 创建一个醒目的测试按钮
+        let testButton = UIButton(type: .system)
+        testButton.setTitle("🔧 网络探测测试", for: .normal)
+        testButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+        testButton.backgroundColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 0.1)
+        testButton.layer.cornerRadius = 10
+        testButton.layer.borderWidth = 2
+        testButton.layer.borderColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0).cgColor
+        testButton.translatesAutoresizingMaskIntoConstraints = false
+        testButton.addTarget(self, action: #selector(openNetworkDiagnosis), for: .touchUpInside)
+        
+        view.addSubview(testButton)
+        
+        // 设置约束 - 兼容iOS 9+
+        NSLayoutConstraint.activate([
+            testButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            testButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            testButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -30),
+            testButton.heightAnchor.constraint(equalToConstant: 60)
+        ])
     }
     
     @objc func changeText(noti:Notification){
