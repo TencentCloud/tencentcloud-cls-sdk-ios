@@ -514,6 +514,9 @@ didReceiveData:(NSData *)data {
                                                                provider:[[CLSSpanProviderDelegate alloc] init]];
         [builder setURL:self.request.domain];
         [builder setpageName:self.request.pageName];
+        if (self.request.traceId) {
+            [builder setTraceId:self.request.traceId];
+        }
         
         [self startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
             // 记录探测结果（无论成功失败）

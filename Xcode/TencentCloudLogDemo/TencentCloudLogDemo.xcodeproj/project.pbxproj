@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1011BE8B037D4AB8DE77C769 /* libPods-TencentCloudLogDemoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C45B219E7A2600CC0CA1F55C /* libPods-TencentCloudLogDemoTests.a */; };
+		2D8C1E44BED2FAEC3FE268C8 /* Pods_TencentCloudLogDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1172D28E830566012A993087 /* Pods_TencentCloudLogDemo.framework */; };
+		D7CA45D38465D3BA780D17BB /* Pods_TencentCloudLogDemoTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 982C618FB43BCD4A88EDD864 /* Pods_TencentCloudLogDemoTests.framework */; };
 		EBAE1BE42EE17789009551F0 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = EBAE1BE32EE17789009551F0 /* AppDelegate.m */; };
 		EBAE1BED2EE17789009551F0 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EBAE1BEB2EE17789009551F0 /* Main.storyboard */; };
 		EBAE1BEF2EE1778A009551F0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EBAE1BEE2EE1778A009551F0 /* Assets.xcassets */; };
@@ -20,7 +21,6 @@
 		EBCC8AC12EE28A8C006B5797 /* CLSLogUploadViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8AC02EE28A8C006B5797 /* CLSLogUploadViewController.m */; };
 		EBCC8AC32EE28AC8006B5797 /* CLSNetworkDetectViewController.h in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8AC22EE28AC8006B5797 /* CLSNetworkDetectViewController.h */; };
 		EBCC8AC52EE28AD7006B5797 /* CLSNetworkDetectViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8AC42EE28AD7006B5797 /* CLSNetworkDetectViewController.m */; };
-		FFA6B41AEB6D9B3FBFCFED40 /* libPods-TencentCloudLogDemo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 68480E74187AE78BE7DF92C2 /* libPods-TencentCloudLogDemo.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,13 +35,13 @@
 
 /* Begin PBXFileReference section */
 		10CCD9C0D9E2642295FFA231 /* Pods-TencentCloudLogDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.release.xcconfig"; sourceTree = "<group>"; };
+		1172D28E830566012A993087 /* Pods_TencentCloudLogDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TencentCloudLogDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B748AE9EABB9A2BFA90FEE2 /* libPods-TencentCloudLogDemoUITests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TencentCloudLogDemoUITests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3EEAC34CDC444E94649BB130 /* Pods-TencentCloudLogDemoUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoUITests.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoUITests/Pods-TencentCloudLogDemoUITests.debug.xcconfig"; sourceTree = "<group>"; };
-		68480E74187AE78BE7DF92C2 /* libPods-TencentCloudLogDemo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TencentCloudLogDemo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		802D771F1115D64CC374912A /* Pods-TencentCloudLogDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.debug.xcconfig"; sourceTree = "<group>"; };
 		88EACAC4DE0B0CA20764BA86 /* Pods-TencentCloudLogDemoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoTests.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests.release.xcconfig"; sourceTree = "<group>"; };
+		982C618FB43BCD4A88EDD864 /* Pods_TencentCloudLogDemoTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TencentCloudLogDemoTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C051D4D41B6E18515315BADD /* Pods-TencentCloudLogDemoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoTests.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests.debug.xcconfig"; sourceTree = "<group>"; };
-		C45B219E7A2600CC0CA1F55C /* libPods-TencentCloudLogDemoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TencentCloudLogDemoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EBAE1BDF2EE17789009551F0 /* TencentCloudLogDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TencentCloudLogDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EBAE1BE22EE17789009551F0 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		EBAE1BE32EE17789009551F0 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -66,7 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FFA6B41AEB6D9B3FBFCFED40 /* libPods-TencentCloudLogDemo.a in Frameworks */,
+				2D8C1E44BED2FAEC3FE268C8 /* Pods_TencentCloudLogDemo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,7 +74,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1011BE8B037D4AB8DE77C769 /* libPods-TencentCloudLogDemoTests.a in Frameworks */,
+				D7CA45D38465D3BA780D17BB /* Pods_TencentCloudLogDemoTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,9 +84,9 @@
 		05A3D48F995F3124020BE694 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				68480E74187AE78BE7DF92C2 /* libPods-TencentCloudLogDemo.a */,
 				3B748AE9EABB9A2BFA90FEE2 /* libPods-TencentCloudLogDemoUITests.a */,
-				C45B219E7A2600CC0CA1F55C /* libPods-TencentCloudLogDemoTests.a */,
+				1172D28E830566012A993087 /* Pods_TencentCloudLogDemo.framework */,
+				982C618FB43BCD4A88EDD864 /* Pods_TencentCloudLogDemoTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -163,7 +163,7 @@
 				EBAE1BDB2EE17789009551F0 /* Sources */,
 				EBAE1BDC2EE17789009551F0 /* Frameworks */,
 				EBAE1BDD2EE17789009551F0 /* Resources */,
-				00D69A74381D42A92612B768 /* [CP] Copy Pods Resources */,
+				903BA522547C7E83DFB05589 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -182,6 +182,7 @@
 				EBAE1BF62EE1778A009551F0 /* Sources */,
 				EBAE1BF72EE1778A009551F0 /* Frameworks */,
 				EBAE1BF82EE1778A009551F0 /* Resources */,
+				B6A91E974A64603E7438FE21 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -251,23 +252,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		00D69A74381D42A92612B768 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		6AA51426DB5DDB3E768A04B1 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -288,6 +272,40 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		903BA522547C7E83DFB05589 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B6A91E974A64603E7438FE21 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		CF4BEE7478E62074BF738829 /* [CP] Check Pods Manifest.lock */ = {

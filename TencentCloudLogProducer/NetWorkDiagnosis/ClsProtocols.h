@@ -20,6 +20,7 @@
 @property(nonatomic, assign) BOOL enableMultiplePortsDetect;
 @property (nonatomic, copy, nullable) NSString *pageName;
 @property(nonatomic, strong) NSDictionary<NSString*, NSString*> *detectEx;  // userEx 已移除，统一从 ClsNetworkDiagnosis 获取
+@property(nonatomic, copy, nullable) NSString *traceId;
 @end
 
 @interface CLSHttpRequest : CLSRequest

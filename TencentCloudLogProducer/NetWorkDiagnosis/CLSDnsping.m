@@ -175,6 +175,10 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
     [builder setURL:self.request.domain];
     [builder setpageName:self.request.pageName];
+    // 设置自定义traceId
+    if (self.request.traceId) {
+        [builder setTraceId:self.request.traceId];
+    }
     NSDictionary *d = [builder report:self.topicId reportData:reportData];
     
     // 7. 构建响应并回调
@@ -221,12 +225,13 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     // 5. 追加通用字段（空值兜底）
     reportData[@"appKey"] = self.request.appKey;
     reportData[@"src"] = @"app";
-    reportData[@"trace_id"] = CLSIdGenerator.generateTraceId ?: @"";
+    // 优先使用request中的traceId，如果没有则自动生成
+    reportData[@"trace_id"] = self.request.traceId ?: CLSIdGenerator.generateTraceId ?: @"";
     reportData[@"netInfo"] = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interfaceInfo[@"type"]
                                                                            networkAppId:self.networkAppId
                                                                                   appKey:self.appKey
                                                                                     uin:self.uin
-                                                                                endpoint:self.endPoint
+                                                                               endpoint:self.endPoint
                                                                            interfaceDNS:self.interfaceInfo[@"dns"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
     reportData[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取

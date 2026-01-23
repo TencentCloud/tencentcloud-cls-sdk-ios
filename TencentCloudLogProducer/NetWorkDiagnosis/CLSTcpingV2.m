@@ -632,6 +632,9 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                                                                    provider:[[CLSSpanProviderDelegate alloc] init]];
             [builder setURL:self.request.domain];
             [builder setpageName:self.request.pageName];
+            if (self.request.traceId) {
+                [builder setTraceId:self.request.traceId];
+            }
             
             NSDictionary *reportDict = [builder report:self.topicId reportData:aggregatedResult];
             CLSResponse *completionResult = [CLSResponse complateResultWithContent:reportDict ?: @{}];

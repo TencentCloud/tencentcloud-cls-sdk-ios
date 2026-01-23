@@ -1,9 +1,8 @@
 CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO
 CONFIGURATION_BUILD_DIR = ${PODS_CONFIGURATION_BUILD_DIR}/TencentCloudLogProducer
-EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64
+FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/FMDB" "${PODS_CONFIGURATION_BUILD_DIR}/Protobuf" "${PODS_CONFIGURATION_BUILD_DIR}/Reachability"
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1 CLS_HAS_CORE_TELEPHONY=1
-HEADER_SEARCH_PATHS = $(inherited) "${PODS_ROOT}/Headers/Private" "${PODS_ROOT}/Headers/Private/TencentCloudLogProducer" "${PODS_ROOT}/Headers/Public" "${PODS_ROOT}/Headers/Public/FMDB" "${PODS_ROOT}/Headers/Public/Protobuf" "${PODS_ROOT}/Headers/Public/Reachability" "${PODS_ROOT}/Headers/Public/TencentCloudLogProducer"
-OTHER_CFLAGS = $(inherited) -fmodule-map-file="${PODS_CONFIGURATION_BUILD_DIR}/Protobuf/Protobuf.modulemap"
+OTHER_LDFLAGS = $(inherited) -l"resolv" -l"sqlite3" -l"z" -framework "FMDB" -framework "Foundation" -framework "Network" -framework "Protobuf" -framework "Reachability" -framework "SystemConfiguration" -framework "UIKit"
 PODS_BUILD_DIR = ${BUILD_DIR}
 PODS_CONFIGURATION_BUILD_DIR = ${PODS_BUILD_DIR}/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)
 PODS_DEVELOPMENT_LANGUAGE = ${DEVELOPMENT_LANGUAGE}
@@ -12,5 +11,4 @@ PODS_TARGET_SRCROOT = ${PODS_ROOT}/../../..
 PODS_XCFRAMEWORKS_BUILD_DIR = $(PODS_CONFIGURATION_BUILD_DIR)/XCFrameworkIntermediates
 PRODUCT_BUNDLE_IDENTIFIER = org.cocoapods.${PRODUCT_NAME:rfc1034identifier}
 SKIP_INSTALL = YES
-SWIFT_INCLUDE_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/Protobuf"
 USE_RECURSIVE_SCRIPT_INPUTS_IN_SCRIPT_PHASES = YES

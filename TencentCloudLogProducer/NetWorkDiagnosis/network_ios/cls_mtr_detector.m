@@ -2110,7 +2110,23 @@ static void *tcp_parallel_worker_thread(void *arg) {
                                              &decoded_probe) == 0) {
             ttl = decoded_ttl;
             probe_index = decoded_probe;
-            is_target_reply = 0; // ICMP 错误消息默认来自中间路由器
+            
+            // 检查是否是 Port Unreachable（目标到达标志）
+            // IPv4: ICMP_DEST_UNREACH (type=3), Port Unreachable (code=3)
+            // IPv6: ICMP6_DST_UNREACH (type=1), Port Unreachable (code=4)
+            uint8_t dest_unreach_type = is_ipv6 ? 1 : 3;
+            uint8_t port_unreachable_code = is_ipv6 ? 4 : 3;
+            if (icmp_type == dest_unreach_type &&
+                icmp_code == port_unreachable_code) {
+              is_target_reply = 1; // Port Unreachable 表示到达目标
+            } else {
+              is_target_reply = 0; // ICMP 错误消息默认来自中间路由器
+            }
+            
+            // 额外检查：如果源IP等于目标IP，也视为到达目标（作为补充判断）
+            if (!is_target_reply && strcmp(temp_src_ip, target_ip) == 0) {
+              is_target_reply = 1;
+            }
 
             mtr_tcp_event event;
             memset(&event, 0, sizeof(event));
@@ -4076,6 +4092,11 @@ static int probe_udp_parallel(const char *target_ip, int max_ttl, int times,
       int all_done = 1;
       for (int ttl = 1; ttl <= max_ttl; ttl++) {
         mtr_hop_state *hop = &session.hops[ttl];
+        // 如果hop还未发送任何探测，不应该被视为完成
+        if (hop->sent_count == 0) {
+          all_done = 0;
+          break;
+        }
         if (!hop->ttl_done &&
             (hop->sent_count < times ||
              (current_time - hop->first_send_time) < (uint64_t)timeout_ms)) {
@@ -4614,6 +4635,11 @@ static int probe_tcp_parallel(const char *target_ip, int max_ttl, int times,
       int all_done = 1;
       for (int ttl = 1; ttl <= max_ttl; ttl++) {
         mtr_hop_state *hop = &session.hops[ttl];
+        // 如果hop还未发送任何探测，不应该被视为完成
+        if (hop->sent_count == 0) {
+          all_done = 0;
+          break;
+        }
         if (!hop->ttl_done &&
             (hop->sent_count < times ||
              (current_time - hop->first_send_time) < (uint64_t)timeout_ms)) {
@@ -5212,6 +5238,25 @@ cls_mtr_detector_perform_mtr(const char *target,
                          ? "Probe failed: socket/send error"
                          : "Probe timeout: no hop responded",
                      sizeof(result->error_message));
+      } else {
+        // 检查是否真正到达目标主机
+        int target_reached = 0;
+        if (last_hop > 0 && last_hop <= (int)path->results_count) {
+          cls_mtr_hop_result *last_hop_result = &path->results[last_hop - 1];
+          if (last_hop_result->ip[0] != '\0' && path->host_ip[0] != '\0') {
+            if (strcmp(last_hop_result->ip, path->host_ip) == 0) {
+              target_reached = 1;
+            }
+          }
+        }
+        // 如果未到达目标，设置错误信息
+        if (!target_reached) {
+          final_code = cls_mtr_detector_error_timeout;
+          result->error_code = final_code;
+          safe_strncpy(result->error_message,
+                       "Probe completed but target host not reached",
+                       sizeof(result->error_message));
+        }
       }
     } else if (probe_result == (int)cls_mtr_detector_error_timeout) {
       // 未到达目标（可能是连续超时提前停止/全局 deadline 到期等）
@@ -5263,6 +5308,25 @@ cls_mtr_detector_perform_mtr(const char *target,
                          ? "Probe failed: socket/send error"
                          : "Probe timeout: no hop responded",
                      sizeof(result->error_message));
+      } else {
+        // 检查是否真正到达目标主机
+        int target_reached = 0;
+        if (last_hop > 0 && last_hop <= (int)path->results_count) {
+          cls_mtr_hop_result *last_hop_result = &path->results[last_hop - 1];
+          if (last_hop_result->ip[0] != '\0' && path->host_ip[0] != '\0') {
+            if (strcmp(last_hop_result->ip, path->host_ip) == 0) {
+              target_reached = 1;
+            }
+          }
+        }
+        // 如果未到达目标，设置错误信息
+        if (!target_reached) {
+          final_code = cls_mtr_detector_error_timeout;
+          result->error_code = final_code;
+          safe_strncpy(result->error_message,
+                       "Probe completed but target host not reached",
+                       sizeof(result->error_message));
+        }
       }
     } else if (probe_result == (int)cls_mtr_detector_error_timeout) {
       // 未到达目标（可能是连续超时提前停止/全局 deadline 到期等）
@@ -5316,6 +5380,25 @@ cls_mtr_detector_perform_mtr(const char *target,
                          ? "Probe failed: socket/bind/send error"
                          : "Probe timeout: no hop responded",
                      sizeof(result->error_message));
+      } else {
+        // 检查是否真正到达目标主机
+        int target_reached = 0;
+        if (last_hop > 0 && last_hop <= (int)path->results_count) {
+          cls_mtr_hop_result *last_hop_result = &path->results[last_hop - 1];
+          if (last_hop_result->ip[0] != '\0' && path->host_ip[0] != '\0') {
+            if (strcmp(last_hop_result->ip, path->host_ip) == 0) {
+              target_reached = 1;
+            }
+          }
+        }
+        // 如果未到达目标，设置错误信息
+        if (!target_reached) {
+          final_code = cls_mtr_detector_error_timeout;
+          result->error_code = final_code;
+          safe_strncpy(result->error_message,
+                       "Probe completed but target host not reached",
+                       sizeof(result->error_message));
+        }
       }
     } else if (probe_result == (int)cls_mtr_detector_error_timeout) {
       // 未到达目标（可能是连续超时提前停止/全局 deadline 到期等）
@@ -5356,9 +5439,50 @@ cls_mtr_detector_perform_mtr(const char *target,
     }
   }
 
-  // 构造 path 字符串：timestamp: 源IP-目标IP
-  const char *source_ip_for_path = (device_ip[0] != '\0') ? device_ip : "*";
+  // 构造 path 字符串：timestamp: 第一跳IP-目标IP（或最后一跳IP，如果未到达目标）
+  // 起点：使用第一跳的IP（hop=1），如果没有第一跳数据则使用本地设备IP作为兜底
+  // 终点：如果到达目标则使用目标IP，否则使用最后一跳的IP
+  const char *source_ip_for_path = "*"; // 默认值
+  if (path->results_count > 0) {
+    cls_mtr_hop_result *first_hop_result = &path->results[0]; // hop=1 (索引0)
+    if (first_hop_result->ip[0] != '\0') {
+      source_ip_for_path = first_hop_result->ip; // 使用第一跳的IP
+    } else if (device_ip[0] != '\0') {
+      source_ip_for_path = device_ip; // 兜底：使用本地设备IP
+    }
+  } else if (device_ip[0] != '\0') {
+    source_ip_for_path = device_ip; // 兜底：使用本地设备IP
+  }
+  
+  // 终点IP：默认使用目标IP，但如果未到达目标则使用最后一跳的IP
   const char *dest_ip_for_path = path->host_ip[0] ? path->host_ip : path->host;
+  
+  // 检查是否到达目标：如果最后一跳的IP等于目标IP，说明到达了目标
+  // 否则，使用最后一跳的IP作为终点IP
+  int target_reached = 0;
+  if (path->lastHop > 0 && path->lastHop <= (int)path->results_count) {
+    cls_mtr_hop_result *last_hop_result = &path->results[path->lastHop - 1];
+    if (last_hop_result->ip[0] != '\0' && path->host_ip[0] != '\0') {
+      // 比较最后一跳的IP和目标IP
+      if (strcmp(last_hop_result->ip, path->host_ip) == 0) {
+        target_reached = 1;
+      }
+    }
+  }
+  
+  // 如果没有到达目标，使用最后一跳的IP；否则使用目标IP
+  // 注意：即使最后一跳IP为空，只要不等于目标IP，也应该使用最后一跳IP（如果存在）
+  if (!target_reached) {
+    if (path->lastHop > 0 && path->lastHop <= (int)path->results_count) {
+      cls_mtr_hop_result *last_hop_result = &path->results[path->lastHop - 1];
+      if (last_hop_result->ip[0] != '\0') {
+        dest_ip_for_path = last_hop_result->ip;
+      }
+      // 如果最后一跳IP为空，保持使用目标IP（但这种情况应该很少见）
+    }
+    // 如果没有有效的最后一跳，保持使用目标IP（这种情况应该很少见）
+  }
+  
   snprintf(path->path, sizeof(path->path), "%lld : %s-%s", path->timestamp,
            source_ip_for_path, dest_ip_for_path);
 

@@ -19,6 +19,7 @@
 @property(nonatomic, strong) NSString *name;
 @property(nonatomic, strong) NSString *url;
 @property(nonatomic, strong) NSString *pageName;
+@property(nonatomic, strong) NSString *customTraceId;
 @property(nonatomic, strong) id<CLSSpanProviderProtocol> spanProvider;
 @property(atomic, assign, readonly) BOOL active;
 @property(nonatomic, strong) NSMutableArray<CLSAttribute*> *attributes;
@@ -68,6 +69,11 @@
     return self;
 }
 
+- (CLSSpanBuilder *) setTraceId: (NSString *)traceId {
+    _customTraceId = traceId;
+    return self;
+}
+
 
 - (CLSSpanBuilder *) addAttribute: (CLSAttribute *) attribute, ... NS_REQUIRES_NIL_TERMINATION {
     [_attributes addObject:attribute];
@@ -108,7 +114,7 @@
     CLSRecordableSpan *span = [[CLSRecordableSpan alloc] init];
     span.name = _name;
     span.service = _service;
-    span.traceID = CLSIdGenerator.generateTraceId;
+    span.traceID = _customTraceId ?: CLSIdGenerator.generateTraceId;
     
 //    if (nil != _spanProvider) {
 //        [_attributes addObjectsFromArray:[_spanProvider provideAttribute]];

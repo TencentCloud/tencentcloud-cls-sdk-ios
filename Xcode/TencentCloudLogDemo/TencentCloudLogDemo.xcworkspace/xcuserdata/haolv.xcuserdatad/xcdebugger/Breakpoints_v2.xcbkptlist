@@ -14,8 +14,8 @@
             filePath = "TencentCloudLogDemo/CLSNetworkDetectViewController.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "73"
-            endingLineNumber = "73"
+            startingLineNumber = "74"
+            endingLineNumber = "74"
             landmarkName = "-callHttppingAPI"
             landmarkType = "7">
             <Locations>
@@ -160,7 +160,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "240"
             endingLineNumber = "240"
-            landmarkName = "-parseAndCacheNetToken:"
+            landmarkName = "-innerSetupLogSenderWithConfig:topicId:netToken:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -394,8 +394,8 @@
             filePath = "TencentCloudLogDemoTests/TencentCloudLogDemoTests.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "262"
-            endingLineNumber = "262"
+            startingLineNumber = "263"
+            endingLineNumber = "263"
             landmarkName = "-validateExtensionFields:expectedDetectEx:expectedUserEx:"
             landmarkType = "7">
          </BreakpointContent>
@@ -410,8 +410,8 @@
             filePath = "TencentCloudLogDemoTests/TencentCloudLogDemoTests.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "185"
-            endingLineNumber = "185"
+            startingLineNumber = "186"
+            endingLineNumber = "186"
             landmarkName = "-validateCommonFields:"
             landmarkType = "7">
          </BreakpointContent>
@@ -426,8 +426,8 @@
             filePath = "TencentCloudLogDemoTests/TencentCloudLogDemoTests.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "590"
-            endingLineNumber = "590"
+            startingLineNumber = "586"
+            endingLineNumber = "586"
             landmarkName = "-testMtrFieldsCompleteness"
             landmarkType = "7">
          </BreakpointContent>
@@ -474,8 +474,8 @@
             filePath = "TencentCloudLogDemoTests/TencentCloudLogDemoTests.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "677"
-            endingLineNumber = "677"
+            startingLineNumber = "673"
+            endingLineNumber = "673"
             landmarkName = "-testPingUnreachableHost"
             landmarkType = "7">
          </BreakpointContent>
@@ -538,8 +538,8 @@
             filePath = "TencentCloudLogDemoTests/TencentCloudLogDemoTests.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "888"
-            endingLineNumber = "888"
+            startingLineNumber = "884"
+            endingLineNumber = "884"
             landmarkName = "-testTcpPingClosedPort"
             landmarkType = "7">
             <Locations>
@@ -660,14 +660,14 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "429C5A1F-5BE1-41D9-A9BD-BBA69E351F80"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "TencentCloudLogDemoTests/TencentCloudLogDemoTests.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "949"
-            endingLineNumber = "949"
+            startingLineNumber = "945"
+            endingLineNumber = "945"
             landmarkName = "-testTcpPingInvalidPort"
             landmarkType = "7">
             <Locations>
@@ -701,7 +701,38 @@
                   endingLineNumber = "949"
                   offsetFromSymbolStart = "68">
                </Location>
+               <Location
+                  uuid = "429C5A1F-5BE1-41D9-A9BD-BBA69E351F80 - 9c0261dd564da168"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "__50-[CLSNetworkDiagnosisTests testTcpPingInvalidPort]_block_invoke"
+                  moduleName = "TencentCloudLogDemoTests"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/haolv/WorkSpace/cls_team/sdk/tencentcloud-cls-sdk-ios/Xcode/TencentCloudLogDemo/TencentCloudLogDemoTests/TencentCloudLogDemoTests.m"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "944"
+                  endingLineNumber = "944"
+                  offsetFromSymbolStart = "68">
+               </Location>
             </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "89429030-6B18-47D4-8710-37D04623FB4A"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../TencentCloudLogProducer/NetWorkDiagnosis/CLSHttpingV2.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "534"
+            endingLineNumber = "534"
+            landmarkName = "-start:"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

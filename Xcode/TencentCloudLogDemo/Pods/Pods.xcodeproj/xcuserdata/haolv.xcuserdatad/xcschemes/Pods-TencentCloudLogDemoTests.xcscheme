@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "DF3989C5048AC677CA77C96152061625"
-               BuildableName = "libPods-TencentCloudLogDemoTests.a"
+               BuildableName = "Pods_TencentCloudLogDemoTests.framework"
                BlueprintName = "Pods-TencentCloudLogDemoTests"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>
