@@ -17,7 +17,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         ins = [[CLSPrivocyUtils alloc] init];
-        ins.privocy = NO;
+        ins.privocy = YES;
     });
     return ins;
 }

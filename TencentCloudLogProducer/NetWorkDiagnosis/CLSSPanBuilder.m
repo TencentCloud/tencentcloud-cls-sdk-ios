@@ -153,7 +153,6 @@
     NSDictionary *dict = [reportData copy];
     
     NSString *method = [dict objectForKey:@"method"]?:@"";
-    [CLSPrivocyUtils setEnablePrivocy:YES];
     [self addAttribute:
          [CLSAttribute of:@"net.type" value:method],
          [CLSAttribute of:@"page.name" value:self.pageName],
