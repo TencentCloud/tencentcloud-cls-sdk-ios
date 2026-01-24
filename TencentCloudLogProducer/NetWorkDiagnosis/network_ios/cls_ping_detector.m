@@ -1070,24 +1070,18 @@ static int send_icmp_packet(int socket, const struct sockaddr *target_addr, sock
     }
 
     // 对 IPv6 主动填充校验和，避免内核未代填时出现 checksum=0
+    // 注意：对于ICMPv6，内核会自动计算校验和，但如果能获取本地地址，手动计算可以确保正确性
     if (target_addr->sa_family == AF_INET6 && packet.length >= sizeof(ICMPHeader)) {
         struct sockaddr_in6 local_addr;
         memset(&local_addr, 0, sizeof(local_addr));
         socklen_t local_len = sizeof(local_addr);
 
-        // 尝试获取本地地址；若未绑定地址，先连接以便内核选择出站地址
-        if (getsockname(socket, (struct sockaddr *)&local_addr, &local_len) != 0 ||
-            local_addr.sin6_family != AF_INET6 ||
-            IN6_IS_ADDR_UNSPECIFIED(&local_addr.sin6_addr)) {
-            // 连接到目标以选取合适的源地址
-            if (connect(socket, target_addr, addr_len) == 0) {
-                memset(&local_addr, 0, sizeof(local_addr));
-                local_len = sizeof(local_addr);
-                (void)getsockname(socket, (struct sockaddr *)&local_addr, &local_len);
-            }
-        }
-
-        if (local_addr.sin6_family == AF_INET6 && !IN6_IS_ADDR_UNSPECIFIED(&local_addr.sin6_addr)) {
+        // 尝试获取本地地址（不connect，避免影响后续sendto/recvfrom）
+        // 如果socket已绑定到接口，getsockname应该能返回本地地址
+        if (getsockname(socket, (struct sockaddr *)&local_addr, &local_len) == 0 &&
+            local_addr.sin6_family == AF_INET6 &&
+            !IN6_IS_ADDR_UNSPECIFIED(&local_addr.sin6_addr)) {
+            // 成功获取本地地址，手动计算校验和
             const struct sockaddr_in6 *addr6 = (const struct sockaddr_in6 *)target_addr;
             NSMutableData *mutablePacket = [packet mutableCopy];
             ICMPHeader *header = (ICMPHeader *)mutablePacket.mutableBytes;
@@ -1098,15 +1092,8 @@ static int send_icmp_packet(int socket, const struct sockaddr *target_addr, sock
                                                           mutablePacket.length);
             header->checksum = checksum;
             packet = mutablePacket; // 使用带校验和的数据
-        } else {
-            // 获取本地IPv6地址失败时，不中断发送，回退依赖内核代填校验和
-            if (result) {
-                result->exceptionNum += 1;
-                if (result->error_message[0] == '\0') {
-                    set_error_message(result, "Fallback to kernel checksum (no local IPv6 address)");
-                }
-            }
         }
+        // 如果无法获取本地地址，依赖内核自动计算校验和（这是正常情况，不记录异常）
     }
 
     ssize_t sent = sendto(socket, packet.bytes, packet.length, 0, target_addr, addr_len);
@@ -2095,17 +2082,23 @@ cls_ping_detector_error_code cls_ping_detector_perform_ping(const char *target,
             goto cleanup;
         }
 
-        // 显式要求内核计算 ICMPv6 校验和（偏移为 ICMP 头中 checksum 字段的偏移）
+        // 尝试设置 IPV6_CHECKSUM 选项（主要用于 UDP，ICMPv6 内核会自动计算）
+        // 注意：在 iOS 上，ICMPv6 socket 可能不支持此选项（errno=42 ENOPROTOOPT），这是正常的
         int cksum_offset = offsetof(ICMPHeader, checksum);
         if (setsockopt(resources.socket_fd, IPPROTO_IPV6, IPV6_CHECKSUM, &cksum_offset, sizeof(cksum_offset)) != 0) {
             int err = errno;
-            // 不致命，内核可能仍会自动代填，但记录一次异常便于排查
-            if (result && result->error_message[0] == '\0') {
-                set_error_message(result, "Failed to enable IPv6 checksum auto-fill: errno=%d (%s)", err, strerror(err));
+            // ENOPROTOOPT (42) 表示协议不支持此选项，对于 ICMPv6 这是正常的，内核会自动计算校验和
+            // 其他错误才记录为异常，但不影响后续操作
+            if (err != ENOPROTOOPT) {
+                // 非 ENOPROTOOPT 的错误才记录异常
+                if (result && result->error_message[0] == '\0') {
+                    set_error_message(result, "Failed to enable IPv6 checksum auto-fill: errno=%d (%s)", err, strerror(err));
+                }
+                if (result) {
+                    result->exceptionNum += 1;
+                }
             }
-            if (result) {
-                result->exceptionNum += 1;
-            }
+            // ENOPROTOOPT 是正常的，内核会自动处理 ICMPv6 校验和，不需要记录错误
         }
     } else {
         int ttl_opt = ttl;
