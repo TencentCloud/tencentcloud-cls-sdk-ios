@@ -20,6 +20,9 @@
 		996E3FA12859913600982B7E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F9A2859913600982B7E /* LaunchScreen.storyboard */; };
 		996E3FA22859913600982B7E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F9C2859913600982B7E /* Main.storyboard */; };
 		EBB259712F231D89001DD66E /* NetworkDiagnosisViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB259702F231D89001DD66E /* NetworkDiagnosisViewController.swift */; };
+		EBFF711D2F259D100040F660 /* BaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFF711A2F259D0F0040F660 /* BaseViewController.swift */; };
+		EBFF711E2F259D100040F660 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFF711B2F259D100040F660 /* MainViewController.swift */; };
+		EBFF711F2F259D100040F660 /* ProducerExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFF711C2F259D100040F660 /* ProducerExampleViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +45,9 @@
 		996E3F9B2859913600982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		996E3F9D2859913600982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Main.storyboard; sourceTree = "<group>"; };
 		EBB259702F231D89001DD66E /* NetworkDiagnosisViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDiagnosisViewController.swift; sourceTree = "<group>"; };
+		EBFF711A2F259D0F0040F660 /* BaseViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BaseViewController.swift; sourceTree = "<group>"; };
+		EBFF711B2F259D100040F660 /* MainViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		EBFF711C2F259D100040F660 /* ProducerExampleViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProducerExampleViewController.swift; sourceTree = "<group>"; };
 		FAD29D1F64337BA273504E71 /* Pods-TencentCloudLogSwiftDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogSwiftDemo.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogSwiftDemo/Pods-TencentCloudLogSwiftDemo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -95,6 +101,9 @@
 		996E3F7E2859905E00982B7E /* TencentCloudLogSwiftDemo */ = {
 			isa = PBXGroup;
 			children = (
+				EBFF711A2F259D0F0040F660 /* BaseViewController.swift */,
+				EBFF711B2F259D100040F660 /* MainViewController.swift */,
+				EBFF711C2F259D100040F660 /* ProducerExampleViewController.swift */,
 				996E3F962859913600982B7E /* Assets.xcassets */,
 				996E3F992859913600982B7E /* Base.lproj */,
 				996E3F952859913600982B7E /* sendcallback.h */,
@@ -247,7 +256,10 @@
 				996E3F822859905E00982B7E /* SceneDelegate.swift in Sources */,
 				EBB259712F231D89001DD66E /* NetworkDiagnosisViewController.swift in Sources */,
 				996E3FA02859913600982B7E /* sendcallback.m in Sources */,
+				EBFF711F2F259D100040F660 /* ProducerExampleViewController.swift in Sources */,
+				EBFF711D2F259D100040F660 /* BaseViewController.swift in Sources */,
 				996E3F9E2859913600982B7E /* utils.swift in Sources */,
+				EBFF711E2F259D100040F660 /* MainViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

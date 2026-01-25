@@ -1,17 +1,9 @@
 //
 //  Use this file to import your target's public headers that you would like to expose to Swift.
 //
+//  注意：使用 use_frameworks! 时，CocoaPods会自动生成框架
+//  Swift可以直接通过 import TencentCloudLogProducer 访问所有公共类
 
-// 导入日志上传核心模块
-#import "TencentCloudLogProducer/ClsLogSender.h"
-#import "TencentCloudLogProducer/ClsLogModel.h"
-#import "TencentCloudLogProducer/CLSLogStorage.h"
-#import "TencentCloudLogProducer/ClsLogs.pbobjc.h"
+// 无需在此手动导入任何头文件
 
-// 导入网络探测模块
-#import "ClsNetworkDiagnosis.h"
-#import "ClsAdapter.h"
-#import "ClsNetDiag.h"
-#import "baseClsPlugin.h"
-#import "ClsNetworkDiagnosisPlugin.h"
 
