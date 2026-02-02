@@ -9,7 +9,7 @@
 #import <netinet/in.h>
 #import <arpa/inet.h>
 #import <netdb.h>
-#import <netinet/in.h>
+#import <net/if.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import "CLSTcpingV2.h"
 #import "CLSRequestValidator.h"
@@ -75,24 +75,45 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         return errno;
     }
     
-    // 绑定指定网卡
+    // 绑定指定网卡（参考 Ping/MTR 模块：使用 IP_BOUND_IF 精确绑定接口，而非 bind(IP)）
     NSString *interfaceName = self.interface[@"name"];
-    NSString *interfaceIP = self.interface[@"ip"];
-    if (interfaceName && ![interfaceName isEqualToString:@"unknown"] && interfaceIP) {
-        struct sockaddr_in localAddr;
-        memset(&localAddr, 0, sizeof(localAddr));
-        localAddr.sin_family = AF_INET;
-        localAddr.sin_port = 0; // 系统自动分配源端口
-        inet_pton(AF_INET, interfaceIP.UTF8String, &localAddr.sin_addr);
-        
-        if (bind(sock, (struct sockaddr *)&localAddr, sizeof(localAddr)) == -1) {
-            NSLog(@"Bind to interface %@ (IP: %@) failed: %s", interfaceName, interfaceIP, strerror(errno));
+    NSNumber *indexNum = self.interface[@"index"];
+    unsigned int interfaceIndex = 0;
+    if (interfaceName && ![interfaceName isEqualToString:@"unknown"] && indexNum && [indexNum isKindOfClass:[NSNumber class]]) {
+        NSInteger tempIndex = [indexNum integerValue];
+        if (tempIndex > 0) {
+            interfaceIndex = (unsigned int)tempIndex;
+        }
+    }
+    if (interfaceIndex == 0 && interfaceName && interfaceName.length > 0 && ![interfaceName isEqualToString:@"unknown"]) {
+        interfaceIndex = if_nametoindex(interfaceName.UTF8String);
+    }
+    if (interfaceIndex > 0) {
+#if defined(IP_BOUND_IF)
+        if (setsockopt(sock, IPPROTO_IP, IP_BOUND_IF, &interfaceIndex, sizeof(interfaceIndex)) < 0) {
+            NSLog(@"TCP bind to interface %@ (index %u) failed: %s", interfaceName, interfaceIndex, strerror(errno));
             self.bindFailedCount++;
             close(sock);
             return -1;
-        } else {
-            NSLog(@"Successfully bound to interface: %@ (IP: %@)", interfaceName, interfaceIP);
         }
+        NSLog(@"Successfully bound to interface: %@ (index %u)", interfaceName ?: @"", interfaceIndex);
+#else
+        // 兜底：无 IP_BOUND_IF 时使用 bind(IP)
+        NSString *interfaceIP = self.interface[@"ip"];
+        if (interfaceIP) {
+            struct sockaddr_in localAddr;
+            memset(&localAddr, 0, sizeof(localAddr));
+            localAddr.sin_family = AF_INET;
+            localAddr.sin_port = 0;
+            inet_pton(AF_INET, interfaceIP.UTF8String, &localAddr.sin_addr);
+            if (bind(sock, (struct sockaddr *)&localAddr, sizeof(localAddr)) == -1) {
+                NSLog(@"Bind to interface %@ (IP: %@) failed: %s", interfaceName, interfaceIP, strerror(errno));
+                self.bindFailedCount++;
+                close(sock);
+                return -1;
+            }
+        }
+#endif
     }
     
     // 设置socket参数

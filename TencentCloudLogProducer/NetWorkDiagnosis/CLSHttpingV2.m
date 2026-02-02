@@ -10,6 +10,14 @@
 #import "CLSCocoa.h"
 #import "CLSStringUtils.h"
 #import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
+#if __has_include(<Network/Network.h>)
+#import <Network/Network.h>
+#endif
+
+@interface CLSMultiInterfaceHttping ()
+/// Network.framework 路径下解析到的 HTTP 状态码，用于 buildFinalReportDictWithTask 在 task 为 nil 时使用
+@property (nonatomic, assign) NSInteger networkResultStatusCode;
+@end
 
 @implementation CLSMultiInterfaceHttping
 
@@ -20,6 +28,7 @@
         _timingMetrics = [NSMutableDictionary dictionary];
         _responseData = [NSMutableData data];
         _interfaceInfo = @{};
+        _networkResultStatusCode = -2;
     }
     return self;
 }
@@ -72,16 +81,8 @@
     self.completionHandler = completion;
     self.interfaceInfo = [currentInterface copy];
     self.processStartTime = CFAbsoluteTimeGetCurrent();
-    // 构建Session配置
-    NSURLSessionConfiguration *sessionConfig = [self createSessionConfigurationForInterface];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    queue.maxConcurrentOperationCount = 1;
-    queue.name = [NSString stringWithFormat:@"CLSHttpingQueue.%@", self.interfaceInfo[@"name"]];
-    self.urlSession = [NSURLSession sessionWithConfiguration:sessionConfig
-                                                   delegate:self
-                                              delegateQueue:queue];
+    self.networkResultStatusCode = -2;
 
-    // 校验URL
     NSURL *url = [NSURL URLWithString:self.request.domain];
     if (!url) {
         NSError *error = [NSError errorWithDomain:@"CLSHttpingErrorDomain"
@@ -91,22 +92,138 @@
         return;
     }
 
-    // 构建请求
+    NSString *interfaceName = self.interfaceInfo[@"name"] ?: @"";
+#if __has_include(<Network/Network.h>) && TARGET_OS_IPHONE
+    // 参考 Ping/MTR：使用 Network.framework 强制按接口类型探测（requiredInterfaceType），避免系统始终走 WiFi
+    BOOL useNetworkFramework = (interfaceName.length > 0 &&
+        ([interfaceName hasPrefix:@"en"] || [interfaceName hasPrefix:@"pdp_ip"]));
+    if (useNetworkFramework && @available(iOS 12.0, *)) {
+        [self startHttpingWithNetworkFrameworkCompletion:completion];
+        return;
+    }
+#endif
+
+    // 回退：NSURLSession（无法强制接口时使用）
+    NSURLSessionConfiguration *sessionConfig = [self createSessionConfigurationForInterface];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    queue.maxConcurrentOperationCount = 1;
+    queue.name = [NSString stringWithFormat:@"CLSHttpingQueue.%@", self.interfaceInfo[@"name"]];
+    self.urlSession = [NSURLSession sessionWithConfiguration:sessionConfig
+                                                   delegate:self
+                                              delegateQueue:queue];
+
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
     request.timeoutInterval = self.request.timeout;
     [request setValue:@"CLSHttping/2.0.0" forHTTPHeaderField:@"User-Agent"];
     [request setValue:self.interfaceInfo[@"name"] forHTTPHeaderField:@"X-Network-Interface"];
 
-    // ✅ 移除外层定时器，只依赖 NSURLSession 的超时控制
-    // NSURLSession 的 timeoutIntervalForRequest 已提供系统级超时机制
-    // 外层定时器会与重试逻辑冲突，且在重试时不会正确重置
-    
-    // 启动任务（依赖 NSURLSession 超时，外层控制 maxRetries 重试）
     self.taskStartTime = CFAbsoluteTimeGetCurrent();
     NSURLSessionDataTask *task = [self.urlSession dataTaskWithRequest:request];
     [task resume];
 }
+
+#if __has_include(<Network/Network.h>) && TARGET_OS_IPHONE
+#pragma mark - Network.framework 多网卡强制探测（requiredInterfaceType）
+- (void)startHttpingWithNetworkFrameworkCompletion:(void (^)(NSDictionary *finalReportDict, NSError *error))completion
+API_AVAILABLE(ios(12.0)) {
+    NSURL *url = [NSURL URLWithString:self.request.domain];
+    if (!url || !url.host) {
+        NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid URL"}];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSDictionary *dict = [self buildFinalReportDictWithTask:nil error:err];
+            if (completion) completion(dict, err);
+        });
+        return;
+    }
+
+    NSString *host = url.host;
+    NSString *path = url.path.length > 0 ? url.path : @"/";
+    uint16_t port = (uint16_t)(url.port ? url.port.unsignedShortValue : 443);
+    NSString *scheme = (url.scheme ?: @"https").lowercaseString;
+    BOOL isHTTPS = [scheme isEqualToString:@"https"];
+    if (url.port == nil) {
+        port = isHTTPS ? 443 : 80;
+    }
+
+    NWHostEndpoint *endpoint = [NWHostEndpoint endpointWithHostname:host port:[@(port) stringValue]];
+    NWParameters *params = isHTTPS ? [NWParameters parametersWithTLS] : [NWParameters tcpParameters];
+    NSString *ifName = self.interfaceInfo[@"name"] ?: @"";
+    if ([ifName hasPrefix:@"en"]) {
+        params.requiredInterfaceType = NWInterfaceTypeWiFi;
+        params.prohibitedInterfaceTypes = [NSSet setWithObjects:@(NWInterfaceTypeCellular), nil];
+    } else if ([ifName hasPrefix:@"pdp_ip"]) {
+        params.requiredInterfaceType = NWInterfaceTypeCellular;
+        params.prohibitedInterfaceTypes = [NSSet setWithObjects:@(NWInterfaceTypeWiFi), nil];
+    }
+
+    __block NWConnection *conn = [[NWConnection alloc] initWithEndpoint:(NWEndpoint *)endpoint parameters:params];
+    __block BOOL completed = NO;
+    __block NSUInteger receivedBytes = 0;
+    __block NSInteger statusCode = -2;
+    __block CFAbsoluteTime taskStart = CFAbsoluteTimeGetCurrent();
+
+    void (^finish)(NSError *) = ^(NSError *error) {
+        if (completed) return;
+        completed = YES;
+        [conn cancel];
+        self.taskStartTime = taskStart;
+        self.receivedBytes = receivedBytes;
+        self.networkResultStatusCode = statusCode;
+        NSDictionary *dict = [self buildFinalReportDictWithTask:nil error:error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(dict, error);
+        });
+    };
+
+    conn.stateUpdateHandler = ^(NWConnectionState state) {
+        switch (state) {
+            case NWConnectionStateReady: {
+                NSString *req = [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\nHost: %@\r\nUser-Agent: CLSHttping/2.0.0\r\nConnection: close\r\n\r\n", path, host];
+                NSData *reqData = [req dataUsingEncoding:NSUTF8StringEncoding];
+                [conn sendContent:reqData completion:^(NWError sendError) {
+                    if (sendError != NWErrorNone) {
+                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}]);
+                        return;
+                    }
+                    [conn receiveMinimumLength:1 maximumLength:65536 completion:^(NSData *data, BOOL complete, NWError recvError) {
+                        if (recvError != NWErrorNone && recvError != NWErrorConnectionCancelled) {
+                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}]);
+                            return;
+                        }
+                        if (data.length) {
+                            receivedBytes += data.length;
+                            if (statusCode == -2) {
+                                NSString *firstLine = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                                NSArray *lines = [firstLine componentsSeparatedByString:@"\r\n"];
+                                if (lines.count) {
+                                    NSArray *parts = [lines[0] componentsSeparatedByString:@" "];
+                                    if (parts.count >= 2) statusCode = [parts[1] integerValue];
+                                }
+                            }
+                        }
+                        finish(nil);
+                    }];
+                }];
+                break;
+            }
+            case NWConnectionStateFailed:
+                finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection failed"}]);
+                break;
+            case NWConnectionStateCancelled:
+                if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection cancelled"}]);
+                break;
+            default:
+                break;
+        }
+    };
+
+    [conn start];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}]);
+    });
+}
+#endif
 
 - (void)setupTimeoutTimer {
     if (_timeoutTimer) {
@@ -147,7 +264,9 @@
             self.completionHandler(finalReportDict, error);
             self.completionHandler = nil;
         }
-        [self.urlSession finishTasksAndInvalidate];
+        if (self.urlSession) {
+            [self.urlSession finishTasksAndInvalidate];
+        }
     });
 }
 
@@ -334,10 +453,12 @@ didReceiveData:(NSData *)data {
     NSURL *requestURL = [NSURL URLWithString:self.request.domain];
     NSString *domain = requestURL.host ?: @"";
     
-    // HTTP状态码处理
+    // HTTP状态码处理（task 为 nil 时使用 networkResultStatusCode，如 Network.framework 路径）
     NSInteger statusCode = -2; // 无响应默认值
     if (response) {
         statusCode = (response.statusCode >= 100 && response.statusCode <= 599) ? response.statusCode : -1;
+    } else if (self.networkResultStatusCode >= 100 && self.networkResultStatusCode <= 599) {
+        statusCode = self.networkResultStatusCode;
     }
     
     // 时间戳统一计算
@@ -423,12 +544,14 @@ didReceiveData:(NSData *)data {
     finalReportDict[@"totalTime"] = @(totalTime);
     
     // -------------------------- 3. 合并扩展字段 --------------------------
-    // 构建headers
+    // 构建headers（response 为空时仅填接口信息）
     NSMutableDictionary *headers = [NSMutableDictionary dictionary];
-    [response.allHeaderFields enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        NSString *lowercaseKey = [key lowercaseString];
-        headers[lowercaseKey] = obj;
-    }];
+    if (response && response.allHeaderFields) {
+        [response.allHeaderFields enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+            NSString *lowercaseKey = [key lowercaseString];
+            headers[lowercaseKey] = obj;
+        }];
+    }
     headers[@"x-network-interface"] = self.interfaceInfo[@"name"] ?: @"";
     if (self.interfaceInfo[@"ip"]) {
         headers[@"x-source-ip"] = self.interfaceInfo[@"ip"];
@@ -510,7 +633,7 @@ didReceiveData:(NSData *)data {
         NSLog(@"interface:%@", currentInterface);
         
         // 执行单次探测
-        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" 
+        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
                                                                provider:[[CLSSpanProviderDelegate alloc] init]];
         [builder setURL:self.request.domain];
         [builder setpageName:self.request.pageName];
@@ -518,7 +641,20 @@ didReceiveData:(NSData *)data {
             [builder setTraceId:self.request.traceId];
         }
         
-        [self startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
+        // enableMultiplePortsDetect=YES 时为每个网卡创建独立实例，避免 for 循环中多次调用
+        // startHttpingWithCompletion 时覆盖 self.interfaceInfo/urlSession 导致异步回调使用错误状态
+        CLSMultiInterfaceHttping *instanceToUse = self;
+        if (self.request.enableMultiplePortsDetect) {
+            instanceToUse = [[CLSMultiInterfaceHttping alloc] initWithRequest:self.request];
+            instanceToUse.topicId = self.topicId;
+            instanceToUse.networkAppId = self.networkAppId;
+            instanceToUse.appKey = self.appKey;
+            instanceToUse.uin = self.uin;
+            instanceToUse.region = self.region;
+            instanceToUse.endPoint = self.endPoint;
+        }
+        
+        [instanceToUse startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
             // 记录探测结果（无论成功失败）
             NSInteger httpCode = [finalReportDict[@"httpCode"] integerValue];
             BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);
@@ -526,11 +662,11 @@ didReceiveData:(NSData *)data {
             if (!error && isHttpSuccess) {
                 NSLog(@"✅ HTTP Ping 成功 - HTTP %ld", (long)httpCode);
             } else {
-                NSLog(@"❌ HTTP Ping 失败 - HTTP %ld, Error: %@", 
+                NSLog(@"❌ HTTP Ping 失败 - HTTP %ld, Error: %@",
                       (long)httpCode, error.localizedDescription ?: @"连接失败");
             }
             
-            // 立即上报结果
+            // 立即上报结果（使用当前 self 的 topicId 与回调）
             NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
             
             // 封装为 CLSResponse 返回

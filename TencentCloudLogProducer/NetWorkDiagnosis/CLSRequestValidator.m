@@ -160,13 +160,13 @@ typedef NS_ENUM(NSInteger, CLSValidationErrorCode) {
         return NO;
     }
     
-    // 校验 protocol (协议类型: icmp 或 udp)
+   // 校验 protocol (协议类型: icmp、udp 或 tcp)
     if (request.protocol && request.protocol.length > 0) {
         NSString *lowerProtocol = [request.protocol lowercaseString];
-        if (![lowerProtocol isEqualToString:@"icmp"] && ![lowerProtocol isEqualToString:@"udp"]) {
+        if (![lowerProtocol isEqualToString:@"icmp"] && ![lowerProtocol isEqualToString:@"udp"] && ![lowerProtocol isEqualToString:@"tcp"]) {
             if (error) {
                 *error = [self errorWithCode:CLSValidationErrorProtocol
-                                     message:[NSString stringWithFormat:@"protocol 参数非法: %@ (有效值: icmp, udp)", request.protocol]];
+                                     message:[NSString stringWithFormat:@"protocol 参数非法: %@ (有效值: icmp, udp, tcp)", request.protocol]];
             }
             return NO;
         }
