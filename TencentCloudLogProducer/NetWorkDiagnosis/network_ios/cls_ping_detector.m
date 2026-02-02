@@ -2260,6 +2260,8 @@ cls_ping_detector_error_code cls_ping_detector_perform_ping(const char *target,
         result->packet_loss = ((double)(packets_sent - packets_received) / (double)packets_sent);
         if (result->packet_loss < 0.0) result->packet_loss = 0.0;
         if (result->packet_loss > 1.0) result->packet_loss = 1.0;
+        // 四舍五入到两位小数，消除浮点数精度误差（如 0.3 可能变成 0.29999999999999999）
+        result->packet_loss = round(result->packet_loss * 100.0) / 100.0;
     } else {
         result->packet_loss = 1.0;
     }

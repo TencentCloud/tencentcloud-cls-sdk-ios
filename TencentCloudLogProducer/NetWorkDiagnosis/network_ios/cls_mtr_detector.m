@@ -602,6 +602,9 @@ static void fill_hop_result_from_state(cls_mtr_hop_result *hop_result,
     hop_result->loss = 0.0;
   if (hop_result->loss > 1.0)
     hop_result->loss = 1.0;
+  // 四舍五入到两位小数，消除浮点数精度误差（如 0.3 可能变成 0.29999999999999999）
+  // 这是解决浮点数精度问题的唯一有效方法
+  hop_result->loss = round(hop_result->loss * 100.0) / 100.0;
 
   // 选择最常见的 IP（跳过空字符串）
   const char *best_ip = NULL;

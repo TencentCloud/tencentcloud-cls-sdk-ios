@@ -1690,7 +1690,7 @@ static int is_ipv6_available(void) {
 // DNS 服务器列表常量
 #define DNS_MAX_DEFAULT_SERVERS 4
 static const char *DNS_IPV4_SERVERS[] = {"119.29.29.29", "182.254.116.116", "119.28.28.28", "182.254.118.118"};
-static const char *DNS_IPV6_SERVERS[] = {"2402:4e00:8010::1:10", "2402:4e00:8030::1:10", "2402:4e00:8020::1:10", "2402:4e00:8040::1:10"};
+static const char *DNS_IPV6_SERVERS[] = {"2001:4860:4860::8888", "240e:4c:4008::1", "2408:8899::8", "2409:8088::a"};
 
 /**
  * 获取默认 DNS 服务器
