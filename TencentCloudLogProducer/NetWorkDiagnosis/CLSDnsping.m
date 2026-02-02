@@ -267,11 +267,17 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
         return;
     }
     
-    // 遍历网卡执行检测（修正循环变量类型）
+    // 遍历网卡执行检测（参考 Ping/MTR：支持 enableMultiplePortsDetect 控制）
     for (NSDictionary *interfaceInfo in availableInterfaces) {
         NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
         NSLog(@"%@ 开始检测网卡：%@", kDNSLogPrefix, interfaceName);
         [self startDnsWithInterface:interfaceInfo completion:completion];
+        
+        // 非多端口检测时，仅检测第一个网卡后退出
+        if (self.request && !self.request.enableMultiplePortsDetect) {
+            NSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kDNSLogPrefix);
+            break;
+        }
     }
 }
 
