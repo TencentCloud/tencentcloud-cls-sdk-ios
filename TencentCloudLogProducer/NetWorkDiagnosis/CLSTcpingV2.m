@@ -69,13 +69,19 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     });
 }
 
-- (int)connect:(struct sockaddr_in *)addr {
-    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+#pragma mark - 通用连接（IPv4/IPv6 + 接口绑定）
+/// 按地址族创建 socket、绑定接口（IP_BOUND_IF / IPV6_BOUND_IF）并连接，与 Ping/MTR 一致
+- (int)connectWithAddr:(const struct sockaddr *)addr addrLen:(socklen_t)addrLen {
+    if (!addr || addrLen < sizeof(struct sockaddr)) {
+        return -1;
+    }
+    int family = addr->sa_family;
+    int sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
     if (sock == -1) {
         return errno;
     }
-    
-    // 绑定指定网卡（参考 Ping/MTR 模块：使用 IP_BOUND_IF 精确绑定接口，而非 bind(IP)）
+
+    // 绑定指定网卡（参考 Ping/MTR：IPv4 用 IP_BOUND_IF，IPv6 用 IPV6_BOUND_IF）
     NSString *interfaceName = self.interface[@"name"];
     NSNumber *indexNum = self.interface[@"index"];
     unsigned int interfaceIndex = 0;
@@ -89,46 +95,58 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         interfaceIndex = if_nametoindex(interfaceName.UTF8String);
     }
     if (interfaceIndex > 0) {
-#if defined(IP_BOUND_IF)
-        if (setsockopt(sock, IPPROTO_IP, IP_BOUND_IF, &interfaceIndex, sizeof(interfaceIndex)) < 0) {
-            NSLog(@"TCP bind to interface %@ (index %u) failed: %s", interfaceName, interfaceIndex, strerror(errno));
-            self.bindFailedCount++;
-            close(sock);
-            return -1;
-        }
-        NSLog(@"Successfully bound to interface: %@ (index %u)", interfaceName ?: @"", interfaceIndex);
-#else
-        // 兜底：无 IP_BOUND_IF 时使用 bind(IP)
-        NSString *interfaceIP = self.interface[@"ip"];
-        if (interfaceIP) {
-            struct sockaddr_in localAddr;
-            memset(&localAddr, 0, sizeof(localAddr));
-            localAddr.sin_family = AF_INET;
-            localAddr.sin_port = 0;
-            inet_pton(AF_INET, interfaceIP.UTF8String, &localAddr.sin_addr);
-            if (bind(sock, (struct sockaddr *)&localAddr, sizeof(localAddr)) == -1) {
-                NSLog(@"Bind to interface %@ (IP: %@) failed: %s", interfaceName, interfaceIP, strerror(errno));
+        if (family == AF_INET6) {
+#if defined(IPV6_BOUND_IF)
+            if (setsockopt(sock, IPPROTO_IPV6, IPV6_BOUND_IF, &interfaceIndex, sizeof(interfaceIndex)) < 0) {
+                NSLog(@"TCP bind to interface %@ (index %u) IPv6 failed: %s", interfaceName, interfaceIndex, strerror(errno));
                 self.bindFailedCount++;
                 close(sock);
                 return -1;
             }
-        }
+            NSLog(@"Successfully bound to interface: %@ (index %u) IPv6", interfaceName ?: @"", interfaceIndex);
+#else
+            (void)interfaceName;
 #endif
+        } else {
+#if defined(IP_BOUND_IF)
+            if (setsockopt(sock, IPPROTO_IP, IP_BOUND_IF, &interfaceIndex, sizeof(interfaceIndex)) < 0) {
+                NSLog(@"TCP bind to interface %@ (index %u) failed: %s", interfaceName, interfaceIndex, strerror(errno));
+                self.bindFailedCount++;
+                close(sock);
+                return -1;
+            }
+            NSLog(@"Successfully bound to interface: %@ (index %u)", interfaceName ?: @"", interfaceIndex);
+#else
+            // 兜底：无 IP_BOUND_IF 时使用 bind(IP)（仅 IPv4）
+            NSString *interfaceIP = self.interface[@"ip"];
+            if (interfaceIP) {
+                struct sockaddr_in localAddr;
+                memset(&localAddr, 0, sizeof(localAddr));
+                localAddr.sin_family = AF_INET;
+                localAddr.sin_port = 0;
+                inet_pton(AF_INET, interfaceIP.UTF8String, &localAddr.sin_addr);
+                if (bind(sock, (struct sockaddr *)&localAddr, sizeof(localAddr)) == -1) {
+                    NSLog(@"Bind to interface %@ (IP: %@) failed: %s", interfaceName, interfaceIP, strerror(errno));
+                    self.bindFailedCount++;
+                    close(sock);
+                    return -1;
+                }
+            }
+#endif
+        }
     }
-    
+
     // 设置socket参数
     int on = 1;
     setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
     setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 
-    // 设置超时
     struct timeval timeout;
     timeout.tv_sec = (long)self.request.timeout;
     timeout.tv_usec = 10;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
-    
-    // 设置非阻塞
+
     int flags = fcntl(sock, F_GETFL, 0);
     if (flags == -1) {
         close(sock);
@@ -139,9 +157,8 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         close(sock);
         return -1;
     }
-    
-    // 非阻塞connect
-    int connectResult = connect(sock, (struct sockaddr *)addr, sizeof(struct sockaddr));
+
+    int connectResult = connect(sock, addr, addrLen);
     if (connectResult < 0) {
         // 非阻塞connect正常应该返回-1且errno=EINPROGRESS
         if (errno != EINPROGRESS) {
@@ -207,6 +224,11 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     fcntl(sock, F_SETFL, flags);
     close(sock);
     return 0;
+}
+
+/// IPv4 兼容包装，供 performTcpPing 等原有路径使用
+- (int)connect:(struct sockaddr_in *)addr {
+    return [self connectWithAddr:(const struct sockaddr *)addr addrLen:sizeof(struct sockaddr_in)];
 }
 
 - (void)performTcpPing {
@@ -431,52 +453,53 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 #pragma mark - 单次探测方法（用于多次汇总）
-/// 执行单次 TCP 探测（不重置全局计数器）
+/// 执行单次 TCP 探测（不重置全局计数器）；按接口 family 解析 IPv4/IPv6 并绑定对应接口（IP_BOUND_IF / IPV6_BOUND_IF）
 - (void)performSingleProbeWithInterface:(NSDictionary *)currentInterface
                              completion:(void (^)(BOOL success, NSTimeInterval latency, NSError *error))completion {
-    // 设置网卡
     self.interface = [currentInterface copy];
-    
-    // 执行单次 TCP 连接
+
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_len = sizeof(addr);
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(self.request.port);
-        
-        // 解析域名/IP
-        const char *hostaddr = [self.request.domain UTF8String];
-        if (hostaddr == NULL) hostaddr = "\0";
-        addr.sin_addr.s_addr = inet_addr(hostaddr);
-        
-        if (addr.sin_addr.s_addr == INADDR_NONE) {
-            struct hostent *host = gethostbyname(hostaddr);
-            if (host == NULL || host->h_addr == NULL) {
-                NSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d", hostaddr, self.request.port);
-                NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain code:-2 userInfo:@{NSLocalizedDescriptionKey: @"DNS resolution failed"}];
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    completion(NO, 0, error);
-                });
-                return;
-            }
-            addr.sin_addr = *(struct in_addr *)host->h_addr;
+        const char *host = [self.request.domain UTF8String];
+        if (!host || host[0] == '\0') {
+            NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid host"}];
+            dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, 0, error); });
+            return;
         }
-        
-        // 计算耗时
+        NSString *portStr = [@(self.request.port) stringValue];
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+        // 按接口 family 优先解析 IPv6 或 IPv4，与 Ping/MTR 一致
+        NSString *ifFamily = currentInterface[@"family"];
+        if ([ifFamily isEqualToString:@"IPv6"]) {
+            hints.ai_family = AF_INET6;
+        } else {
+            hints.ai_family = AF_INET;
+        }
+
+        struct addrinfo *res = NULL;
+        int gai = getaddrinfo(host, [portStr UTF8String], &hints, &res);
+        if (gai != 0 || res == NULL || res->ai_addr == NULL) {
+            NSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d (getaddrinfo: %s)", host, self.request.port, gai_strerror(gai));
+            NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain code:-2 userInfo:@{NSLocalizedDescriptionKey: @"DNS resolution failed"}];
+            if (res) freeaddrinfo(res);
+            dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, 0, error); });
+            return;
+        }
+
         CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
-        int result = [self connect:&addr];
+        int result = [self connectWithAddr:res->ai_addr addrLen:res->ai_addrlen];
+        freeaddrinfo(res);
         CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
-        NSTimeInterval latency = (endTime - startTime) * 1000;  // ms
-        
-        // 回调结果
+        NSTimeInterval latency = (endTime - startTime) * 1000;
+
         dispatch_async(dispatch_get_main_queue(), ^{
             if (result == 0) {
                 completion(YES, latency, nil);
             } else {
-                NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain 
-                                                     code:result 
-                                                 userInfo:@{NSLocalizedDescriptionKey: @"TCP connect failed"}];
+                NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain code:result userInfo:@{NSLocalizedDescriptionKey: @"TCP connect failed"}];
                 completion(NO, latency, error);
             }
         });
