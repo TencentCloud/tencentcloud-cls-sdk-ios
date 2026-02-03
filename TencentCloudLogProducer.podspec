@@ -43,12 +43,11 @@ Pod::Spec.new do |s|
       b.source_files = 'TencentCloudLogProducer/NetWorkDiagnosis/**/*.{m,h}'
       b.public_header_files = 'TencentCloudLogProducer/NetWorkDiagnosis/*.h'
       
-      # 1. 网络诊断专属框架（Core未包含）
-      b.frameworks = "CoreTelephony" # 运营商信息获取
+      # 1. 网络诊断专属框架（Core未包含）：Network.framework 多网卡探测，CoreTelephony 运营商信息
+      b.frameworks = 'CoreTelephony', 'Network'
       # 2. 网络诊断专属系统库（Core未包含）
       b.libraries = 'resolv' # DNS解析依赖
       # 3. 宏定义（不影响Core，仅网络诊断使用）
-      b.frameworks = 'Network'
       b.pod_target_xcconfig = {
         'GCC_PREPROCESSOR_DEFINITIONS' => 'CLS_HAS_CORE_TELEPHONY=1'
       }
