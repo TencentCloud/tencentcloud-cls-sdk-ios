@@ -10,9 +10,7 @@
 #import "CLSCocoa.h"
 #import "CLSStringUtils.h"
 #import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
-#if __has_include(<Network/Network.h>)
 #import <Network/Network.h>
-#endif
 #if __has_include(<Security/SecProtocolOptions.h>)
 #import <Security/SecProtocolOptions.h>
 #endif
@@ -161,18 +159,70 @@ API_AVAILABLE(ios(12.0)) {
     }
 #endif
 
-    NWHostEndpoint *endpoint = [NWHostEndpoint endpointWithHostname:host port:[@(port) stringValue]];
-    NWParameters *params = isHTTPS ? [NWParameters parametersWithTLS] : [NWParameters tcpParameters];
-    NSString *ifName = self.interfaceInfo[@"name"] ?: @"";
-    if ([ifName hasPrefix:@"en"]) {
-        params.requiredInterfaceType = NWInterfaceTypeWiFi;
-        params.prohibitedInterfaceTypes = [NSSet setWithObjects:@(NWInterfaceTypeCellular), nil];
-    } else if ([ifName hasPrefix:@"pdp_ip"]) {
-        params.requiredInterfaceType = NWInterfaceTypeCellular;
-        params.prohibitedInterfaceTypes = [NSSet setWithObjects:@(NWInterfaceTypeWiFi), nil];
+    const char *hostC = host.UTF8String;
+    const char *portC = [[@(port) stringValue] UTF8String];
+    if (!hostC || !portC) {
+        NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid host or port"}];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
+        });
+        return;
     }
 
-    __block NWConnection *conn = [[NWConnection alloc] initWithEndpoint:(NWEndpoint *)endpoint parameters:params];
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    nw_parameters_t params;
+    if (isHTTPS) {
+        params = nw_parameters_create_secure_tcp(NULL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+    } else {
+        params = nw_parameters_create();
+        if (params) {
+            nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(params);
+            if (protocol_stack) {
+                nw_protocol_options_t tcp_options = nw_tcp_create_options();
+                if (tcp_options) {
+                    nw_protocol_stack_set_transport_protocol(protocol_stack, tcp_options);
+                }
+            }
+        }
+    }
+    if (!params) {
+        NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create parameters"}];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
+        });
+        return;
+    }
+
+    NSString *ifName = self.interfaceInfo[@"name"] ?: @"";
+    if ([ifName hasPrefix:@"en"]) {
+        nw_parameters_set_required_interface_type(params, nw_interface_type_wifi);
+        nw_parameters_prohibit_interface_type(params, nw_interface_type_cellular);
+    } else if ([ifName hasPrefix:@"pdp_ip"]) {
+        nw_parameters_set_required_interface_type(params, nw_interface_type_cellular);
+        nw_parameters_prohibit_interface_type(params, nw_interface_type_wifi);
+    }
+
+    nw_endpoint_t endpoint = nw_endpoint_create_host(hostC, portC);
+    if (!endpoint) {
+        params = NULL;  // ARC: 释放我们持有的引用
+        NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid endpoint"}];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
+        });
+        return;
+    }
+
+    __block nw_connection_t c_conn = nw_connection_create(endpoint, params);
+    params = NULL;   // 连接已持有，ARC 下不再持有
+    endpoint = NULL;
+    if (!c_conn) {
+        NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create connection"}];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
+        });
+        return;
+    }
+
     __block BOOL completed = NO;
     __block NSUInteger receivedBytes = 0;
     __block NSInteger statusCode = -2;
@@ -181,7 +231,10 @@ API_AVAILABLE(ios(12.0)) {
     void (^finish)(NSError *) = ^(NSError *error) {
         if (completed) return;
         completed = YES;
-        [conn cancel];
+        if (c_conn) {
+            nw_connection_cancel(c_conn);
+            c_conn = NULL;  // ARC: 释放连接引用
+        }
         self.taskStartTime = taskStart;
         self.receivedBytes = receivedBytes;
         self.networkResultStatusCode = statusCode;
@@ -191,50 +244,59 @@ API_AVAILABLE(ios(12.0)) {
         });
     };
 
-    conn.stateUpdateHandler = ^(NWConnectionState state) {
+    nw_connection_set_queue(c_conn, queue);
+    nw_connection_set_state_changed_handler(c_conn, ^(nw_connection_state_t state, nw_error_t error) {
         switch (state) {
-            case NWConnectionStateReady: {
+            case nw_connection_state_ready: {
                 NSString *req = [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\nHost: %@\r\nUser-Agent: CLSHttping/2.0.0\r\nConnection: close\r\n\r\n", requestURI, host];
                 NSData *reqData = [req dataUsingEncoding:NSUTF8StringEncoding];
-                [conn sendContent:reqData completion:^(NWError sendError) {
-                    if (sendError != NWErrorNone) {
+                dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, queue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                nw_connection_send(c_conn, sendData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t sendError) {
+                    if (sendError) {
                         finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}]);
                         return;
                     }
-                    [conn receiveMinimumLength:1 maximumLength:65536 completion:^(NSData *data, BOOL complete, NWError recvError) {
-                        if (recvError != NWErrorNone && recvError != NWErrorConnectionCancelled) {
+                    nw_connection_receive(c_conn, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t recvError) {
+                        if (recvError) {
                             finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}]);
                             return;
                         }
-                        if (data.length) {
-                            receivedBytes += data.length;
-                            if (statusCode == -2) {
-                                NSString *firstLine = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                                NSArray *lines = [firstLine componentsSeparatedByString:@"\r\n"];
-                                if (lines.count) {
-                                    NSArray *parts = [lines[0] componentsSeparatedByString:@" "];
-                                    if (parts.count >= 2) statusCode = [parts[1] integerValue];
+                        if (content && dispatch_data_get_size(content) > 0) {
+                            size_t size = 0;
+                            const void *buf = NULL;
+                            dispatch_data_t mapped = dispatch_data_create_map(content, &buf, &size);
+                            if (buf && size > 0) {
+                                receivedBytes += size;
+                                if (statusCode == -2) {
+                                    NSData *chunk = [NSData dataWithBytes:buf length:size];
+                                    NSString *firstLine = [[NSString alloc] initWithData:chunk encoding:NSUTF8StringEncoding];
+                                    NSArray *lines = [firstLine componentsSeparatedByString:@"\r\n"];
+                                    if (lines.count) {
+                                        NSArray *parts = [lines[0] componentsSeparatedByString:@" "];
+                                        if (parts.count >= 2) statusCode = [parts[1] integerValue];
+                                    }
                                 }
                             }
+                            (void)mapped;
                         }
                         finish(nil);
-                    }];
-                }];
+                    });
+                });
                 break;
             }
-            case NWConnectionStateFailed:
+            case nw_connection_state_failed:
                 finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection failed"}]);
                 break;
-            case NWConnectionStateCancelled:
+            case nw_connection_state_cancelled:
                 if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection cancelled"}]);
                 break;
             default:
                 break;
         }
-    };
+    });
+    nw_connection_start(c_conn);
 
-    [conn start];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)), queue, ^{
         if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}]);
     });
 }
