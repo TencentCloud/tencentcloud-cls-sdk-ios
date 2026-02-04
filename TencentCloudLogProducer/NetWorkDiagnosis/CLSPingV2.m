@@ -64,13 +64,27 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
     self.interfaceInfo = [interfaceInfo copy];
     
-    // 3. 初始化PING配置（关键：memset清空结构体）
+    // 3. 参数校验：timeout 范围 0 < timeout ≤ 300000 ms
+    if (self.request.timeout <= 0 || self.request.timeout > 300000) {
+        NSLog(@"❌ Ping探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
+        if (completion) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"INVALID_PARAMETER",
+                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
+                @"error_code": @(-1)
+            }];
+            completion(errorResponse);
+        }
+        return;
+    }
+    
+    // 4. 初始化PING配置（关键：memset清空结构体）
     cls_ping_detector_config config;
     memset(&config, 0, sizeof(config)); // 必须初始化，避免残留值
     config.packet_size = self.request.size;
     config.ttl = 64;
-    // 配置参数（timeout 从秒转换为毫秒）
-    config.timeout_ms = self.request.timeout * 1000;
+    // 配置参数（timeout 已经是毫秒单位，直接使用）
+    config.timeout_ms = self.request.timeout;
     config.interval_ms = self.request.interval;
     config.times = self.request.maxTimes;
     config.prefer = self.request.prefer;  // 使用 request 中的 prefer 配置
@@ -194,7 +208,7 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
         return;
     }
     
-    NSLog(@"✅ Ping探测参数: maxTimes=%d, timeout=%ds, size=%d bytes, interval=%dms, prefer=%d", 
+    NSLog(@"✅ Ping探测参数: maxTimes=%d, timeout=%dms, size=%d bytes, interval=%dms, prefer=%d", 
           self.request.maxTimes, self.request.timeout, self.request.size, self.request.interval, self.request.prefer);
     
     // 获取可用网卡列表（空值兜底）

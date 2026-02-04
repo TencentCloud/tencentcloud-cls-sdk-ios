@@ -43,9 +43,10 @@
 
 - (NSURLSessionConfiguration *)createSessionConfigurationForInterface {
     NSURLSessionConfiguration *sessionConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
-    // 配置网络超时参数（timeout 从秒转换为秒，NSURLSession 使用秒单位）
-    sessionConfig.timeoutIntervalForRequest = self.request.timeout;
-    sessionConfig.timeoutIntervalForResource = self.request.timeout;
+    // 配置网络超时参数（timeout 从毫秒转换为秒，NSURLSession 使用秒单位）
+    NSTimeInterval timeoutInSeconds = self.request.timeout / 1000.0;
+    sessionConfig.timeoutIntervalForRequest = timeoutInSeconds;
+    sessionConfig.timeoutIntervalForResource = timeoutInSeconds;
     NSString *currentInterfaceName = self.interfaceInfo[@"name"];
     
     if ([currentInterfaceName hasPrefix:@"en"]) {
@@ -115,7 +116,8 @@
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
-    request.timeoutInterval = self.request.timeout;
+    // timeout 从毫秒转换为秒（NSURLRequest 使用秒单位）
+    request.timeoutInterval = self.request.timeout / 1000.0;
     [request setValue:@"CLSHttping/2.0.0" forHTTPHeaderField:@"User-Agent"];
     [request setValue:self.interfaceInfo[@"name"] forHTTPHeaderField:@"X-Network-Interface"];
 
@@ -296,13 +298,15 @@ API_AVAILABLE(ios(12.0)) {
     });
     nw_connection_start(c_conn);
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)), queue, ^{
+    // timeout 从毫秒转换为纳秒
+    int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), queue, ^{
         if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}]);
     });
 }
 
 #if __has_include(<Security/SecProtocolOptions.h>)
-// HTTPS 且 enableSSLVerification==NO 时使用 C API 创建带“接受任意证书”的 TLS 参数，与 NSURLSession 路径行为一致
+// HTTPS 且 enableSSLVerification==NO 时使用 C API 创建带"接受任意证书"的 TLS 参数，与 NSURLSession 路径行为一致
 - (void)startHttpingWithNetworkFrameworkNoSSLWithHost:(NSString *)host path:(NSString *)path port:(uint16_t)port completion:(void (^)(NSDictionary *finalReportDict, NSError *error))completion
 API_AVAILABLE(ios(12.0)) {
     const char *hostC = host.UTF8String;
@@ -437,7 +441,9 @@ API_AVAILABLE(ios(12.0)) {
     });
     nw_connection_start(c_conn);
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)), queue, ^{
+    // timeout 从毫秒转换为纳秒（NoSSL 路径）
+    int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), queue, ^{
         if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}]);
     });
 }
@@ -451,8 +457,10 @@ API_AVAILABLE(ios(12.0)) {
 
     _timeoutTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
     if (_timeoutTimer) {
+        // timeout 从毫秒转换为纳秒
+        int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
         dispatch_source_set_timer(_timeoutTimer,
-                                 dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)),
+                                 dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds),
                                  DISPATCH_TIME_FOREVER, 0);
 
         __weak __typeof(self) weakSelf = self;
@@ -844,8 +852,22 @@ didReceiveData:(NSData *)data {
         return;
     }
     
+    // 参数校验：timeout 范围 0 < timeout ≤ 300000 ms（默认值 30000ms）
+    if (self.request.timeout <= 0 || self.request.timeout > 300000) {
+        NSLog(@"❌ HTTP探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
+        if (complate) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"INVALID_PARAMETER",
+                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
+                @"error_code": @(-1)
+            }];
+            complate(errorResponse);
+        }
+        return;
+    }
+    
     // ⚠️ HTTPing 不支持多次探测，单次探测后立即上报（无论成功失败）
-    NSLog(@"✅ HTTP探测参数: timeout=%ds, size=%d bytes", self.request.timeout, self.request.size);
+    NSLog(@"✅ HTTP探测参数: timeout=%dms, size=%d bytes", self.request.timeout, self.request.size);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     for (NSDictionary *currentInterface in availableInterfaces) {

@@ -16,6 +16,7 @@
 @property(nonatomic, copy) NSString *appKey;
 @property(atomic, assign) int size;
 @property(atomic, assign) int maxTimes;
+/// 超时时间，单位：毫秒（ms），有效范围：0 < timeout ≤ 300000
 @property(atomic, assign) int timeout;
 @property(nonatomic, assign) BOOL enableMultiplePortsDetect;
 @property (nonatomic, copy, nullable) NSString *pageName;

@@ -130,12 +130,26 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     const char **dnsServers = [self convertNameServerToDnsServersArray];
     char json_buffer[8192] = {0};
     
-    // 2. 配置DNS检测参数
+    // 2. 参数校验：timeout 范围 0 < timeout ≤ 300000 ms
+    if (self.request && (self.request.timeout <= 0 || self.request.timeout > 300000)) {
+        NSLog(@"❌ DNS探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
+        if (completion) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"INVALID_PARAMETER",
+                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
+                @"error_code": @(-1)
+            }];
+            completion(errorResponse);
+        }
+        return;
+    }
+    
+    // 3. 配置DNS检测参数
     cls_dns_detector_config config;
     memset(&config, 0, sizeof(config));
     config.dns_servers = dnsServers;
-    // 配置参数（timeout 从秒转换为毫秒）
-    config.timeout_ms = self.request ? (self.request.timeout * 1000) : 3000; // 默认超时3s
+    // 配置参数（timeout 已经是毫秒单位，直接使用）
+    config.timeout_ms = self.request ? self.request.timeout : 3000; // 默认超时3000ms
     config.prefer = self.request ? self.request.prefer : -1;  // 使用 request 中的 prefer 配置，默认自动检测
     
     // 处理网卡下标
@@ -256,7 +270,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
         return;
     }
     
-    NSLog(@"✅ DNS探测参数: maxTimes=%d, timeout=%ds, prefer=%d", 
+    NSLog(@"✅ DNS探测参数: maxTimes=%d, timeout=%dms, prefer=%d", 
           self.request.maxTimes, self.request.timeout, self.request.prefer);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];

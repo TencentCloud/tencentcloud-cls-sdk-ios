@@ -141,9 +141,10 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
     setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 
+    // timeout 从毫秒转换为 timeval 结构体（秒和微秒）
     struct timeval timeout;
-    timeout.tv_sec = (long)self.request.timeout;
-    timeout.tv_usec = 10;
+    timeout.tv_sec = (long)(self.request.timeout / 1000);  // 秒部分
+    timeout.tv_usec = (long)((self.request.timeout % 1000) * 1000);  // 微秒部分
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
 
@@ -284,9 +285,10 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     _timeoutTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
                                          dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
     
-    // 单次探测超时（与HTTP Ping保持一致）
+    // 单次探测超时（timeout 从毫秒转换为纳秒）
+    int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
     dispatch_source_set_timer(_timeoutTimer,
-                             dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.request.timeout * NSEC_PER_SEC)),
+                             dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds),
                              DISPATCH_TIME_FOREVER,
                              0.1 * NSEC_PER_SEC);  // leeway: 100ms，提高定时器精度
     
@@ -603,15 +605,14 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 - (void)start:(CompleteCallback)complete {
-    // 参数合法性校验
-    NSError *validationError = nil;
-    if (![CLSRequestValidator validateTcpRequest:self.request error:&validationError]) {
-        NSLog(@"❌ TCP探测参数校验失败: %@", validationError.localizedDescription);
+    // 参数校验：timeout 范围 0 < timeout ≤ 300000 ms（默认值 2000ms）
+    if (self.request.timeout <= 0 || self.request.timeout > 300000) {
+        NSLog(@"❌ TCP探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
         if (complete) {
             CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
-                @"error": @"参数校验失败",
-                @"error_message": validationError.localizedDescription,
-                @"error_code": @(validationError.code)
+                @"error": @"INVALID_PARAMETER",
+                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
+                @"error_code": @(-1)
             }];
             complete(errorResponse);
         }
@@ -620,7 +621,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     
     // ⚠️ 重要：maxTimes 表示固定探测次数（无论成功失败都探测 N 次）
     int totalProbes = self.request.maxTimes;
-    NSLog(@"✅ TCP探测参数: port=%ld, totalProbes=%d（固定探测次数）, timeout=%ds（单次超时）", 
+    NSLog(@"✅ TCP探测参数: port=%ld, totalProbes=%d（固定探测次数）, timeout=%dms（单次超时）", 
           (long)self.request.port, totalProbes, self.request.timeout);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];

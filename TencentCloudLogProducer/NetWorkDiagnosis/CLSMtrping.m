@@ -62,12 +62,26 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
     self.interfaceInfo = [interfaceInfo copy];
     
-    // 3. 初始化PING配置（关键：memset清空结构体）
+    // 3. 参数校验：timeout 范围 30 ≤ timeout ≤ 300000 ms（默认值 1500ms）
+    if (self.request.timeout < 30 || self.request.timeout > 300000) {
+        NSLog(@"❌ MTR探测参数非法: timeout=%d (有效范围: 30 ≤ timeout ≤ 300000ms)", self.request.timeout);
+        if (completion) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"INVALID_PARAMETER",
+                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 30 ≤ timeout ≤ 300000ms)", self.request.timeout],
+                @"error_code": @(-1)
+            }];
+            completion(errorResponse);
+        }
+        return;
+    }
+    
+    // 4. 初始化PING配置（关键：memset清空结构体）
     cls_mtr_detector_config config;
     memset(&config, 0, sizeof(config)); // 必须初始化，避免残留值
     config.max_ttl = self.request.maxTTL;
-    // 配置参数（timeout 从秒转换为毫秒）
-    config.timeout_ms = self.request.timeout * 1000;
+    // 配置参数（timeout 已经是毫秒单位，直接使用）
+    config.timeout_ms = self.request.timeout;
     config.times = self.request.maxTimes;
     config.prefer = self.request.prefer;  // 使用 request 中的 prefer 配置
     config.protocol = [self.request.protocol UTF8String];
@@ -189,7 +203,7 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
         return;
     }
     
-    NSLog(@"✅ MTR探测参数: maxTimes=%d, timeout=%ds, maxTTL=%d, protocol=%@, prefer=%d", 
+    NSLog(@"✅ MTR探测参数: maxTimes=%d, timeout=%dms, maxTTL=%d, protocol=%@, prefer=%d", 
           self.request.maxTimes, self.request.timeout, self.request.maxTTL, self.request.protocol, self.request.prefer);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
