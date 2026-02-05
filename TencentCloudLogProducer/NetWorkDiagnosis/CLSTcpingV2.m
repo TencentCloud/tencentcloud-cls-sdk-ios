@@ -605,20 +605,6 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 - (void)start:(CompleteCallback)complete {
-    // 参数校验：timeout 范围 0 < timeout ≤ 300000 ms（默认值 2000ms）
-    if (self.request.timeout <= 0 || self.request.timeout > 300000) {
-        NSLog(@"❌ TCP探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
-        if (complete) {
-            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
-                @"error": @"INVALID_PARAMETER",
-                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
-                @"error_code": @(-1)
-            }];
-            complete(errorResponse);
-        }
-        return;
-    }
-    
     // ⚠️ 重要：maxTimes 表示固定探测次数（无论成功失败都探测 N 次）
     int totalProbes = self.request.maxTimes;
     NSLog(@"✅ TCP探测参数: port=%ld, totalProbes=%d（固定探测次数）, timeout=%dms（单次超时）", 

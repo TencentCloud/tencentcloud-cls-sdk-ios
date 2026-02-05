@@ -37,11 +37,11 @@ typedef NS_ENUM(NSInteger, CLSValidationErrorCode) {
         return NO;
     }
     
-    // 2. 校验 timeout (超时时间: 1-60秒)
-    if (request.timeout < 1 || request.timeout > 60) {
+    // 2. 校验 timeout (超时时间: 0 < timeout ≤ 300000 ms，单位：毫秒)
+    if (request.timeout <= 0 || request.timeout > 300000) {
         if (error) {
             *error = [self errorWithCode:CLSValidationErrorTimeout
-                                 message:[NSString stringWithFormat:@"timeout 参数非法: %d (有效范围: 1-60秒)", request.timeout]];
+                                 message:[NSString stringWithFormat:@"timeout 参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", request.timeout]];
         }
         return NO;
     }

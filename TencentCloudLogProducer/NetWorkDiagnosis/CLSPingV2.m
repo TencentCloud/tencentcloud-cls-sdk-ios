@@ -64,21 +64,7 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
     self.interfaceInfo = [interfaceInfo copy];
     
-    // 3. 参数校验：timeout 范围 0 < timeout ≤ 300000 ms
-    if (self.request.timeout <= 0 || self.request.timeout > 300000) {
-        NSLog(@"❌ Ping探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
-        if (completion) {
-            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
-                @"error": @"INVALID_PARAMETER",
-                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
-                @"error_code": @(-1)
-            }];
-            completion(errorResponse);
-        }
-        return;
-    }
-    
-    // 4. 初始化PING配置（关键：memset清空结构体）
+    // 2. 初始化PING配置（关键：memset清空结构体）
     cls_ping_detector_config config;
     memset(&config, 0, sizeof(config)); // 必须初始化，避免残留值
     config.packet_size = self.request.size;

@@ -843,23 +843,9 @@ didReceiveData:(NSData *)data {
         NSLog(@"❌ HTTP探测参数校验失败: %@", validationError.localizedDescription);
         if (complate) {
             CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
-                @"error": @"参数校验失败",
+                @"error": @"INVALID_PARAMETER",
                 @"error_message": validationError.localizedDescription,
                 @"error_code": @(validationError.code)
-            }];
-            complate(errorResponse);
-        }
-        return;
-    }
-    
-    // 参数校验：timeout 范围 0 < timeout ≤ 300000 ms（默认值 30000ms）
-    if (self.request.timeout <= 0 || self.request.timeout > 300000) {
-        NSLog(@"❌ HTTP探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
-        if (complate) {
-            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
-                @"error": @"INVALID_PARAMETER",
-                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
-                @"error_code": @(-1)
             }];
             complate(errorResponse);
         }

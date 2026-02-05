@@ -130,21 +130,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     const char **dnsServers = [self convertNameServerToDnsServersArray];
     char json_buffer[8192] = {0};
     
-    // 2. 参数校验：timeout 范围 0 < timeout ≤ 300000 ms
-    if (self.request && (self.request.timeout <= 0 || self.request.timeout > 300000)) {
-        NSLog(@"❌ DNS探测参数非法: timeout=%d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout);
-        if (completion) {
-            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
-                @"error": @"INVALID_PARAMETER",
-                @"error_message": [NSString stringWithFormat:@"timeout参数非法: %d (有效范围: 0 < timeout ≤ 300000ms)", self.request.timeout],
-                @"error_code": @(-1)
-            }];
-            completion(errorResponse);
-        }
-        return;
-    }
-    
-    // 3. 配置DNS检测参数
+    // 2. 配置DNS检测参数
     cls_dns_detector_config config;
     memset(&config, 0, sizeof(config));
     config.dns_servers = dnsServers;

@@ -26,7 +26,7 @@
         // 核心参数默认值
         _size = 64;         // 包大小默认 64 字节 (范围: 8-1024)
         _maxTimes = 1;      // 探测次数默认 1 次 (范围: 1-100)
-        _timeout = 60;      // 单次探测超时时间默认 60 秒 (范围: 1-60)
+        _timeout = 5000;    // 单次探测超时时间默认 5000 毫秒 (范围: 0 < timeout ≤ 300000)
         
         _pageName = @"";
         _enableMultiplePortsDetect = NO;
@@ -41,8 +41,9 @@
 - (instancetype)init {
     self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
     if (self) {
-        // 2. 初始化子类自己的属性，port默认为0是一个合理的选择
+        // 2. 初始化子类自己的属性
         _enableSSLVerification = YES;
+        self.timeout = 30000;  // HTTP默认超时时间: 30000 ms (30秒)
     }
     return self;
 }
@@ -53,9 +54,10 @@
 - (instancetype)init {
     self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
     if (self) {
-        // 2. 初始化子类自己的属性，port默认为0是一个合理的选择
+        // 2. 初始化子类自己的属性
         _interval = 200;
         _prefer = -1;  // 默认自动检测
+        self.timeout = 2000;  // Ping默认超时时间: 2000 ms (2秒)
     }
     return self;
 }
@@ -66,8 +68,9 @@
 - (instancetype)init {
     self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
     if (self) {
-        // 2. 初始化子类自己的属性，port默认为0是一个合理的选择
+        // 2. 初始化子类自己的属性
         _port = 0;
+        self.timeout = 2000;  // TCP默认超时时间: 2000 ms (2秒)
     }
     return self;
 }
@@ -79,9 +82,10 @@
 - (instancetype)init {
     self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
     if (self) {
-        // 2. 初始化子类自己的属性，设置为空字符串
+        // 2. 初始化子类自己的属性
         _nameServer = @"";
         _prefer = -1;  // 默认自动检测
+        self.timeout = 5000;  // DNS默认超时时间: 5000 ms (5秒)
     }
     return self;
 }
@@ -92,10 +96,11 @@
 - (instancetype)init {
     self = [super init]; // 1. 先调用父类(CLSRequest)的init方法[1,4](@ref)
     if (self) {
-        // 2. 初始化子类自己的属性，设置为空字符串
+        // 2. 初始化子类自己的属性
         _maxTTL = 64;
         _protocol = @"icmp";
         _prefer = -1;  // 默认自动检测
+        self.timeout = 1500;  // MTR默认超时时间: 1500 ms
     }
     return self;
 }
