@@ -458,7 +458,9 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 /// 执行单次 TCP 探测（不重置全局计数器）；按接口 family 解析 IPv4/IPv6 并绑定对应接口（IP_BOUND_IF / IPV6_BOUND_IF）
 - (void)performSingleProbeWithInterface:(NSDictionary *)currentInterface
                              completion:(void (^)(BOOL success, NSTimeInterval latency, NSError *error))completion {
-    self.interface = [currentInterface copy];
+    // ✅ 修复：先 copy 一次，确保 block 内部引用的是独立副本
+    NSDictionary *interfaceCopy = [currentInterface copy];
+    self.interface = interfaceCopy;
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         const char *host = [self.request.domain UTF8String];
@@ -474,7 +476,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
         // 按接口 family 优先解析 IPv6 或 IPv4，与 Ping/MTR 一致
-        NSString *ifFamily = currentInterface[@"family"];
+        NSString *ifFamily = interfaceCopy[@"family"];  // ✅ 使用 copy 后的副本
         if ([ifFamily isEqualToString:@"IPv6"]) {
             hints.ai_family = AF_INET6;
         } else {
@@ -614,33 +616,33 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     for (NSDictionary *currentInterface in availableInterfaces) {
         NSLog(@"availableInterfaces:%@", currentInterface);
         
+        // ✅ 核心修复：为每个接口创建独立的探测对象，避免状态共享
+        NSDictionary *capturedInterface = [currentInterface copy];
+        CLSMultiInterfaceTcping *probeInstance = [[CLSMultiInterfaceTcping alloc] initWithRequest:self.request];
+        
         // 使用串行队列执行多次探测
         dispatch_queue_t probeQueue = dispatch_queue_create("com.tencent.cls.tcpping.probe", DISPATCH_QUEUE_SERIAL);
         
         dispatch_async(probeQueue, ^{
-            // ===== 重置全局汇总数据（每个接口独立统计）=====
-            [self.latencies removeAllObjects];
-            self.successCount = 0;
-            self.failureCount = 0;
-            self.bindFailedCount = 0;
+            NSLog(@"🌐 开始探测接口: %@ (使用独立探测对象)", capturedInterface[@"name"] ?: @"unknown");
             
             // ===== 执行 totalProbes 次探测（无论成功失败都继续）=====
             for (int i = 0; i < totalProbes; i++) {
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
                 
                 int probeIndex = i + 1;
-                NSLog(@"🔄 TCP Ping 探测 %d/%d", probeIndex, totalProbes);
+                NSLog(@"🔄 TCP Ping 探测 %d/%d (接口: %@)", probeIndex, totalProbes, capturedInterface[@"name"] ?: @"unknown");
                 
-                // 执行单次探测（注意：这里会重置内部计数，所以需要在外层汇总）
-                [self performSingleProbeWithInterface:currentInterface completion:^(BOOL success, NSTimeInterval latency, NSError *error) {
+                // 执行单次探测（使用独立对象，每个接口的数据互不干扰）
+                [probeInstance performSingleProbeWithInterface:capturedInterface completion:^(BOOL success, NSTimeInterval latency, NSError *error) {
                     if (success) {
-                        // 成功：记录延迟
-                        [self.latencies addObject:@(latency)];
-                        self.successCount++;
+                        // 成功：记录延迟（使用独立对象）
+                        [probeInstance.latencies addObject:@(latency)];
+                        probeInstance.successCount++;
                         NSLog(@"✅ TCP Ping 成功（%d/%d）- 延迟 %.2fms", probeIndex, totalProbes, latency);
                     } else {
-                        // 失败：仅计数
-                        self.failureCount++;
+                        // 失败：仅计数（使用独立对象）
+                        probeInstance.failureCount++;
                         NSLog(@"❌ TCP Ping 失败（%d/%d）- Error: %@", probeIndex, totalProbes, error.localizedDescription ?: @"连接失败");
                     }
                     
@@ -654,17 +656,17 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
             
             // ===== 所有探测完成，构建汇总结果并上报 =====
             NSLog(@"📊 TCP Ping 汇总: 总次数=%d, 成功=%lu, 失败=%lu, bind失败=%lu", 
-                  totalProbes, (unsigned long)self.successCount, (unsigned long)self.failureCount, (unsigned long)self.bindFailedCount);
+                  totalProbes, (unsigned long)probeInstance.successCount, (unsigned long)probeInstance.failureCount, (unsigned long)probeInstance.bindFailedCount);
             
-            NSDictionary *aggregatedResult = [self buildAggregatedReportDictForProbeCount:totalProbes];
+            NSDictionary *aggregatedResult = [probeInstance buildAggregatedReportDictForProbeCount:totalProbes];
             
-            // 上报汇总结果
+            // 上报汇总结果（使用独立对象的数据）
             CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" 
                                                                    provider:[[CLSSpanProviderDelegate alloc] init]];
-            [builder setURL:self.request.domain];
-            [builder setpageName:self.request.pageName];
-            if (self.request.traceId) {
-                [builder setTraceId:self.request.traceId];
+            [builder setURL:probeInstance.request.domain];
+            [builder setpageName:probeInstance.request.pageName];
+            if (probeInstance.request.traceId) {
+                [builder setTraceId:probeInstance.request.traceId];
             }
             
             NSDictionary *reportDict = [builder report:self.topicId reportData:aggregatedResult];

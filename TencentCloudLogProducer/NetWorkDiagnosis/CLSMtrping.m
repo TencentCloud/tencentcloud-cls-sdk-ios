@@ -202,9 +202,19 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     
     // 遍历网卡执行检测
     for (NSDictionary *interfaceInfo in availableInterfaces) {
-        NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
-        NSLog(@"%@ 开始检测网卡：%@", kMtrLogPrefix, interfaceName);
-        [self startMtrWithCompletion:interfaceInfo completion:complate];
+        // ✅ 核心修复：为每个接口创建独立的探测对象，避免状态共享
+        NSDictionary *capturedInterface = [interfaceInfo copy];
+        CLSMultiInterfaceMtr *probeInstance = [[CLSMultiInterfaceMtr alloc] initWithRequest:self.request];
+        probeInstance.topicId = self.topicId;
+        probeInstance.networkAppId = self.networkAppId;
+        probeInstance.appKey = self.appKey;
+        probeInstance.uin = self.uin;
+        probeInstance.region = self.region;
+        probeInstance.endPoint = self.endPoint;
+        
+        NSString *interfaceName = capturedInterface[@"name"] ?: @"未知";
+        NSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kMtrLogPrefix, interfaceName);
+        [probeInstance startMtrWithCompletion:capturedInterface completion:complate];
         // 非多端口检测时，仅检测第一个网卡后退出
         if (self.request && !self.request.enableMultiplePortsDetect) {
             NSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kMtrLogPrefix);

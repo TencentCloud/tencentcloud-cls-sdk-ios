@@ -208,9 +208,19 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     
     // 遍历网卡执行检测
     for (NSDictionary *interfaceInfo in availableInterfaces) {
-        NSString *interfaceName = interfaceInfo[@"name"] ?: @"未知";
-        NSLog(@"%@ 开始检测网卡：%@", kPINGLogPrefix, interfaceName);
-        [self startPingWithInterface:interfaceInfo completion:completion];
+        // ✅ 核心修复：为每个接口创建独立的探测对象，避免状态共享
+        NSDictionary *capturedInterface = [interfaceInfo copy];
+        CLSMultiInterfacePing *probeInstance = [[CLSMultiInterfacePing alloc] initWithRequest:self.request];
+        probeInstance.topicId = self.topicId;
+        probeInstance.networkAppId = self.networkAppId;
+        probeInstance.appKey = self.appKey;
+        probeInstance.uin = self.uin;
+        probeInstance.region = self.region;
+        probeInstance.endPoint = self.endPoint;
+        
+        NSString *interfaceName = capturedInterface[@"name"] ?: @"未知";
+        NSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kPINGLogPrefix, interfaceName);
+        [probeInstance startPingWithInterface:capturedInterface completion:completion];
         
         // 非多端口检测时，仅检测第一个网卡后退出
         if (self.request && !self.request.enableMultiplePortsDetect) {
