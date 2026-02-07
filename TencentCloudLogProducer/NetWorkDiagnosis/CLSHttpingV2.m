@@ -1094,61 +1094,128 @@ didReceiveData:(NSData *)data {
     NSLog(@"✅ HTTP探测参数: timeout=%dms, size=%d bytes", self.request.timeout, self.request.size);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
-    for (NSDictionary *currentInterface in availableInterfaces) {
-        NSLog(@"interface:%@", currentInterface);
-        
-        // 执行单次探测
-        // ✅ 创建 extraProvider 并传递接口名称
-        CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
-        [extraProvider setExtra:@"network.interface.name" value:currentInterface[@"name"] ?: @""];
-        
-        CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
-                                                               provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
-        [builder setURL:self.request.domain];
-        [builder setpageName:self.request.pageName];
-        if (self.request.traceId) {
-            [builder setTraceId:self.request.traceId];
-        }
-        
-        // enableMultiplePortsDetect=YES 时为每个网卡创建独立实例，避免 for 循环中多次调用
-        // startHttpingWithCompletion 时覆盖 self.interfaceInfo/urlSession 导致异步回调使用错误状态
-        CLSMultiInterfaceHttping *instanceToUse = self;
-        if (self.request.enableMultiplePortsDetect) {
-            instanceToUse = [[CLSMultiInterfaceHttping alloc] initWithRequest:self.request];
-            instanceToUse.topicId = self.topicId;
-            instanceToUse.networkAppId = self.networkAppId;
-            instanceToUse.appKey = self.appKey;
-            instanceToUse.uin = self.uin;
-            instanceToUse.region = self.region;
-            instanceToUse.endPoint = self.endPoint;
-        }
-        
-        [instanceToUse startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
-            // 记录探测结果（无论成功失败）
-            NSInteger httpCode = [finalReportDict[@"httpCode"] integerValue];
-            BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);
-            
-            if (!error && isHttpSuccess) {
-                NSLog(@"✅ HTTP Ping 成功 - HTTP %ld", (long)httpCode);
-            } else {
-                NSLog(@"❌ HTTP Ping 失败 - HTTP %ld, Error: %@",
-                      (long)httpCode, error.localizedDescription ?: @"连接失败");
+    
+    // ✅ 多网卡模式：使用串行队列 + 信号量等待每个探测完成（参考 TCPing 实现）
+    // ✅ 单网卡模式：for 循环只执行一次，无需后台队列
+    if (self.request.enableMultiplePortsDetect && availableInterfaces.count > 1) {
+        // 多网卡模式：在后台队列中串行执行每个网卡的探测
+        dispatch_queue_t detectionQueue = dispatch_queue_create("com.cls.httping.multiInterface", DISPATCH_QUEUE_SERIAL);
+        dispatch_async(detectionQueue, ^{
+            for (NSDictionary *currentInterface in availableInterfaces) {
+                NSDictionary *capturedInterface = [currentInterface copy];  // 捕获接口信息
+                NSString *interfaceName = capturedInterface[@"name"] ?: @"未知";
+                NSLog(@"🚀 HTTPing 开始探测网卡：%@", interfaceName);
+                
+                // 创建信号量，等待异步探测完成
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+                
+                // 执行单次探测
+                // ✅ 创建 extraProvider 并传递接口名称
+                CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
+                [extraProvider setExtra:@"network.interface.name" value:capturedInterface[@"name"] ?: @""];
+                
+                CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
+                                                                       provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
+                [builder setURL:self.request.domain];
+                [builder setpageName:self.request.pageName];
+                if (self.request.traceId) {
+                    [builder setTraceId:self.request.traceId];
+                }
+                
+                // 为每个网卡创建独立实例
+                CLSMultiInterfaceHttping *instanceToUse = [[CLSMultiInterfaceHttping alloc] initWithRequest:self.request];
+                instanceToUse.topicId = self.topicId;
+                instanceToUse.networkAppId = self.networkAppId;
+                instanceToUse.appKey = self.appKey;
+                instanceToUse.uin = self.uin;
+                instanceToUse.region = self.region;
+                instanceToUse.endPoint = self.endPoint;
+                
+                [instanceToUse startHttpingWithCompletion:capturedInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
+                    // 记录探测结果（无论成功失败）
+                    NSInteger httpCode = [finalReportDict[@"httpCode"] integerValue];
+                    BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);
+                    
+                    if (!error && isHttpSuccess) {
+                        NSLog(@"✅ HTTP Ping 成功 - 网卡:%@ HTTP %ld", interfaceName, (long)httpCode);
+                    } else {
+                        NSLog(@"❌ HTTP Ping 失败 - 网卡:%@ HTTP %ld, Error: %@",
+                              interfaceName, (long)httpCode, error.localizedDescription ?: @"连接失败");
+                    }
+                    
+                    // 立即上报结果（使用当前 self 的 topicId 与回调）
+                    NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
+                    
+                    // 封装为 CLSResponse 返回
+                    CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
+                    
+                    // 回调返回结果（每个网卡完成都会回调一次，这是预期行为）
+                    NSLog(@"📤 HTTPing 网卡 %@ 探测完成，调用回调", interfaceName);
+                    if (complate) {
+                        complate(completionResult);
+                    }
+                    
+                    // ✅ 释放信号量，允许下一个网卡开始探测
+                    dispatch_semaphore_signal(semaphore);
+                }];
+                
+                // ✅ 等待当前网卡探测完成（阻塞后台线程）
+                dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+                NSLog(@"✅ HTTPing 网卡 %@ 探测已完成，准备下一个", interfaceName);
             }
             
-            // 立即上报结果（使用当前 self 的 topicId 与回调）
-            NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
+            NSLog(@"✅ HTTPing 所有网卡探测完成");
+        });
+    } else {
+        // 单网卡模式：直接在主线程执行（只探测第一个网卡）
+        for (NSDictionary *currentInterface in availableInterfaces) {
+            NSLog(@"interface:%@", currentInterface);
             
-            // 封装为 CLSResponse 返回
-            CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
+            // 执行单次探测
+            // ✅ 创建 extraProvider 并传递接口名称
+            CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
+            [extraProvider setExtra:@"network.interface.name" value:currentInterface[@"name"] ?: @""];
             
-            // 回调返回结果
-            if (complate) {
-                complate(completionResult);
+            CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
+                                                                   provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
+            [builder setURL:self.request.domain];
+            [builder setpageName:self.request.pageName];
+            if (self.request.traceId) {
+                [builder setTraceId:self.request.traceId];
             }
-        }];
-        
-        // 非多端口检测，仅执行第一个接口
-        if (!self.request.enableMultiplePortsDetect) {
+            
+            // 单网卡模式使用 self（不创建新实例）
+            CLSMultiInterfaceHttping *instanceToUse = self;
+            
+            NSString *interfaceName = currentInterface[@"name"] ?: @"未知";
+            NSLog(@"🚀 HTTPing 开始探测网卡：%@", interfaceName);
+            
+            [instanceToUse startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
+                // 记录探测结果（无论成功失败）
+                NSInteger httpCode = [finalReportDict[@"httpCode"] integerValue];
+                BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);
+                
+                if (!error && isHttpSuccess) {
+                    NSLog(@"✅ HTTP Ping 成功 - 网卡:%@ HTTP %ld", interfaceName, (long)httpCode);
+                } else {
+                    NSLog(@"❌ HTTP Ping 失败 - 网卡:%@ HTTP %ld, Error: %@",
+                          interfaceName, (long)httpCode, error.localizedDescription ?: @"连接失败");
+                }
+                
+                // 立即上报结果（使用当前 self 的 topicId 与回调）
+                NSDictionary *d = [builder report:self.topicId reportData:finalReportDict];
+                
+                // 封装为 CLSResponse 返回
+                CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
+                
+                // 回调返回结果（每个网卡完成都会回调一次，这是预期行为）
+                NSLog(@"📤 HTTPing 网卡 %@ 探测完成，调用回调", interfaceName);
+                if (complate) {
+                    complate(completionResult);
+                }
+            }];
+            
+            // 单网卡模式：只执行第一个接口
             break;
         }
     }
