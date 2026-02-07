@@ -696,43 +696,47 @@ didReceiveData:(NSData *)data {
     double bandwidth = self.receivedBytes / MAX((totalTime / 1000), 0.001);
     
     // 错误信息处理（增强逻辑）
-    NSInteger errorCode = 0;
-    NSString *errorMessage = @"";
+    NSInteger errCode = 0;
+    NSString *errMsg = @"";
+    BOOL hasError = NO;  // 标记是否有错误
     
     if (error) {
         // 场景1：网络错误（超时、连接失败等）
+        hasError = YES;
         if ([error.domain isEqualToString:NSURLErrorDomain]) {
-            errorCode = 2000 + error.code;  // 网络错误基础码 2000 + NSURLError code
-            errorMessage = [NSString stringWithFormat:@"Network error: %@", error.localizedDescription];
+            errCode = 2000 + error.code;  // 网络错误基础码 2000 + NSURLError code
+            errMsg = [NSString stringWithFormat:@"Network error: %@", error.localizedDescription];
         } else if ([error.domain isEqualToString:@"CLSHttpingErrorDomain"]) {
             // 自定义错误（超时=-1, 无效URL=-2）
-            errorCode = error.code;
-            errorMessage = error.localizedDescription ?: @"";
+            errCode = error.code;
+            errMsg = error.localizedDescription ?: @"";
         } else {
             // 其他未知错误
-            errorCode = 3000 + error.code;
-            errorMessage = [NSString stringWithFormat:@"Unknown error: %@", error.localizedDescription];
+            errCode = 3000 + error.code;
+            errMsg = [NSString stringWithFormat:@"Unknown error: %@", error.localizedDescription];
         }
     } else if (statusCode >= 400) {
         // 场景2：HTTP错误状态码（4xx/5xx）
-        errorCode = 1000 + statusCode;  // HTTP错误基础码 1000 + statusCode
-        errorMessage = [NSString stringWithFormat:@"HTTP %ld", (long)statusCode];
+        hasError = YES;
+        errCode = 1000 + statusCode;  // HTTP错误基础码 1000 + statusCode
+        errMsg = [NSString stringWithFormat:@"HTTP %ld", (long)statusCode];
     } else if (statusCode == -2) {
         // 场景3：无响应
-        errorCode = -3;
-        errorMessage = @"No response";
+        hasError = YES;
+        errCode = -3;
+        errMsg = @"No response";
     } else if (statusCode >= 200 && statusCode < 400) {
-        // 场景4：成功（2xx/3xx）
-        errorCode = 0;
-        errorMessage = @"Success";
+        // 场景4：成功（2xx/3xx）- 不设置错误字段
+        hasError = NO;
     } else {
         // 场景5：异常状态码
-        errorCode = -4;
-        errorMessage = [NSString stringWithFormat:@"Invalid status code: %ld", (long)statusCode];
+        hasError = YES;
+        errCode = -4;
+        errMsg = [NSString stringWithFormat:@"Invalid status code: %ld", (long)statusCode];
     }
 
     // 基础网络指标（原netOrigin）
-    NSDictionary *netOrigin = @{
+    NSMutableDictionary *netOrigin = [@{
         @"method": @"http",
         @"url": self.request.domain ?: @"",
         @"trace_id": CLSIdGenerator.generateTraceId,
@@ -761,10 +765,14 @@ didReceiveData:(NSData *)data {
         @"httpProtocol": self.timingMetrics[@"httpProtocol"] ?: @"unknown",
         @"interface_ip": self.interfaceInfo[@"ip"] ?: @"",
         @"interface_type": self.interfaceInfo[@"type"] ?: @"",
-        @"interface_family": self.interfaceInfo[@"family"] ?: @"",
-        @"err_code": @(errorCode),
-        @"error_message": errorMessage
-    };
+        @"interface_family": self.interfaceInfo[@"family"] ?: @""
+    } mutableCopy];
+    
+    // 仅在有错误时添加错误字段
+    if (hasError) {
+        netOrigin[@"errCode"] = @(errCode);
+        netOrigin[@"errMsg"] = errMsg;
+    }
     
     // -------------------------- 2. 合并原resultDict的基础字段 --------------------------
     finalReportDict[@"pageName"] = self.request.pageName ?: @"";
@@ -844,8 +852,8 @@ didReceiveData:(NSData *)data {
         if (complate) {
             CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
                 @"error": @"INVALID_PARAMETER",
-                @"error_message": validationError.localizedDescription,
-                @"error_code": @(validationError.code)
+                @"errMsg": validationError.localizedDescription,
+                @"errCode": @(validationError.code)
             }];
             complate(errorResponse);
         }

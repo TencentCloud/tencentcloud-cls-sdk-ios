@@ -372,44 +372,46 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
     
     // 4. 错误信息处理（增强逻辑）
-    NSInteger errorCode = 0;
-    NSString *errorMessage = @"";
+    NSInteger errCode = 0;
+    NSString *errMsg = @"";
+    BOOL hasError = NO;  // 标记是否有错误
     
     if (error) {
         // 场景1：有明确错误对象（超时、网络错误等）
+        hasError = YES;
         if ([error.domain isEqualToString:kTcpPingErrorDomain]) {
-            errorCode = error.code;  // 超时=-1, 其他自定义错误
-            errorMessage = error.localizedDescription ?: @"";
+            errCode = error.code;  // 超时=-1, 其他自定义错误
+            errMsg = error.localizedDescription ?: @"";
         } else {
             // 其他域的错误
-            errorCode = 3000 + error.code;
-            errorMessage = [NSString stringWithFormat:@"Unknown error: %@", error.localizedDescription];
+            errCode = 3000 + error.code;
+            errMsg = [NSString stringWithFormat:@"Unknown error: %@", error.localizedDescription];
         }
     } else {
         // 场景2：无错误对象，根据统计信息判断
         if (totalAttempts == 0) {
             // 未进行任何探测
-            errorCode = -5;
-            errorMessage = @"No attempts made";
+            hasError = YES;
+            errCode = -5;
+            errMsg = @"No attempts made";
         } else if (self.bindFailedCount > 0 && self.successCount == 0) {
             // 所有尝试都因 bind 失败
-            errorCode = -20;
-            errorMessage = [NSString stringWithFormat:@"Interface bind failed (%lu attempts)", (unsigned long)self.bindFailedCount];
+            hasError = YES;
+            errCode = -20;
+            errMsg = [NSString stringWithFormat:@"Interface bind failed (%lu attempts)", (unsigned long)self.bindFailedCount];
         } else if (lossRate >= 1.0) {
             // 完全丢包
-            errorCode = -11;
-            errorMessage = [NSString stringWithFormat:@"Total packet loss (0/%lu)", (unsigned long)totalAttempts];
+            hasError = YES;
+            errCode = -11;
+            errMsg = [NSString stringWithFormat:@"Total packet loss (0/%lu)", (unsigned long)totalAttempts];
         } else if (lossRate > 0.0) {
             // 部分丢包
-            errorCode = -10;
-            errorMessage = [NSString stringWithFormat:@"Partial packet loss (%.1f%%, %lu/%lu)", 
+            hasError = YES;
+            errCode = -10;
+            errMsg = [NSString stringWithFormat:@"Partial packet loss (%.1f%%, %lu/%lu)", 
                             lossRate * 100, (unsigned long)self.successCount, (unsigned long)totalAttempts];
-        } else {
-            // 成功（无丢包）
-            errorCode = 0;
-            errorMessage = [NSString stringWithFormat:@"Success (%lu/%lu)", 
-                            (unsigned long)self.successCount, (unsigned long)totalAttempts];
         }
+        // else: 成功（无丢包），hasError 保持 NO，不设置错误信息
     }
     
     // 5. 构建网络信息
@@ -441,9 +443,6 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"responseNum": [CLSStringUtils sanitizeNumber:@(self.successCount)] ?: @0,
         @"exceptionNum": [CLSStringUtils sanitizeNumber:@(self.failureCount)] ?: @0,
         @"bindFailed": [CLSStringUtils sanitizeNumber:@(self.bindFailedCount)] ?: @0,
-        // 错误信息
-        @"err_code": @(errorCode),
-        @"error_message": errorMessage,
         // 通用字段
         @"src": kSrcApp,
         @"timestamp": @(timestamp),
@@ -451,6 +450,12 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"detectEx": [CLSStringUtils sanitizeDictionary:self.request.detectEx] ?: @{},
         @"userEx": [CLSStringUtils sanitizeDictionary:[[ClsNetworkDiagnosis sharedInstance] getUserEx]] ?: @{}  // 从全局获取
     }];
+    
+    // 仅在有错误时添加错误字段
+    if (hasError) {
+        reportData[@"errCode"] = @(errCode);
+        reportData[@"errMsg"] = errMsg;
+    }
     
     return [reportData copy];
 }
@@ -579,11 +584,6 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"exceptionNum": @(exceptionNum),      // 异常数（失败次数）
         @"bindFailed": @(self.bindFailedCount), // 绑定失败次数
         
-        // 错误信息（根据汇总结果判断）
-        @"err_code": @(responseNum > 0 ? 0 : -11),  // 有成功则0，否则-11（完全失败）
-        @"error_message": responseNum > 0 ? [NSString stringWithFormat:@"Success (%lu/%lu)", (unsigned long)responseNum, (unsigned long)count] 
-                                          : [NSString stringWithFormat:@"All failed (0/%lu)", (unsigned long)count],
-        
         // 通用字段
         @"src": kSrcApp,
         @"timestamp": @(timestamp),
@@ -591,6 +591,12 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"detectEx": [CLSStringUtils sanitizeDictionary:self.request.detectEx] ?: @{},
         @"userEx": [CLSStringUtils sanitizeDictionary:[[ClsNetworkDiagnosis sharedInstance] getUserEx]] ?: @{}
     }];
+    
+    // 仅在有失败时添加错误字段（完全失败才上报错误）
+    if (responseNum == 0) {
+        reportData[@"errCode"] = @(-11);
+        reportData[@"errMsg"] = [NSString stringWithFormat:@"All failed (0/%lu)", (unsigned long)count];
+    }
     
     NSLog(@"📊 TCP Ping 汇总上报: count=%lu, responseNum=%lu, lossRate=%@ (%.0f%%), avgLatency=%@ms, total=%@ms", 
           (unsigned long)count, (unsigned long)responseNum, lossRateStr, lossRate * 100.0, avgLatencyStr, totalLatencyStr);
