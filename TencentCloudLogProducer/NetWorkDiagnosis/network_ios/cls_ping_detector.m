@@ -2513,44 +2513,44 @@ int cls_ping_detector_result_to_json(const cls_ping_detector_result *result,
     }
     pos += ret;
     
-    // total
-    ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"total\": %.2f,\n", result->total_time);
+    // total (输出为字符串，避免 IEEE 754 精度问题)
+    ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"total\": \"%.2f\",\n", result->total_time);
     if (ret < 0 || (size_t)ret >= buffer_size - pos) {
         return -1;
     }
     pos += ret;
     
-    // loss: 丢包率 (转换为小数形式，0.0-1.0)
+    // loss: 丢包率 (转换为小数形式，0.0-1.0，输出为字符串)
     double loss_decimal = result->packet_loss / 1.0;
     if (loss_decimal < 0.0) loss_decimal = 0.0;
     if (loss_decimal > 1.0) loss_decimal = 1.0;
-    ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"loss\": %.2f,\n", loss_decimal);
+    ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"loss\": \"%.2f\",\n", loss_decimal);
     if (ret < 0 || (size_t)ret >= buffer_size - pos) {
         return -1;
     }
     pos += ret;
     
-    // latency字段
+    // latency字段 (输出为字符串)
     if (result->packets_received > 0) {
-        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency_min\": %.3f,\n", result->min_rtt);
+        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency_min\": \"%.3f\",\n", result->min_rtt);
         if (ret < 0 || (size_t)ret >= buffer_size - pos) {
             return -1;
         }
         pos += ret;
         
-        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency_max\": %.3f,\n", result->max_rtt);
+        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency_max\": \"%.3f\",\n", result->max_rtt);
         if (ret < 0 || (size_t)ret >= buffer_size - pos) {
             return -1;
         }
         pos += ret;
         
-        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency\": %.3f,\n", result->avg_rtt);
+        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency\": \"%.3f\",\n", result->avg_rtt);
         if (ret < 0 || (size_t)ret >= buffer_size - pos) {
             return -1;
         }
         pos += ret;
         
-        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"stddev\": %.3f,\n", result->stddev);
+        ret = snprintf(json_buffer + pos, buffer_size - pos, "  \"stddev\": \"%.3f\",\n", result->stddev);
         if (ret < 0 || (size_t)ret >= buffer_size - pos) {
             return -1;
         }

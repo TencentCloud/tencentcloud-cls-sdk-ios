@@ -9,7 +9,13 @@
 #import "CLSSpanProviderProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
+
+@class CLSExtraProvider;
+
 @interface CLSSpanProviderDelegate : NSObject<CLSSpanProviderProtocol>
+
+// 使用 extraProvider 初始化（用于传递探测场景的接口名称等信息）
+- (instancetype)initWithExtraProvider:(CLSExtraProvider *)extraProvider;
 
 @end
 

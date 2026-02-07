@@ -476,5 +476,183 @@
     return [cpu copy];
 }
 
+// MARK: - Interface-Based Network Detection (for Probing Scenarios)
+
+/// 根据接口名称判断是否为蜂窝网络接口
++ (BOOL)isCellularInterface:(NSString *)interfaceName {
+    if (!interfaceName || interfaceName.length == 0) {
+        return NO;
+    }
+    // 蜂窝网络接口命名规则：pdp_ip0, pdp_ip1, pdp_ip2...
+    return [interfaceName hasPrefix:@"pdp_ip"];
+}
+
+/// 根据接口名称判断是否为 Wi-Fi 接口
++ (BOOL)isWiFiInterface:(NSString *)interfaceName {
+    if (!interfaceName || interfaceName.length == 0) {
+        return NO;
+    }
+    // Wi-Fi 接口命名规则：en0, en1...
+    return [interfaceName hasPrefix:@"en"];
+}
+
+/// 根据接口名称获取网络类型（用于探测场景）
+/// @param interfaceName 网络接口名称（如 "pdp_ip0", "en0"）
+/// @return 网络类型名称（"Wi-Fi", "4G", "5G", "3G", "2G", "Unknown"）
++ (NSString *)getNetworkTypeNameForInterface:(NSString *)interfaceName {
+    NSLog(@"🔍 [getNetworkTypeNameForInterface] interfaceName = [%@]", interfaceName);
+    
+    // 1. 如果未提供接口名称，降级到系统全局检测
+    if (!interfaceName || interfaceName.length == 0) {
+        NSLog(@"⚠️ [getNetworkTypeNameForInterface] No interface name, fallback to system detection");
+        return [self getNetworkTypeName];
+    }
+    
+    // 2. 判断接口类型
+    if ([self isWiFiInterface:interfaceName]) {
+        // Wi-Fi 接口
+        NSLog(@"✅ [getNetworkTypeNameForInterface] Wi-Fi interface detected: %@", interfaceName);
+        return @"Wi-Fi";
+    }
+    
+    if ([self isCellularInterface:interfaceName]) {
+        // 蜂窝网络接口 - 需要进一步检测具体类型（4G/5G/3G/2G）
+        NSLog(@"✅ [getNetworkTypeNameForInterface] Cellular interface detected: %@", interfaceName);
+        
+#if CLS_HAS_CORE_TELEPHONY
+        NSString *currentStatus = [self getNetworkType];
+        NSLog(@"📶 [getNetworkTypeNameForInterface] Radio technology: %@", currentStatus);
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyLTE]) {
+            return @"4G";
+        }
+        
+        if (@available(iOS 14.1, *)) {
+            if ([currentStatus isEqualToString:CTRadioAccessTechnologyNRNSA]
+                || [currentStatus isEqualToString:CTRadioAccessTechnologyNR]) {
+                return @"5G";
+            }
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyWCDMA]
+           || [currentStatus isEqualToString:CTRadioAccessTechnologyHSDPA]
+           || [currentStatus isEqualToString:CTRadioAccessTechnologyHSUPA]
+           || [currentStatus isEqualToString:CTRadioAccessTechnologyCDMAEVDORev0]
+           || [currentStatus isEqualToString:CTRadioAccessTechnologyCDMAEVDORevA]
+           || [currentStatus isEqualToString:CTRadioAccessTechnologyCDMAEVDORevB]
+           || [currentStatus isEqualToString:CTRadioAccessTechnologyeHRPD]) {
+            return @"3G";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyGPRS]
+            || [currentStatus isEqualToString:CTRadioAccessTechnologyEdge]
+            || [currentStatus isEqualToString:CTRadioAccessTechnologyCDMA1x]) {
+            return @"2G";
+        }
+        
+        // 无法识别的蜂窝网络类型
+        NSLog(@"⚠️ [getNetworkTypeNameForInterface] Unknown cellular type: %@", currentStatus);
+        return @"Cellular";
+#else
+        return @"Cellular";
+#endif
+    }
+    
+    // 3. 其他接口（回环、VPN、桥接等）
+    NSLog(@"⚠️ [getNetworkTypeNameForInterface] Other interface type: %@", interfaceName);
+    return @"Unknown";
+}
+
+/// 根据接口名称获取网络子类型（用于探测场景）
+/// @param interfaceName 网络接口名称（如 "pdp_ip0", "en0"）
+/// @return 网络子类型名称（"LTE", "NRNSA", "NR", "WCDMA", etc.）
++ (NSString *)getNetworkSubTypeNameForInterface:(NSString *)interfaceName {
+    NSLog(@"🔍 [getNetworkSubTypeNameForInterface] interfaceName = [%@]", interfaceName);
+    
+    // 1. 如果未提供接口名称，降级到系统全局检测
+    if (!interfaceName || interfaceName.length == 0) {
+        NSLog(@"⚠️ [getNetworkSubTypeNameForInterface] No interface name, fallback to system detection");
+        return [self getNetworkSubTypeName];
+    }
+    
+    // 2. Wi-Fi 接口 - 返回 Unknown（Wi-Fi 没有子类型）
+    if ([self isWiFiInterface:interfaceName]) {
+        NSLog(@"✅ [getNetworkSubTypeNameForInterface] Wi-Fi interface, returning 'Unknown'");
+        return @"Unknown";
+    }
+    
+    // 3. 蜂窝网络接口 - 检测具体的无线技术
+    if ([self isCellularInterface:interfaceName]) {
+        NSLog(@"✅ [getNetworkSubTypeNameForInterface] Cellular interface: %@", interfaceName);
+        
+#if CLS_HAS_CORE_TELEPHONY
+        NSString *currentStatus = [self getNetworkType];
+        NSLog(@"📶 [getNetworkSubTypeNameForInterface] Radio technology: %@", currentStatus);
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyGPRS]) {
+            return @"GPRS";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyEdge]) {
+            return @"EDGE";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyWCDMA]) {
+            return @"WCDMA";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyHSDPA]) {
+            return @"HSDPA";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyHSUPA]) {
+            return @"HSUPA";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyCDMA1x]) {
+            return @"CDMA1x";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyCDMAEVDORev0]) {
+            return @"EVDOv0";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyCDMAEVDORevA]) {
+            return @"EVDORevA";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyCDMAEVDORevB]) {
+            return @"EVDORevB";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyeHRPD]) {
+            return @"HRPD";
+        }
+        
+        if ([currentStatus isEqualToString:CTRadioAccessTechnologyLTE]) {
+            return @"LTE";
+        }
+        
+        if (@available(iOS 14.1, *)) {
+            if ([currentStatus isEqualToString:CTRadioAccessTechnologyNRNSA]) {
+                return @"NRNSA";
+            } else if ([currentStatus isEqualToString:CTRadioAccessTechnologyNR]) {
+                return @"NR";
+            }
+        }
+        
+        // 无法识别的蜂窝网络子类型
+        NSLog(@"⚠️ [getNetworkSubTypeNameForInterface] Unknown cellular subtype: %@", currentStatus);
+        return @"Unknown";
+#else
+        return @"Unknown";
+#endif
+    }
+    
+    // 4. 其他接口
+    NSLog(@"⚠️ [getNetworkSubTypeNameForInterface] Other interface type: %@", interfaceName);
+    return @"Unknown";
+}
+
 @end
 

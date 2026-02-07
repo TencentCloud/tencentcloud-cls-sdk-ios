@@ -860,8 +860,12 @@ didReceiveData:(NSData *)data {
         NSLog(@"interface:%@", currentInterface);
         
         // 执行单次探测
+        // ✅ 创建 extraProvider 并传递接口名称
+        CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
+        [extraProvider setExtra:@"network.interface.name" value:currentInterface[@"name"] ?: @""];
+        
         CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
-                                                               provider:[[CLSSpanProviderDelegate alloc] init]];
+                                                               provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
         [builder setURL:self.request.domain];
         [builder setpageName:self.request.pageName];
         if (self.request.traceId) {

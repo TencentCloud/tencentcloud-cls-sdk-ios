@@ -32,8 +32,25 @@
 
 @implementation CLSSpanProviderDelegate
 
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _extraProvider = [[CLSExtraProvider alloc] init];
+    }
+    return self;
+}
+
+- (instancetype)initWithExtraProvider:(CLSExtraProvider *)extraProvider {
+    self = [super init];
+    if (self) {
+        _extraProvider = extraProvider ?: [[CLSExtraProvider alloc] init];
+    }
+    return self;
+}
+
 - (CLSResource *) createDefaultResource {
     BOOL privocy = [CLSPrivocyUtils isEnablePrivocy];
+    NSLog(@"🔒 [CLSCocoa] privocy = %d", privocy);
     
     CLSResource *resource = [[CLSResource alloc] init];
     [resource add:@"sdk.language" value:@"Objective-C"];
@@ -100,11 +117,41 @@
     [resource add:@"app.versionCode" value:(!buildCode ? @"-" : buildCode)];
     [resource add:@"app.name" value:(!appName ? @"-" : appName)];
     
-    [resource add:@"net.access" value: privocy ? [CLSDeviceUtils getNetworkTypeName] : @""];
-    [resource add:@"net.access_subtype" value: privocy ? [CLSDeviceUtils getNetworkSubTypeName] : @""];
-    NSString  *carrier =  [CLSDeviceUtils getCarrier];
-    NSLog(@"carrier:%@",carrier);
-    [resource add:@"carrier" value: privocy ? [[CLSDeviceUtils getCarrier] copy] : @""];
+    // ========== 网络类型检测（支持接口名称传递） ==========
+    NSString *networkType = nil;
+    NSString *networkSubType = nil;
+    
+    // 1. 尝试从 extras 中获取接口名称（探测场景）
+    NSDictionary *extras = [_extraProvider getExtras];
+    NSString *interfaceName = extras[@"network.interface.name"];
+    
+    if (interfaceName && interfaceName.length > 0) {
+        // 探测场景：使用指定的网络接口
+        NSLog(@"🔍 [CLSCocoa] Using interface-based detection: %@", interfaceName);
+        networkType = [CLSDeviceUtils getNetworkTypeNameForInterface:interfaceName];
+        networkSubType = [CLSDeviceUtils getNetworkSubTypeNameForInterface:interfaceName];
+    } else {
+        // 常规场景：使用系统全局检测
+        NSLog(@"🌐 [CLSCocoa] Using system-based detection");
+        networkType = [CLSDeviceUtils getNetworkTypeName];
+        networkSubType = [CLSDeviceUtils getNetworkSubTypeName];
+    }
+    
+    NSString *carrier = [CLSDeviceUtils getCarrier];
+    
+    NSLog(@"🌐 [CLSCocoa] interfaceName = [%@]", interfaceName ?: @"(nil)");
+    NSLog(@"🌐 [CLSCocoa] networkType = [%@], length=%lu", networkType, (unsigned long)networkType.length);
+    NSLog(@"🌐 [CLSCocoa] networkSubType = [%@], length=%lu", networkSubType, (unsigned long)networkSubType.length);
+    NSLog(@"📱 [CLSCocoa] carrier = [%@], length=%lu, isNil=%d", carrier, (unsigned long)carrier.length, carrier == nil);
+    NSLog(@"🔒 [CLSCocoa] privocy = %d", privocy);
+    NSLog(@"✅ [CLSCocoa] Final values: net.access=[%@], net.access_subtype=[%@], carrier=[%@]", 
+          privocy ? networkType : @"",
+          privocy ? networkSubType : @"",
+          privocy ? carrier : @"");
+    
+    [resource add:@"net.access" value: privocy ? networkType : @""];
+    [resource add:@"net.access_subtype" value: privocy ? networkSubType : @""];
+    [resource add:@"carrier" value: privocy ? carrier : @""];
     return resource;
 }
 

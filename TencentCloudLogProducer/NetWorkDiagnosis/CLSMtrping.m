@@ -106,7 +106,11 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     NSDictionary *reportData = [self buildReportDataFromMtrResult:jsonString];
     
     // 9. 上报链路数据（语义化日志，避免冗余构建）
-    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+    // ✅ 创建 extraProvider 并传递接口名称
+    CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
+    [extraProvider setExtra:@"network.interface.name" value:interfaceName ?: @""];
+    
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
     [builder setURL:domainStr];
     [builder setpageName:self.request.pageName];
     // 设置自定义traceId
@@ -150,12 +154,14 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     }
     
     // 4. 校验解析结果类型（必须是字典）
-    if (![jsonObject isKindOfClass:[NSMutableDictionary class]]) {
+    if (![jsonObject isKindOfClass:[NSDictionary class]]) {
         NSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kMtrLogPrefix, [jsonObject class]);
         return @{};
     }
     
-    NSMutableDictionary *reportData = (NSMutableDictionary *)jsonObject;
+    // 转换为可变字典（方便后续添加字段）
+    // C 层已经将浮点数输出为字符串，避免了 IEEE 754 精度问题，这里无需格式化
+    NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:jsonObject];
     
     // 5. 追加通用字段（空值兜底，避免崩溃）
     reportData[@"appKey"] = self.request.appKey;

@@ -109,7 +109,11 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     NSDictionary *reportData = [self buildReportDataFromPingResult:jsonString];
     
     // 9. 上报链路数据（语义化日志，避免冗余构建）
-    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
+    // ✅ 创建 extraProvider 并传递接口名称
+    CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
+    [extraProvider setExtra:@"network.interface.name" value:interfaceName ?: @""];
+    
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
     [builder setURL:domainStr];
     [builder setpageName:self.request.pageName];
     // 设置自定义traceId
@@ -140,7 +144,7 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
         return @{};
     }
     
-    // 3. 解析JSON为可变字典（带错误处理）
+    // 3. 解析JSON为字典（带错误处理）
     NSError *parseError = nil;
     id jsonObject = [NSJSONSerialization JSONObjectWithData:jsonData
                                                     options:NSJSONReadingMutableContainers
@@ -153,13 +157,13 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     }
     
     // 4. 校验解析结果类型（必须是字典）
-    if (![jsonObject isKindOfClass:[NSMutableDictionary class]]) {
+    if (![jsonObject isKindOfClass:[NSDictionary class]]) {
         NSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kPINGLogPrefix, [jsonObject class]);
         return @{};
     }
     
-    NSMutableDictionary *reportData = (NSMutableDictionary *)jsonObject;
-    NSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kPINGLogPrefix, reportData);
+    // 转换为可变字典（方便后续添加字段）
+    NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:jsonObject];
     
     // 5. 追加通用字段（空值兜底，避免崩溃）
     reportData[@"appKey"] = self.request.appKey;

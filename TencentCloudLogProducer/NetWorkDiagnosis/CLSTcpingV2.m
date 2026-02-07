@@ -354,18 +354,19 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 
 // 核心方法：直接基于原始状态构建上报数据（移除buildResult后，所有逻辑集中在此）
 - (NSDictionary *)buildReportDataFromTcpPingResultWithError:(NSError *)error {
-    // 1. 计算核心统计值
-    NSNumber *minLatency = [self.latencies valueForKeyPath:@"@min.self"] ?: @0;
-    NSNumber *maxLatency = [self.latencies valueForKeyPath:@"@max.self"] ?: @0;
-    NSNumber *avgLatency = [self.latencies valueForKeyPath:@"@avg.self"] ?: @0;
-    NSNumber *stddev = [self calculateStdDev] ?: @0;
-    double totalLatency = [[self.latencies valueForKeyPath:@"@sum.self"] doubleValue];
+    // 1. 计算核心统计值（直接格式化为字符串，避免 doubleValue 精度问题）
+    NSString *minLatencyStr = self.latencies.count > 0 ? [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@min.self"] doubleValue]] : @"0.00";
+    NSString *maxLatencyStr = self.latencies.count > 0 ? [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@max.self"] doubleValue]] : @"0.00";
+    NSString *avgLatencyStr = self.latencies.count > 0 ? [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@avg.self"] doubleValue]] : @"0.00";
+    NSString *stddevStr = self.latencies.count > 0 ? [NSString stringWithFormat:@"%.2f", [[self calculateStdDev] doubleValue]] : @"0.00";
+    NSString *totalLatencyStr = self.latencies.count > 0 ? [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@sum.self"] doubleValue]] : @"0.00";
     
-    // 2. 计算丢包率（范围：0.0～1.0）
+    // 2. 计算丢包率（范围：0.0～1.0，直接格式化为字符串）
     NSUInteger totalAttempts = self.successCount + self.failureCount;
     double lossRate = totalAttempts > 0 ? (double)self.failureCount / (double)totalAttempts : 0.0;
     // 确保范围在 [0.0, 1.0]
     lossRate = MAX(0.0, MIN(1.0, lossRate));
+    NSString *lossRateStr = [NSString stringWithFormat:@"%.2f", lossRate];  // 直接格式化为字符串
     
     // 3. 时间戳（毫秒级）
     NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
@@ -419,7 +420,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                                                                                 endpoint:self.endPoint
                                                                            interfaceDNS:self.interface[@"dns"]];
     
-    // 6. 构建上报数据（一步到位，无中间对象）
+    // 6. 构建上报数据（所有浮点数字段使用字符串，避免精度问题）
     NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:@{
         // 基础信息
         @"host": [CLSStringUtils sanitizeString:self.request.domain] ?: @"",
@@ -429,14 +430,14 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"host_ip": [CLSStringUtils sanitizeString:[self resolvedIP]] ?: @"",
         @"port": [CLSStringUtils sanitizeNumber:@(self.request.port)] ?: @0,
         @"interface": [CLSStringUtils sanitizeString:self.interface[@"type"]] ?: kInterfaceDefault,
-        // 统计信息
+        // 统计信息（浮点数字段使用字符串）
         @"count": [CLSStringUtils sanitizeNumber:@(self.request.maxTimes)] ?: @0,
-        @"total": [CLSStringUtils sanitizeNumber:@(totalLatency)] ?: @0,
-        @"loss": [CLSStringUtils sanitizeNumber:@(lossRate)] ?: @0,  // 修复：使用丢包率（0～1）
-        @"latency_min": [CLSStringUtils sanitizeNumber:minLatency] ?: @0,
-        @"latency_max": [CLSStringUtils sanitizeNumber:maxLatency] ?: @0,
-        @"latency": [CLSStringUtils sanitizeNumber:avgLatency] ?: @0,
-        @"stddev": [CLSStringUtils sanitizeNumber:stddev] ?: @0,
+        @"total": totalLatencyStr,              // 字符串格式，保留两位小数
+        @"loss": lossRateStr,                   // 字符串格式，保留两位小数（0.00～1.00）
+        @"latency_min": minLatencyStr,          // 字符串格式，保留两位小数
+        @"latency_max": maxLatencyStr,          // 字符串格式，保留两位小数
+        @"latency": avgLatencyStr,              // 字符串格式，保留两位小数
+        @"stddev": stddevStr,                   // 字符串格式，保留两位小数
         @"responseNum": [CLSStringUtils sanitizeNumber:@(self.successCount)] ?: @0,
         @"exceptionNum": [CLSStringUtils sanitizeNumber:@(self.failureCount)] ?: @0,
         @"bindFailed": [CLSStringUtils sanitizeNumber:@(self.bindFailedCount)] ?: @0,
@@ -513,30 +514,36 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 #pragma mark - 汇总上报数据构建
 /// 构建多次探测汇总后的上报数据
 - (NSDictionary *)buildAggregatedReportDictForProbeCount:(NSUInteger)totalProbes {
-    // ===== 1. 计算延迟统计（仅基于成功的探测）=====
-    double minLatency = 0.0;
-    double maxLatency = 0.0;
-    double avgLatency = 0.0;
-    double stddev = 0.0;
-    double totalLatency = 0.0;
+    // ===== 1. 计算延迟统计（直接格式化为字符串，避免 doubleValue 精度问题）=====
+    NSString *minLatencyStr = @"0.00";
+    NSString *maxLatencyStr = @"0.00";
+    NSString *avgLatencyStr = @"0.00";
+    NSString *stddevStr = @"0.00";
+    NSString *totalLatencyStr = @"0.00";
     
     if (self.latencies.count > 0) {
-        minLatency = [[self.latencies valueForKeyPath:@"@min.self"] doubleValue];
-        maxLatency = [[self.latencies valueForKeyPath:@"@max.self"] doubleValue];
-        avgLatency = [[self.latencies valueForKeyPath:@"@avg.self"] doubleValue];
-        stddev = [[self calculateStdDev] doubleValue];
-        totalLatency = [[self.latencies valueForKeyPath:@"@sum.self"] doubleValue];
+        minLatencyStr = [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@min.self"] doubleValue]];
+        maxLatencyStr = [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@max.self"] doubleValue]];
+        avgLatencyStr = [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@avg.self"] doubleValue]];
+        stddevStr = [NSString stringWithFormat:@"%.2f", [[self calculateStdDev] doubleValue]];
+        totalLatencyStr = [NSString stringWithFormat:@"%.2f", [[self.latencies valueForKeyPath:@"@sum.self"] doubleValue]];
     }
     
     // ===== 2. 计算丢包相关指标 =====
     // count: 探测次数（用户设置的 maxTimes）
     // responseNum: 响应次数（成功次数）
     // exceptionNum: 异常数（失败次数，包含超时、连接失败等）
-    // loss: 丢包数量（不是丢包率！）= 失败次数
+    // lossRate: 丢包率（0.00 ~ 1.00，直接格式化为字符串）
     NSUInteger count = totalProbes;
     NSUInteger responseNum = self.successCount;
     NSUInteger exceptionNum = self.failureCount;
-    NSUInteger loss = self.failureCount;  // 丢包数量 = 失败次数
+    
+    // 计算丢包率（直接格式化为字符串）
+    double lossRate = 0.0;
+    if (count > 0) {
+        lossRate = (double)self.failureCount / (double)count;
+    }
+    NSString *lossRateStr = [NSString stringWithFormat:@"%.2f", lossRate];  // 直接格式化为字符串
     
     // ===== 3. 构建网络信息 =====
     NSDictionary *netInfo = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interface[@"type"]
@@ -549,7 +556,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     // ===== 4. 时间戳（毫秒级）=====
     NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
     
-    // ===== 5. 构建上报数据 =====
+    // ===== 5. 构建上报数据（浮点数字段使用字符串）=====
     NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:@{
         // 基础信息
         @"host": [CLSStringUtils sanitizeString:self.request.domain] ?: @"",
@@ -560,14 +567,14 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"port": [CLSStringUtils sanitizeNumber:@(self.request.port)] ?: @0,
         @"interface": [CLSStringUtils sanitizeString:self.interface[@"type"]] ?: kInterfaceDefault,
         
-        // ⚠️ 核心统计字段（注意字段含义！）
+        // ⚠️ 核心统计字段（浮点数使用字符串，保留两位小数）
         @"count": @(count),                    // 探测次数（总共探测了多少次）
-        @"total": @(totalLatency),             // 总延迟（所有成功探测的延迟之和，单位ms）
-        @"loss": @(loss),                      // 丢包数量（失败次数，不是丢包率！）
-        @"latency_min": @(minLatency),         // 最小延迟（ms）
-        @"latency_max": @(maxLatency),         // 最大延迟（ms）
-        @"latency": @(avgLatency),             // 平均延迟（ms）
-        @"stddev": @(stddev),                  // 延迟标准差（ms）
+        @"total": totalLatencyStr,             // 总延迟（字符串格式，单位ms）
+        @"loss": lossRateStr,                  // 丢包率（字符串格式：0.00～1.00）
+        @"latency_min": minLatencyStr,         // 最小延迟（字符串格式，单位ms）
+        @"latency_max": maxLatencyStr,         // 最大延迟（字符串格式，单位ms）
+        @"latency": avgLatencyStr,             // 平均延迟（字符串格式，单位ms）
+        @"stddev": stddevStr,                  // 延迟标准差（字符串格式，单位ms）
         @"responseNum": @(responseNum),        // 响应次数（成功次数）
         @"exceptionNum": @(exceptionNum),      // 异常数（失败次数）
         @"bindFailed": @(self.bindFailedCount), // 绑定失败次数
@@ -585,8 +592,8 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"userEx": [CLSStringUtils sanitizeDictionary:[[ClsNetworkDiagnosis sharedInstance] getUserEx]] ?: @{}
     }];
     
-    NSLog(@"📊 TCP Ping 汇总上报: count=%lu, responseNum=%lu, loss=%lu, avgLatency=%.2fms, total=%.2fms", 
-          (unsigned long)count, (unsigned long)responseNum, (unsigned long)loss, avgLatency, totalLatency);
+    NSLog(@"📊 TCP Ping 汇总上报: count=%lu, responseNum=%lu, lossRate=%@ (%.0f%%), avgLatency=%@ms, total=%@ms", 
+          (unsigned long)count, (unsigned long)responseNum, lossRateStr, lossRate * 100.0, avgLatencyStr, totalLatencyStr);
     
     return [reportData copy];
 }
@@ -619,6 +626,13 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         // ✅ 核心修复：为每个接口创建独立的探测对象，避免状态共享
         NSDictionary *capturedInterface = [currentInterface copy];
         CLSMultiInterfaceTcping *probeInstance = [[CLSMultiInterfaceTcping alloc] initWithRequest:self.request];
+        // ✅ 继承外层对象的上报凭证（避免重复配置）
+        probeInstance.topicId = self.topicId;
+        probeInstance.networkAppId = self.networkAppId;
+        probeInstance.appKey = self.appKey;
+        probeInstance.uin = self.uin;
+        probeInstance.region = self.region;
+        probeInstance.endPoint = self.endPoint;
         
         // 使用串行队列执行多次探测
         dispatch_queue_t probeQueue = dispatch_queue_create("com.tencent.cls.tcpping.probe", DISPATCH_QUEUE_SERIAL);
@@ -661,15 +675,19 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
             NSDictionary *aggregatedResult = [probeInstance buildAggregatedReportDictForProbeCount:totalProbes];
             
             // 上报汇总结果（使用独立对象的数据）
+            // ✅ 创建 extraProvider 并传递接口名称
+            CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
+            [extraProvider setExtra:@"network.interface.name" value:capturedInterface[@"name"] ?: @""];
+            
             CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" 
-                                                                   provider:[[CLSSpanProviderDelegate alloc] init]];
+                                                                   provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
             [builder setURL:probeInstance.request.domain];
             [builder setpageName:probeInstance.request.pageName];
             if (probeInstance.request.traceId) {
                 [builder setTraceId:probeInstance.request.traceId];
             }
             
-            NSDictionary *reportDict = [builder report:self.topicId reportData:aggregatedResult];
+            NSDictionary *reportDict = [builder report:probeInstance.topicId reportData:aggregatedResult];
             CLSResponse *completionResult = [CLSResponse complateResultWithContent:reportDict ?: @{}];
             
             // 回调返回汇总结果（切回主线程）

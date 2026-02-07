@@ -870,7 +870,7 @@ static int dns_result_to_json(const char *domain,
     n = snprintf(json_buffer + pos, buffer_size - pos, "  \"status\": \"%s\",\n", status); if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
     n = snprintf(json_buffer + pos, buffer_size - pos, "  \"id\": %u,\n", header->id); if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
     n = snprintf(json_buffer + pos, buffer_size - pos, "  \"flags\": \"%s\",\n", flags_str); if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
-    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency\": %.3f,\n", (double)query_time_ms); if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
+    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency\": \"%.3f\",\n", (double)query_time_ms); if (n < 0 || (size_t)n >= buffer_size - pos) return -1; pos += n;
     if (server_addr && server_addr[0]) { 
         if (json_escape(server_addr, escaped, sizeof(escaped)) < 0) return -1; // 检查转义是否成功
         n = snprintf(json_buffer + pos, buffer_size - pos, "  \"host_ip\": \"%s\",\n", escaped); 
@@ -2723,7 +2723,7 @@ int cls_dns_detector_result_to_json(const cls_dns_detector_result *result,
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
     pos += n;
     
-    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency\": %.3f,\n", result->latency);
+    n = snprintf(json_buffer + pos, buffer_size - pos, "  \"latency\": \"%.3f\",\n", result->latency);
     if (n < 0 || (size_t)n >= buffer_size - pos) return -1;
     pos += n;
     

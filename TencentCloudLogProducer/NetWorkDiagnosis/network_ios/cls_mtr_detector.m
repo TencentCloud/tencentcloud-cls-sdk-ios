@@ -5737,19 +5737,19 @@ int cls_mtr_detector_result_to_json(const cls_mtr_detector_result *result,
     }
 
     if (!path_has_any_reply) {
-      // 仅输出一条空 hop
+      // 仅输出一条空 hop（浮点数输出为字符串，避免 IEEE 754 精度问题）
       if (json_append(json_buffer, buffer_size, &used, "{") != 0)
         return -1;
-      if (json_append(json_buffer, buffer_size, &used, "\"loss\":%.2f", 1.0) !=
+      if (json_append(json_buffer, buffer_size, &used, "\"loss\":\"%.2f\"", 1.0) !=
           0)
         return -1;
-      if (json_append(json_buffer, buffer_size, &used, ",\"latency_min\":%.3f",
+      if (json_append(json_buffer, buffer_size, &used, ",\"latency_min\":\"%.3f\"",
                       0.0) != 0)
         return -1;
-      if (json_append(json_buffer, buffer_size, &used, ",\"latency_max\":%.3f",
+      if (json_append(json_buffer, buffer_size, &used, ",\"latency_max\":\"%.3f\"",
                       0.0) != 0)
         return -1;
-      if (json_append(json_buffer, buffer_size, &used, ",\"latency\":%.3f",
+      if (json_append(json_buffer, buffer_size, &used, ",\"latency\":\"%.3f\"",
                       0.0) != 0)
         return -1;
       if (json_append(json_buffer, buffer_size, &used, ",\"responseNum\":%d",
@@ -5761,7 +5761,7 @@ int cls_mtr_detector_result_to_json(const cls_mtr_detector_result *result,
         return -1;
       if (json_append(json_buffer, buffer_size, &used, ",\"hop\":%d", 1) != 0)
         return -1;
-      if (json_append(json_buffer, buffer_size, &used, ",\"stddev\":%.3f",
+      if (json_append(json_buffer, buffer_size, &used, ",\"stddev\":\"%.3f\"",
                       0.0) != 0)
         return -1;
       if (json_append(json_buffer, buffer_size, &used, "}") != 0)
@@ -5776,16 +5776,17 @@ int cls_mtr_detector_result_to_json(const cls_mtr_detector_result *result,
         if (json_append(json_buffer, buffer_size, &used, "{") != 0)
           return -1;
 
-        if (json_append(json_buffer, buffer_size, &used, "\"loss\":%.2f",
+        // 浮点数输出为字符串，避免 IEEE 754 精度问题
+        if (json_append(json_buffer, buffer_size, &used, "\"loss\":\"%.2f\"",
                         hop->loss) != 0)
           return -1;
         if (json_append(json_buffer, buffer_size, &used,
-                        ",\"latency_min\":%.3f", hop->latency_min) != 0)
+                        ",\"latency_min\":\"%.3f\"", hop->latency_min) != 0)
           return -1;
         if (json_append(json_buffer, buffer_size, &used,
-                        ",\"latency_max\":%.3f", hop->latency_max) != 0)
+                        ",\"latency_max\":\"%.3f\"", hop->latency_max) != 0)
           return -1;
-        if (json_append(json_buffer, buffer_size, &used, ",\"latency\":%.3f",
+        if (json_append(json_buffer, buffer_size, &used, ",\"latency\":\"%.3f\"",
                         hop->latency) != 0)
           return -1;
         if (json_append(json_buffer, buffer_size, &used, ",\"responseNum\":%d",
@@ -5801,7 +5802,7 @@ int cls_mtr_detector_result_to_json(const cls_mtr_detector_result *result,
         if (json_append(json_buffer, buffer_size, &used, ",\"hop\":%d",
                         hop->hop) != 0)
           return -1;
-        if (json_append(json_buffer, buffer_size, &used, ",\"stddev\":%.3f",
+        if (json_append(json_buffer, buffer_size, &used, ",\"stddev\":\"%.3f\"",
                         hop->stddev) != 0)
           return -1;
 
