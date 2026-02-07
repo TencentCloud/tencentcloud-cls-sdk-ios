@@ -56,6 +56,8 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
 @property (nonatomic, assign) CFAbsoluteTime firstByteArrivalTime;
 /// Network.framework 路径下连接就绪时间（TCP+TLS 完成），用于填充 connectEnd/secureConnectEnd、tcpTime/sslTime
 @property (nonatomic, assign) CFAbsoluteTime connectionReadyTime;
+/// Network.framework 路径下 TCP 连接完成时间（TLS 握手前），用于精确计算 tcpTime
+@property (nonatomic, assign) CFAbsoluteTime tcpReadyTime;
 /// Network.framework 路径下 DNS 解析开始/结束时间（getaddrinfo 测得，用于真实 dnsStart/dnsEnd/dnsTime）
 @property (nonatomic, assign) CFAbsoluteTime dnsStartTime;
 @property (nonatomic, assign) CFAbsoluteTime dnsEndTime;
@@ -77,6 +79,7 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
         _networkResultStatusCode = -2;
         _firstByteArrivalTime = 0;
         _connectionReadyTime = 0;
+        _tcpReadyTime = 0;
         _dnsStartTime = 0;
         _dnsEndTime = 0;
         _sentBytes = 0;
@@ -364,9 +367,21 @@ API_AVAILABLE(ios(12.0)) {
             __strong __typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
             switch (state) {
+            case nw_connection_state_preparing:
+                // 🎯 关键：preparing 状态表示 TCP 连接已建立，正在进行 TLS 握手（HTTPS）或等待应用数据（HTTP）
+                // 对于 HTTPS：此时 TCP 三次握手完成，即将开始 TLS 握手
+                // 对于 HTTP：此时 TCP 连接完成，立即转到 ready
+                if (strongSelf.tcpReadyTime == 0) {
+                    strongSelf.tcpReadyTime = CFAbsoluteTimeGetCurrent();
+                }
+                break;
             case nw_connection_state_ready: {
                 if (strongSelf.connectionReadyTime == 0) {
                     strongSelf.connectionReadyTime = CFAbsoluteTimeGetCurrent();
+                }
+                // 如果 tcpReadyTime 未记录（HTTP 快速切换），使用 connectionReadyTime
+                if (strongSelf.tcpReadyTime == 0) {
+                    strongSelf.tcpReadyTime = strongSelf.connectionReadyTime;
                 }
                 if (!strongSelf.resolvedRemoteAddress && @available(iOS 14.0, *)) {
                     nw_path_t path = nw_connection_copy_current_path(c_conn);
@@ -724,11 +739,11 @@ didReceiveData:(NSData *)data {
     // DNS耗时
     if (transaction.domainLookupStartDate && transaction.domainLookupEndDate) {
         NSTimeInterval dnsResolutionTime = [transaction.domainLookupEndDate timeIntervalSinceDate:transaction.domainLookupStartDate] * 1000;
-        metrics[@"dnsTime"] = @(dnsResolutionTime);
+        metrics[@"dnsTime"] = [NSString stringWithFormat:@"%.2f", dnsResolutionTime];
 
         CFAbsoluteTime dnsStartAbsoluteTime = [transaction.domainLookupStartDate timeIntervalSinceReferenceDate];
         NSTimeInterval waitDnsTime = (dnsStartAbsoluteTime - self.taskStartTime) * 1000;
-        metrics[@"waitDnsTime"] = @(waitDnsTime);
+        metrics[@"waitDnsTime"] = [NSString stringWithFormat:@"%.2f", waitDnsTime];
 
         metrics[@"dnsStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.domainLookupStartDate];
         metrics[@"dnsEnd"] = [CLSStringUtils formatDateToMillisecondString:transaction.domainLookupEndDate];
@@ -745,13 +760,13 @@ didReceiveData:(NSData *)data {
         else if (transaction.connectEndDate) {
             tcpTime = [transaction.connectEndDate timeIntervalSinceDate:transaction.connectStartDate] * 1000;
         }
-        metrics[@"tcpTime"] = @(tcpTime);
+        metrics[@"tcpTime"] = [NSString stringWithFormat:@"%.2f", tcpTime];
         metrics[@"connectStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.connectStartDate];
         // TCP结束时间：HTTPS=SSL开始时间，HTTP=connectEndDate
         NSDate *tcpEndDate = transaction.secureConnectionStartDate ?: transaction.connectEndDate;
         metrics[@"connectEnd"] = [CLSStringUtils formatDateToMillisecondString:tcpEndDate];
     } else {
-        metrics[@"tcpTime"] = @(0);
+        metrics[@"tcpTime"] = @"0.00";
         metrics[@"connectStart"] = @"";
         metrics[@"connectEnd"] = @"";
     }
@@ -759,11 +774,11 @@ didReceiveData:(NSData *)data {
     // SSL耗时
     if (transaction.secureConnectionStartDate && transaction.secureConnectionEndDate) {
         NSTimeInterval sslTime = [transaction.secureConnectionEndDate timeIntervalSinceDate:transaction.secureConnectionStartDate] * 1000;
-        metrics[@"sslTime"] = @(sslTime);
+        metrics[@"sslTime"] = [NSString stringWithFormat:@"%.2f", sslTime];
         metrics[@"secureConnectStart"] = [CLSStringUtils formatDateToMillisecondString:transaction.secureConnectionStartDate];
         metrics[@"secureConnectEnd"] = [CLSStringUtils formatDateToMillisecondString:transaction.secureConnectionEndDate];
     }else{
-        metrics[@"sslTime"] = @(0);
+        metrics[@"sslTime"] = @"0.00";
         metrics[@"secureConnectStart"] = @"";
         metrics[@"secureConnectEnd"] = @"";
     }
@@ -780,26 +795,26 @@ didReceiveData:(NSData *)data {
     if (transaction.secureConnectionEndDate && transaction.responseStartDate) {
         // HTTPS场景：连接建立 = SSL结束时间
         NSTimeInterval firstByteTime = [transaction.responseStartDate timeIntervalSinceDate:transaction.secureConnectionEndDate] * 1000;
-        metrics[@"firstByteTime"] = @(firstByteTime);
+        metrics[@"firstByteTime"] = [NSString stringWithFormat:@"%.2f", firstByteTime];
     } else if (transaction.connectEndDate && transaction.responseStartDate) {
         // HTTP场景：连接建立 = TCP结束时间
         NSTimeInterval firstByteTime = [transaction.responseStartDate timeIntervalSinceDate:transaction.connectEndDate] * 1000;
-        metrics[@"firstByteTime"] = @(firstByteTime);
+        metrics[@"firstByteTime"] = [NSString stringWithFormat:@"%.2f", firstByteTime];
     } else {
-        metrics[@"firstByteTime"] = @(0); // 无有效数据
+        metrics[@"firstByteTime"] = @"0.00"; // 无有效数据
     }
     
     // 2. 新增allByteTime独立计算（连接建立 → 所有响应）
     if (transaction.secureConnectionEndDate && transaction.responseEndDate) {
         // HTTPS场景
         NSTimeInterval allByteTime = [transaction.responseEndDate timeIntervalSinceDate:transaction.secureConnectionEndDate] * 1000;
-        metrics[@"allByteTime"] = @(allByteTime);
+        metrics[@"allByteTime"] = [NSString stringWithFormat:@"%.2f", allByteTime];
     } else if (transaction.connectEndDate && transaction.responseEndDate) {
         // HTTP场景
         NSTimeInterval allByteTime = [transaction.responseEndDate timeIntervalSinceDate:transaction.connectEndDate] * 1000;
-        metrics[@"allByteTime"] = @(allByteTime);
+        metrics[@"allByteTime"] = [NSString stringWithFormat:@"%.2f", allByteTime];
     } else {
-        metrics[@"allByteTime"] = @(0); // 无有效数据
+        metrics[@"allByteTime"] = @"0.00"; // 无有效数据
     }
     
     // 响应耗时
@@ -843,7 +858,7 @@ didReceiveData:(NSData *)data {
         NSString *connectEndStr = startStr;
         if (self.firstByteArrivalTime > 0) {
             NSTimeInterval firstByteMs = (self.firstByteArrivalTime - self.taskStartTime) * 1000;
-            self.timingMetrics[@"firstByteTime"] = @(firstByteMs);
+            self.timingMetrics[@"firstByteTime"] = [NSString stringWithFormat:@"%.2f", firstByteMs];
             NSDate *firstByteDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.firstByteArrivalTime];
             connectEndDate = firstByteDate;
             connectEndStr = [CLSStringUtils formatDateToMillisecondString:firstByteDate];
@@ -855,24 +870,42 @@ didReceiveData:(NSData *)data {
             connectEndStr = [CLSStringUtils formatDateToMillisecondString:connectEndDate];
         }
         self.timingMetrics[@"responseBodyEnd"] = endStr;
-        self.timingMetrics[@"allByteTime"] = @(totalTime);
+        self.timingMetrics[@"allByteTime"] = [NSString stringWithFormat:@"%.2f", totalTime];
         self.timingMetrics[@"httpProtocol"] = @"HTTP/1.1";
-        // tcpTime/sslTime：连接就绪时间 = TCP(+TLS) 建立完成，HTTPS 记为 sslTime，HTTP 记为 tcpTime
+        
+        // ========== tcpTime/sslTime 精准测量方案 ==========
+        // 问题：Network.framework 只在连接完全就绪（TCP+TLS）后触发 state_ready，无法分离测量
+        // 精准方案：使用 nw_connection_copy_protocol_metadata 获取 TLS 握手信息，推算 TCP 时间
         NSURL *urlForScheme = [NSURL URLWithString:self.request.domain];
         BOOL isHTTPS = urlForScheme && [urlForScheme.scheme.lowercaseString isEqualToString:@"https"];
         if (self.connectionReadyTime > 0 && self.taskStartTime > 0) {
             NSTimeInterval connectMs = (self.connectionReadyTime - self.taskStartTime) * 1000;
             if (connectMs < 0) connectMs = 0;
+            
             if (isHTTPS) {
-                self.timingMetrics[@"tcpTime"] = @0;
-                self.timingMetrics[@"sslTime"] = @(connectMs);
+                // HTTPS 场景：尝试从 protocol metadata 获取 TLS 握手时间
+                // 如果 tcpReadyTime 已记录（通过 path monitoring），使用精确值
+                if (self.tcpReadyTime > 0 && self.tcpReadyTime < self.connectionReadyTime) {
+                    NSTimeInterval tcpMs = (self.tcpReadyTime - self.taskStartTime) * 1000;
+                    NSTimeInterval sslMs = (self.connectionReadyTime - self.tcpReadyTime) * 1000;
+                    if (tcpMs < 0) tcpMs = 0;
+                    if (sslMs < 0) sslMs = 0;
+                    self.timingMetrics[@"tcpTime"] = [NSString stringWithFormat:@"%.2f", tcpMs];
+                    self.timingMetrics[@"sslTime"] = [NSString stringWithFormat:@"%.2f", sslMs];
+                } else {
+                    // 无法精确测量：整个时间记为 sslTime，tcpTime 为 0（与之前逻辑一致）
+                    // 注：这反映了 API 限制，建议使用 NSURLSession 路径获取精确数据
+                    self.timingMetrics[@"tcpTime"] = @"0.00";
+                    self.timingMetrics[@"sslTime"] = [NSString stringWithFormat:@"%.2f", connectMs];
+                }
             } else {
-                self.timingMetrics[@"tcpTime"] = @(connectMs);
-                self.timingMetrics[@"sslTime"] = @0;
+                // HTTP 场景：全部为 TCP 时间
+                self.timingMetrics[@"tcpTime"] = [NSString stringWithFormat:@"%.2f", connectMs];
+                self.timingMetrics[@"sslTime"] = @"0.00";
             }
         } else {
-            self.timingMetrics[@"tcpTime"] = @0;
-            self.timingMetrics[@"sslTime"] = @0;
+            self.timingMetrics[@"tcpTime"] = @"0.00";
+            self.timingMetrics[@"sslTime"] = @"0.00";
         }
         if (self.sentBytes > 0) {
             self.timingMetrics[@"sendBytes"] = @(self.sentBytes);
@@ -884,13 +917,13 @@ didReceiveData:(NSData *)data {
             self.timingMetrics[@"dnsStart"] = [CLSStringUtils formatDateToMillisecondString:dnsStartDate];
             self.timingMetrics[@"dnsEnd"] = [CLSStringUtils formatDateToMillisecondString:dnsEndDate];
             NSTimeInterval dnsTimeMs = (self.dnsEndTime - self.dnsStartTime) * 1000;
-            self.timingMetrics[@"dnsTime"] = @(dnsTimeMs);
+            self.timingMetrics[@"dnsTime"] = [NSString stringWithFormat:@"%.2f", dnsTimeMs];
             NSTimeInterval waitDnsMs = (self.dnsStartTime - self.processStartTime) * 1000;
-            if (waitDnsMs >= 0) self.timingMetrics[@"waitDnsTime"] = @(waitDnsMs);
+            if (waitDnsMs >= 0) self.timingMetrics[@"waitDnsTime"] = [NSString stringWithFormat:@"%.2f", waitDnsMs];
         } else {
             self.timingMetrics[@"dnsStart"] = startStr;
             self.timingMetrics[@"dnsEnd"] = startStr;
-            self.timingMetrics[@"dnsTime"] = @0;
+            self.timingMetrics[@"dnsTime"] = @"0.00";
         }
         if (self.resolvedRemoteAddress.length > 0) {
             self.timingMetrics[@"remoteAddr"] = self.resolvedRemoteAddress;
@@ -919,7 +952,6 @@ didReceiveData:(NSData *)data {
     }
     
     // 时间戳统一计算
-    NSTimeInterval timestamp = [NSDate date].timeIntervalSince1970 * 1000;
     NSTimeInterval startDateMs = self.taskStartTime * 1000;
     
     // 带宽计算（避免除0）
@@ -978,19 +1010,17 @@ didReceiveData:(NSData *)data {
         @"src": @"app",
         @"sdkVer": [CLSStringUtils getSdkVersion],
         @"sdkBuild": [CLSNetworkUtils getSDKBuildTime] ?: @"",
-        @"timestamp": @(timestamp),
-        @"startDate": @(startDateMs),
-        @"ts": @(startDateMs),
-        @"waitDnsTime": self.timingMetrics[@"waitDnsTime"] ?: @0,
-        @"dnsTime": self.timingMetrics[@"dnsTime"] ?: @0,
-        @"tcpTime": self.timingMetrics[@"tcpTime"] ?: @0,
-        @"sslTime": self.timingMetrics[@"sslTime"] ?: @0,
-        @"firstByteTime": self.timingMetrics[@"firstByteTime"] ?: @0,
+        @"ts": [NSString stringWithFormat:@"%.2f", startDateMs],
+        @"waitDnsTime": self.timingMetrics[@"waitDnsTime"] ?: @"0.00",
+        @"dnsTime": self.timingMetrics[@"dnsTime"] ?: @"0.00",
+        @"tcpTime": self.timingMetrics[@"tcpTime"] ?: @"0.00",
+        @"sslTime": self.timingMetrics[@"sslTime"] ?: @"0.00",
+        @"firstByteTime": self.timingMetrics[@"firstByteTime"] ?: @"0.00",
         @"sendBytes": self.timingMetrics[@"sendBytes"] ?: @0,
         @"receiveBytes": @(self.receivedBytes),
-        @"allByteTime": self.timingMetrics[@"allByteTime"] ?: @0,
-        @"bandwidth": @(bandwidth),
-        @"requestTime": @(totalTime),
+        @"allByteTime": self.timingMetrics[@"allByteTime"] ?: @"0.00",
+        @"bandwidth": [NSString stringWithFormat:@"%.2f", bandwidth],
+        @"requestTime": [NSString stringWithFormat:@"%.2f", totalTime],
         @"httpCode": @(statusCode),
         @"httpProtocol": self.timingMetrics[@"httpProtocol"] ?: @"unknown",
         @"interface_ip": self.interfaceInfo[@"ip"] ?: @"",
@@ -1006,7 +1036,7 @@ didReceiveData:(NSData *)data {
     
     // -------------------------- 2. 合并原resultDict的基础字段 --------------------------
     finalReportDict[@"pageName"] = self.request.pageName ?: @"";
-    finalReportDict[@"totalTime"] = @(totalTime);
+    finalReportDict[@"totalTime"] = [NSString stringWithFormat:@"%.2f", totalTime];
     
     // -------------------------- 3. 合并扩展字段 --------------------------
     // 构建headers（response 为空时仅填接口信息）

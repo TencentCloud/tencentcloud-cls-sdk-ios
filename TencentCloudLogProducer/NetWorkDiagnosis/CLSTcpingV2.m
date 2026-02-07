@@ -368,9 +368,6 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     lossRate = MAX(0.0, MIN(1.0, lossRate));
     NSString *lossRateStr = [NSString stringWithFormat:@"%.2f", lossRate];  // 直接格式化为字符串
     
-    // 3. 时间戳（毫秒级）
-    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
-    
     // 4. 错误信息处理（增强逻辑）
     NSInteger errCode = 0;
     NSString *errMsg = @"";
@@ -445,7 +442,6 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         @"bindFailed": [CLSStringUtils sanitizeNumber:@(self.bindFailedCount)] ?: @0,
         // 通用字段
         @"src": kSrcApp,
-        @"timestamp": @(timestamp),
         @"netInfo": [CLSStringUtils sanitizeDictionary:netInfo] ?: @{},
         @"detectEx": [CLSStringUtils sanitizeDictionary:self.request.detectEx] ?: @{},
         @"userEx": [CLSStringUtils sanitizeDictionary:[[ClsNetworkDiagnosis sharedInstance] getUserEx]] ?: @{}  // 从全局获取
@@ -558,9 +554,6 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                                                                                 endpoint:self.endPoint
                                                                            interfaceDNS:self.interface[@"dns"]];
     
-    // ===== 4. 时间戳（毫秒级）=====
-    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;
-    
     // ===== 5. 构建上报数据（浮点数字段使用字符串）=====
     NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:@{
         // 基础信息
@@ -586,7 +579,6 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         
         // 通用字段
         @"src": kSrcApp,
-        @"timestamp": @(timestamp),
         @"netInfo": [CLSStringUtils sanitizeDictionary:netInfo] ?: @{},
         @"detectEx": [CLSStringUtils sanitizeDictionary:self.request.detectEx] ?: @{},
         @"userEx": [CLSStringUtils sanitizeDictionary:[[ClsNetworkDiagnosis sharedInstance] getUserEx]] ?: @{}
