@@ -10,3 +10,7 @@ cls-ios-sdk.zip
 
 # 脚本目录（开发工具脚本，不提交到 Git）
 scripts/
+
+# CodeBuddy 生成的分析报告（不提交到 Git）
+.codebuddy/reports/
+*.codebuddy.md

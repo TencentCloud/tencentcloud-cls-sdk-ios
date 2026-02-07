@@ -172,8 +172,9 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         // errno=EINPROGRESS，使用select等待连接完成
         struct timeval tv;
         fd_set wset, eset;
-        tv.tv_sec = self.request.timeout; // 超时时间
-        tv.tv_usec = 0;
+        // timeout 从毫秒转换为秒和微秒
+        tv.tv_sec = self.request.timeout / 1000;  // 转换为秒
+        tv.tv_usec = (self.request.timeout % 1000) * 1000;  // 剩余的毫秒转换为微秒
         FD_ZERO(&wset);
         FD_ZERO(&eset);
         FD_SET(sock, &wset);

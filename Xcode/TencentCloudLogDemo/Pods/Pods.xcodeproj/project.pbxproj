@@ -7,71 +7,68 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		024D9DD8B6E41C7D8CDE6DE71036843E /* CLSAttribute.m in Sources */ = {isa = PBXBuildFile; fileRef = 51F76B516039D77D0695EEDC2677103D /* CLSAttribute.m */; };
-		0252C8DD48984987C5F1DA50F5386E78 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C6BEB81A58BF5B465951844BCDD24C16 /* PrivacyInfo.xcprivacy */; };
 		026C6439062428052B58FA8D41877DB1 /* OCMBlockArgCaller.m in Sources */ = {isa = PBXBuildFile; fileRef = 64F36BE27EED57954CE112C46BA2259F /* OCMBlockArgCaller.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		02BD99C7386FF7731FE81E74687D567F /* CLSMtrping.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B9F4C4157A81D54D999BAC77F0A1433 /* CLSMtrping.m */; };
 		037B74553C43333B8693ACA61DB05C78 /* OCMRealObjectForwarder.h in Headers */ = {isa = PBXBuildFile; fileRef = 8EE7AAD806EF54DC624A7EFF11AFB860 /* OCMRealObjectForwarder.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		03815ACD5E64B92672AE8AA3A5A2EE27 /* OCMArg.h in Headers */ = {isa = PBXBuildFile; fileRef = F1349A2AA02F11F22D8F6205CA9844E9 /* OCMArg.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		03A1468408B50A609EF3669C178B99D4 /* OCMInvocationExpectation.m in Sources */ = {isa = PBXBuildFile; fileRef = CBEA24C8C9517E49A09994535C271AFF /* OCMInvocationExpectation.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		03F2428C9FE1AF75B287A39D46F646FA /* FMDB-FMDB_Privacy in Resources */ = {isa = PBXBuildFile; fileRef = 148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB-FMDB_Privacy */; };
 		052ACFE9C87A7A8738AC8CCB3D5D418C /* GPBUnknownField.m in Sources */ = {isa = PBXBuildFile; fileRef = CC18B002D017C85C3A85C2785A47A0FC /* GPBUnknownField.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		06BCDDE08C148024F75AC922D6EF1A58 /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6DB31F2CE3982830B7EAB9678DDD2C3A /* FMDatabaseAdditions.m */; };
-		085FB989E76BC842C6B94BB07A51FBCF /* network_ios-Swift.h in Headers */ = {isa = PBXBuildFile; fileRef = 8035E00583E0CD4700BB4DF4C6F4A842 /* network_ios-Swift.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		081235E4B6172D2361F09576ED0C0044 /* ClsLogs.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 0D64DDE66233D51760E69B101AB5742A /* ClsLogs.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		08C82A50A8F66398B67DE2323EBF0788 /* GPBWireFormat.m in Sources */ = {isa = PBXBuildFile; fileRef = CEFC3C36DF28068A644337285B4AD26B /* GPBWireFormat.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		08EE826653BB71774A3FB8368D8F3409 /* GPBProtocolBuffers.h in Headers */ = {isa = PBXBuildFile; fileRef = 6C350A650917F479C901B4BE5EC61CB2 /* GPBProtocolBuffers.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0ABA5238D75A3BBD5BC762B8983164F8 /* GPBUtilities.h in Headers */ = {isa = PBXBuildFile; fileRef = BB65CB5EB074709E2E5A66B0C55807E8 /* GPBUtilities.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		0BEE58F0C2CB7A98AD5AB6DF6592CC21 /* cls_lz4.h in Headers */ = {isa = PBXBuildFile; fileRef = B0EA9D1C72AD857BB78449C6ACCDCBCF /* cls_lz4.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0C994CE9E9CC8E7B31B2C862DB66E501 /* OCMNonRetainingObjectReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = FBA7D90A55B2332E168EF8E249705C20 /* OCMNonRetainingObjectReturnValueProvider.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		0D1C77BFE103C06429BAB5886FDE26DD /* cls_lz4.m in Sources */ = {isa = PBXBuildFile; fileRef = 09142147CB93A8A291B014B3AEF3ADC4 /* cls_lz4.m */; };
 		0D45C478B6225E26D568D6CA97DA18FA /* OCClassMockObject.h in Headers */ = {isa = PBXBuildFile; fileRef = F5C0B46764E8AA8EF5D8A7A7D3411A71 /* OCClassMockObject.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		0D535DEFAB38F82F523FA2970DDE9A88 /* OCMNotificationPoster.h in Headers */ = {isa = PBXBuildFile; fileRef = 7AC2168D96A47DA124BC3A7B7077016E /* OCMNotificationPoster.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		0DC41E6D8838C4E8B718517A2AB5D945 /* CLSMtrping.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B9F4C4157A81D54D999BAC77F0A1433 /* CLSMtrping.m */; };
+		0E53EC7C71859C933DF4D42EB792E755 /* CLSKeyValue.m in Sources */ = {isa = PBXBuildFile; fileRef = 4386B0FDF9DC86FDADF8B156E239EE72 /* CLSKeyValue.m */; };
 		0E6C53D91EE72B414A29D19423842652 /* OCMRecorder.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D1C4D6B4B77A90B6B15D0BDD0CA341A /* OCMRecorder.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0EE4D51D6E6CB670272FED77C64D87EE /* OCObserverMockObject.h in Headers */ = {isa = PBXBuildFile; fileRef = BF2E99CD6363B9C36D766269C23F455F /* OCObserverMockObject.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		0FFA63B0103710B3ACDAE72B33A73200 /* NSInvocation+OCMAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 3641BC6B10EFB046D8A4196D7D1D81D1 /* NSInvocation+OCMAdditions.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		10904A1362CD966840B286E32AE81212 /* CLSRecordableSpan.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E9A4861778A28F983E98AB84FAF753B /* CLSRecordableSpan.m */; };
+		1178357AD3E450F02C1742037056C640 /* CLSTcpingV2.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FFF5DD3E0166DAEA09CC9C10B5CE9AF /* CLSTcpingV2.m */; };
 		11BC1BC7296497E738DA1A3B7181434C /* Struct.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = AC182816AEC4C07FBD205397A8AAB0AB /* Struct.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		12D163F555ADCEB88C451716FD8C2D3F /* CLSRequestValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 2E23F490B8B3215361701926859A647C /* CLSRequestValidator.m */; };
 		1307E93DE595E67AD2D50A379199F385 /* GPBProtocolBuffers_RuntimeSupport.h in Headers */ = {isa = PBXBuildFile; fileRef = AF85B2E81FD4655416EC7B541C484576 /* GPBProtocolBuffers_RuntimeSupport.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		1378519DBF5DA0DBD78B065D3DFE60E7 /* CLSIdGenerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 765C1442F9F634B1581986C0666ECC3B /* CLSIdGenerator.m */; };
-		137F591DF4CB75CB4EFB530BBD7AEEF3 /* CLSSPan.m in Sources */ = {isa = PBXBuildFile; fileRef = 8D8DC6C959DB65EE4F788A2D19331C7E /* CLSSPan.m */; };
-		1480D6B410AC402E5BAA14660FAA9FCB /* CLSUtdid.m in Sources */ = {isa = PBXBuildFile; fileRef = 537D17C03BACCBA08FE56B2B14601B08 /* CLSUtdid.m */; };
-		154EF705C6B47F8BB5047D7B6DF28671 /* ClsNetworkDiagnosis.h in Headers */ = {isa = PBXBuildFile; fileRef = 45B53190B9AE331C3EFD40E97313FE2C /* ClsNetworkDiagnosis.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		156F9ABE0DBBA9D15D56FA4E510602C8 /* cls_mtr_detector.m in Sources */ = {isa = PBXBuildFile; fileRef = 27937788FCAA1E5AB666B22336CB3BFE /* cls_mtr_detector.m */; };
 		15A09F7F886DA1BC15197613B119B7AE /* GPBCodedInputStream.h in Headers */ = {isa = PBXBuildFile; fileRef = 03727476E9FD56337A131475C2DFFDA0 /* GPBCodedInputStream.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		17D77D58509A819B927EFD3454361B4D /* NSNotificationCenter+OCMAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 4CFC8C60C835B85EFDC0368077F51DE7 /* NSNotificationCenter+OCMAdditions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		190F57CC14B399F860DF5863E74E3991 /* CLSSPanBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = F499BC290D7C8809D3DA2F212CD7FA55 /* CLSSPanBuilder.m */; };
 		1A7AC22392736C3721FC70FE47183A6B /* Pods-TencentCloudLogDemoTests-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = B763A19F137EB04D5F115BDC0CC282FE /* Pods-TencentCloudLogDemoTests-dummy.m */; };
-		1AD74F32B06612483092D993C9A219BF /* CLSAppUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 95A6871D700BB25C5D72589DA9C8F5B9 /* CLSAppUtils.m */; };
+		1ADF2FA497586C4470EA924F80C02082 /* CLSLink.h in Headers */ = {isa = PBXBuildFile; fileRef = 45CC93CD0DE98C3B198163B1A00A3988 /* CLSLink.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1D1E7D0BB03DA45493DC69423238FA9F /* GPBArray.h in Headers */ = {isa = PBXBuildFile; fileRef = 72BF8B33729B50C5E3BBF501C13DEB69 /* GPBArray.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		1D41738211C97B022DE37B5805CFC748 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */; };
+		1D41738211C97B022DE37B5805CFC748 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		1DAB5545C9D05F2EC60A1D938A24ED3F /* GPBTimestamp.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = 09A4CB93D4318BB7B98DD25FAF7C128B /* GPBTimestamp.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		1E41E77C1E4AF8EAB5FE5B1B25A99E01 /* CLSPrivocyUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A788FFED43E93C957536C4B779EC70B /* CLSPrivocyUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1EB0F9BC9841E472E1B6E1B0ADD3007C /* FMDB-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 54F1E4F05ED84C1B6CE2F7F118E048E9 /* FMDB-dummy.m */; };
 		1FD7A52353875571B01C3E7FD9845744 /* OCMConstraint.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D7646936C58DAE3F18BFED230A540BD /* OCMConstraint.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		207ABC3E371EDB8AF453B6515FD23E0E /* CLSUserInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 3FF99B85BB168BB55843DE4D2DCAAB4A /* CLSUserInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		228CDD92F991FA023D6F06B69327A028 /* OCMInvocationMatcher.h in Headers */ = {isa = PBXBuildFile; fileRef = 7558F3319CE1973111FB7F03D034E7C7 /* OCMInvocationMatcher.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		22AC6D2EF135D2E7DFEB542C30CF2EA7 /* GPBCodedOutputStream_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 01768F31297619DA11D07F8A4CCC435F /* GPBCodedOutputStream_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		2439F9CC9761E433DDCBC8D5A130CC9D /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 342B070A38F1A52B4B2E7F81C9552189 /* SystemConfiguration.framework */; };
-		25929E738660A950AD9B60023A112FF9 /* CLSPrivocyUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B894A42CEC2B0681E4002A1F6290FB5 /* CLSPrivocyUtils.m */; };
-		25BD2F0A52F0B0B74BB108BD3D578A09 /* ClsLogSender.h in Headers */ = {isa = PBXBuildFile; fileRef = DD2575C23AB0F5812BFFE63C75A7C858 /* ClsLogSender.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		261C3781EAFE595E4230B8286519FFA3 /* GPBExtensionRegistry.m in Sources */ = {isa = PBXBuildFile; fileRef = 4B3B13E58FABDBE7E72791F6597408AA /* GPBExtensionRegistry.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		263F17591F947A4BF62E9A6ECBE6245D /* ClsLogSender.h in Headers */ = {isa = PBXBuildFile; fileRef = DD2575C23AB0F5812BFFE63C75A7C858 /* ClsLogSender.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		274CEA84995BE7BD178B244A4028ABF6 /* CLSDeviceUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = C76C5ADF938B90AB24372EB60976227D /* CLSDeviceUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		28E3E4C5A831F37C5A31E5F4AC5A450A /* Timestamp.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 4AD4D5C78CC7DAA1361030C19CCBCACC /* Timestamp.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		2905E6D22702AD4965102C9AC8BCC5DD /* CLSSPan.h in Headers */ = {isa = PBXBuildFile; fileRef = 673030E3124E6A4BBBBF315DFE1805CD /* CLSSPan.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2AB2A962A952CBC6F38DE2938E055B0E /* OCMMacroState.h in Headers */ = {isa = PBXBuildFile; fileRef = DD05835D6C7C4B0BEB4B5B85E68A0B9E /* OCMMacroState.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2B7DFF21453E38A19B45F8E11EF278E3 /* OCMLocation.h in Headers */ = {isa = PBXBuildFile; fileRef = DF0152A4D5385661548B5983B039F7A2 /* OCMLocation.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2CCABBEFDEFB70C41CCC37065A2574B6 /* GPBStruct.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FF53DB0B12974A4B7CF564E8F1AB70 /* GPBStruct.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2D12D093F3425B423613BB39DC40A72A /* OCMFunctions.m in Sources */ = {isa = PBXBuildFile; fileRef = 4329E7853EE307827CAD8E4111E7AAD1 /* OCMFunctions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		2D38C75D33DBF73D90E67B5657221319 /* GPBStruct.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = B300AD7E9054198F834FE976182D0F35 /* GPBStruct.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		2DBFE0AB762F1424C0458359C24CC597 /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 70E0548B040A694FB8BB72189DE6BE9A /* Network.framework */; };
-		2DFA99406D5F829F960D342FB39E9318 /* CLSAppUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = ECFB67905705BEE3BB968329109F0168 /* CLSAppUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		2E9B1EA5770DF5383EE972EDB816823F /* CLSPingV2.m in Sources */ = {isa = PBXBuildFile; fileRef = 5CAB3576CA067C735810E587EA400A68 /* CLSPingV2.m */; };
+		2D8520572130305F17A0DE90D9073DD7 /* CLSTcpingV2.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ACB0C78A9BBFC8F952A2630282437E3 /* CLSTcpingV2.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2EC9A7EDF03D4C66CB4DA9F65E1AC35B /* OCMInvocationStub.m in Sources */ = {isa = PBXBuildFile; fileRef = 328C420A207243164094E36032FD50AE /* OCMInvocationStub.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		2F05ED23943FB754A93D7086DE5AA8AB /* CLSRecordableSpan.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D1EF2454A55A0157C86ADD51382BE74 /* CLSRecordableSpan.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2F5E8EB2C0A520801311E742CCCC4799 /* GPBDictionary.h in Headers */ = {isa = PBXBuildFile; fileRef = 624FCF4732444FF5DDE63A3E4D3B8419 /* GPBDictionary.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3025FD4C72722EDAA7B5778B22735B62 /* OCMStubRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 81C2C58A81A638FBD47399FA63E51485 /* OCMStubRecorder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		31C05D64D42CA917CEF5585183DD47B3 /* OCMInvocationExpectation.h in Headers */ = {isa = PBXBuildFile; fileRef = E698861DF521CD671F84A806C8DED165 /* OCMInvocationExpectation.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		324B18C2D37BD538D5CD0244EE66819B /* TencentCloudLogProducer-TencentCloudLogProducer in Resources */ = {isa = PBXBuildFile; fileRef = 03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer-TencentCloudLogProducer */; };
-		32E1E387621F82B65DB94A4632C384D6 /* CLSCocoa.h in Headers */ = {isa = PBXBuildFile; fileRef = 3690F8597A5AFAB78C92C6765135C419 /* CLSCocoa.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		32E094FEBDD6F78265AB1E36D2C79E8C /* cls_mtr_detector.h in Headers */ = {isa = PBXBuildFile; fileRef = 10ECB378DD37D5AD6197042341A5F532 /* cls_mtr_detector.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		34519026CD19276CF7FA8A6921FBD3A7 /* OCMFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = DC5392FF3B05C7921EE26AC4974D668B /* OCMFunctions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		347C9015B3B5A863502734167D3BBC10 /* TencentCloudLogProducer-TencentCloudLogProducer in Resources */ = {isa = PBXBuildFile; fileRef = 03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer-TencentCloudLogProducer */; };
 		34822E0799338A17A5AFCBF73081E4C9 /* GPBRuntimeTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = BCC2BF7F988EB60CDDCB1A40A38A4014 /* GPBRuntimeTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34C31624E93FB93E37E4C25D7E252A6A /* OCMVerifier.h in Headers */ = {isa = PBXBuildFile; fileRef = AACA67C2FD5FF12DB5CD96F3FCC177C8 /* OCMVerifier.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		35BC7832A621827C8887C6B9F448FDBD /* cls_ping_detector.m in Sources */ = {isa = PBXBuildFile; fileRef = 11FFABDBC18E1FA048447F17C2B6F9A3 /* cls_ping_detector.m */; };
 		364C99066181FD5AA6927FE80F0D66B5 /* Reachability.h in Headers */ = {isa = PBXBuildFile; fileRef = D8B55B95466A1876A5466DD5C572EF21 /* Reachability.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		37205E90048702A89E64AF1BEE9A66A0 /* CLSMtrping.h in Headers */ = {isa = PBXBuildFile; fileRef = 46F4FAA71DC97EB8EEE189C1200A691A /* CLSMtrping.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		37EBC4EEBD6EFA72B8E93B431D0F631C /* ClsSystemCapabilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 22F1C29D3FB41A0435AF72B84117BE32 /* ClsSystemCapabilities.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		367415C67B0D57266410E8355D96A5F0 /* CLSAppUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 95A6871D700BB25C5D72589DA9C8F5B9 /* CLSAppUtils.m */; };
 		392AC16CCBF2A50096F0B3303E13ADA7 /* NSNotificationCenter+OCMAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = A3080947605B5A3D55D71BA743934FDA /* NSNotificationCenter+OCMAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		392AEDD2622BADB7A7B1729D4282B4A6 /* GPBWireFormat.h in Headers */ = {isa = PBXBuildFile; fileRef = AA0B0B6DE31D9304D39D6D4179AE330A /* GPBWireFormat.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3AEA9965C260CF8AC87E1EB56F50A851 /* SourceContext.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = A48ED9E147B5A4C637262C04E4D2E8A1 /* SourceContext.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -83,137 +80,130 @@
 		3D98D6C75AE8D46FEF6F5414F50815B2 /* OCMObjectReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = 284CC0CCFB77785F74D6ABF0867716F7 /* OCMObjectReturnValueProvider.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		3DEB0926F884FA92604800641EF8BAC6 /* NSMethodSignature+OCMAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = B6474A7858C2220A8DFE57FC53A4A429 /* NSMethodSignature+OCMAdditions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		3E983180E84D6AC282EF25CDC8368D41 /* OCMIndirectReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = 9CE8F3163FF7921E11A05FE1FB40B83F /* OCMIndirectReturnValueProvider.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		3FD29EFC54460641D12F964E24CC972F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */; };
+		3FD29EFC54460641D12F964E24CC972F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		3FF12F392FFAD45A9D62C9E746937E26 /* FMDatabaseQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = DA5A0C4EA4B8F7F477A227BDCD1488C1 /* FMDatabaseQueue.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		40E84298D5B6281A8EE507A8DCB02B63 /* Protobuf-Protobuf_Privacy in Resources */ = {isa = PBXBuildFile; fileRef = F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf-Protobuf_Privacy */; };
-		41D32A93AB45DB60BAAD3B11DFCFBD47 /* cls_mtr_detector.m in Sources */ = {isa = PBXBuildFile; fileRef = 27937788FCAA1E5AB666B22336CB3BFE /* cls_mtr_detector.m */; };
-		41DCDFC3DD25C775BB6CAF22070245C1 /* ClsSignatureTool.h in Headers */ = {isa = PBXBuildFile; fileRef = 7047953D9E0B1A82E019E921ACA3415D /* ClsSignatureTool.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		425B05F2C11F6C414A7278F05E3FE46E /* CLSPingV2.h in Headers */ = {isa = PBXBuildFile; fileRef = A1163A7D8385D3AFDE5B5AB272F1C03D /* CLSPingV2.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		436764D67026FF2C796BC826CEC803DD /* OCMExceptionReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = 4D8E54537E7C77240D3F490B79B3C49A /* OCMExceptionReturnValueProvider.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		43DAECA9091DEEDE97251FC68F804E21 /* GPBDescriptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C0CDA6FCE6A9BF19AEDC5B01027ACA41 /* GPBDescriptor.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		45D4E85C7031F33EA83C956C73136DBF /* OCMockObject.h in Headers */ = {isa = PBXBuildFile; fileRef = DE97FC188CC22E77A789ACEAABB24614 /* OCMockObject.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4692E85326804A3DBF99C6628460AEC2 /* GPBUtilities_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 9C549DAE952B611640D0CC23C0A338D9 /* GPBUtilities_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		47554A9952DB0C1415DD2B9084981A6F /* GPBUnknownFields.h in Headers */ = {isa = PBXBuildFile; fileRef = DB9ADE17FFD737C9E1FA54932ECEE5E5 /* GPBUnknownFields.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4775DBD4961BF6BA60BA6ADECCCF03DA /* OCMBoxedReturnValueProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 5516431EC3A6750C7539E4AFA105F383 /* OCMBoxedReturnValueProvider.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		4B85017BC5718EF3A2B82CD29DBC90B6 /* CLS4Unity.h in Headers */ = {isa = PBXBuildFile; fileRef = 29164D905E2B5D6BFAECFEED65CC2A73 /* CLS4Unity.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		4C07DB5E1F447D8F7FD4420327417A83 /* CLSAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = 38B614588434A8B3D463126641FEFAB1 /* CLSAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		4DF6E8F00C623C943A22E8C9BCEE1B18 /* CLSDnsping.h in Headers */ = {isa = PBXBuildFile; fileRef = 90798B607337DBEBE00B9C57196295FA /* CLSDnsping.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		4ADE189D2310A1510E8C826F834AD533 /* ClsStringUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 9E886E05ED2D6C1D4C784066A539F527 /* ClsStringUtils.m */; };
 		4E104BAD7705D8D5D9F45D41535914EE /* OCMRealObjectForwarder.m in Sources */ = {isa = PBXBuildFile; fileRef = 99B05F5A3A32A23743D8B9D385C6B669 /* OCMRealObjectForwarder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		4EB28B62136A6E02726C50DD45B3B3A4 /* GPBDictionary_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 0782F617488C23CC78AB135462347E7E /* GPBDictionary_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		4EF6D8F6577BC5E18B9154A57A2E6DAA /* ClsLogStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = B22BD5AA1773C9CCFDCE92D847F0544C /* ClsLogStorage.m */; };
-		4FAE59209F015CDE9CFF9E0E163E9278 /* CLS4Unity.m in Sources */ = {isa = PBXBuildFile; fileRef = 0CC46C82F90047D132B251CB3051306D /* CLS4Unity.m */; };
+		5015BC30A64010E2CB3C87ADD6A17E6E /* CLSAppUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = ECFB67905705BEE3BB968329109F0168 /* CLSAppUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5090267B6183608A7B5D960C4EC0A703 /* CLSEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = DBFFC9271CFC7CDE73147C07A8003837 /* CLSEvent.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5137D94F9CA1FAE507602788BC4988A2 /* OCProtocolMockObject.h in Headers */ = {isa = PBXBuildFile; fileRef = B6AB071A3002B6F8CE509E5085AA5D3E /* OCProtocolMockObject.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		51382C88402418D5FE1D451671573EBF /* CLSHttpingV2.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C79C862FF82454F4D99672319463B4 /* CLSHttpingV2.m */; };
 		524E2E7ABD52874B06C8644AF2955AEE /* FMDB-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = F03E8CB4765E0534EC56A269849890A9 /* FMDB-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		52B856E1C42487615989587BA04E9AC7 /* GPBAny.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 27C71B2F5E58ABE4D90C2611BCEC6F95 /* GPBAny.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		52D27AEA262A912CA0A4F72D1BD32586 /* OCMPassByRefSetter.m in Sources */ = {isa = PBXBuildFile; fileRef = A4D28D3E595F564E040B0F706E7797CF /* OCMPassByRefSetter.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		555144658C5231A8152E5C089AB5C355 /* TencentCloudLogProducer-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 35CC94EB8569382FF879B1FFECE482B2 /* TencentCloudLogProducer-dummy.m */; };
 		56A786F5EC1DCD226624BE956DB872D5 /* Wrappers.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ECD88370C31116339C4D59319BB24F3 /* Wrappers.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		589307232E19F94AC1202411257558BC /* CLSUtdid.h in Headers */ = {isa = PBXBuildFile; fileRef = AB9F7F6834D626A488CB76F987BC465D /* CLSUtdid.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		57831CCD7A32C6B7DF90354676D37B66 /* CLSRequestValidator.h in Headers */ = {isa = PBXBuildFile; fileRef = 8F25D5860D3859A174AE1DBEF157C562 /* CLSRequestValidator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		580459172F2394F325FD10A1B6207308 /* ClsNetworkDiagnosis.m in Sources */ = {isa = PBXBuildFile; fileRef = AE02B94E0687918B9C906940BFA044F9 /* ClsNetworkDiagnosis.m */; };
+		581CC76657F116A0FF0B27976FBB4E04 /* CLSMtrping.h in Headers */ = {isa = PBXBuildFile; fileRef = 46F4FAA71DC97EB8EEE189C1200A691A /* CLSMtrping.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		58E9D98682C35EE2FCCDF317962CA790 /* network_ios-Swift.h in Headers */ = {isa = PBXBuildFile; fileRef = 8035E00583E0CD4700BB4DF4C6F4A842 /* network_ios-Swift.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		59224299DA38B63CEFE5FDAE933501E3 /* GPBCodedOutputStream.m in Sources */ = {isa = PBXBuildFile; fileRef = 86E7F5C7F18AE3E948A2D0CC169586E0 /* GPBCodedOutputStream.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		598598E9BD0FAECD9A65FE2913C46C41 /* GPBUnknownField+Additions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939BF10E4DF39B9524752E4481B3B536 /* GPBUnknownField+Additions.swift */; };
 		5B95C0042EA30E36A37E4F686F05DE96 /* OCMVerifier.m in Sources */ = {isa = PBXBuildFile; fileRef = A587A7569A5CDB2D6FD6669DDA6FEAA5 /* OCMVerifier.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		5BC67924B21B1732CA9F21705D397176 /* GPBMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = 856A238B2309351F7BE6CC49D95048CB /* GPBMessage.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		5CFCD2D66F81B7F1AE4D8E82A51AFDCF /* NSMethodSignature+OCMAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 6CF56AD78BFC599E6918A571FFC6DC5B /* NSMethodSignature+OCMAdditions.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		5DA79AC50D19467423E6EF3AFBDE39AD /* ClsNetworkTool.h in Headers */ = {isa = PBXBuildFile; fileRef = CBE7D5FF807C2959943A14F4DAEA9A0E /* ClsNetworkTool.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5EE2B942D319C38368606F17F92E6AF5 /* CLSResource.m in Sources */ = {isa = PBXBuildFile; fileRef = 15922638F05B931A81D554DABE3162C6 /* CLSResource.m */; };
-		5F27C1119848EAE18B169FCE05BF1913 /* cls_ping_detector.h in Headers */ = {isa = PBXBuildFile; fileRef = C07F9CDE271B2C13F741324FA2DBB3AE /* cls_ping_detector.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		5F4002088DEC34F71C1945594FE840B5 /* CLSPingV2.h in Headers */ = {isa = PBXBuildFile; fileRef = A1163A7D8385D3AFDE5B5AB272F1C03D /* CLSPingV2.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5E2929FAD1D5954139854B4CBFD8BF54 /* CLSSpanProviderProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = F85E573616481911FBD14ADA8A66AE0A /* CLSSpanProviderProtocol.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		61B4CC930FD22979260025929C94D3F5 /* OCMock-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = E5B533C4301775DCC78F14A3A16FE49A /* OCMock-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		62E073173C4E099F8836F65F1E3AE152 /* ClsNetworkDiagnosis.m in Sources */ = {isa = PBXBuildFile; fileRef = AE02B94E0687918B9C906940BFA044F9 /* ClsNetworkDiagnosis.m */; };
 		63D8A88D36948E62F745594854E0677F /* FMDB.h in Headers */ = {isa = PBXBuildFile; fileRef = 5B44C1EC53D147ADF570ABA13D85EF28 /* FMDB.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		64DE89266AEBCC1D29B097CF9889D8A9 /* GPBDictionary.m in Sources */ = {isa = PBXBuildFile; fileRef = 44BC77F4AC3BEE346E8B774F67E5A4E4 /* GPBDictionary.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		661DE3EC5A5F7805ACD68EBA077AF612 /* GPBDuration.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = C19CA6A607FC550554E4CFC6E2C57919 /* GPBDuration.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		66420E17ED37E531F7E345AD0AF75DD4 /* CLSPrivocyUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B894A42CEC2B0681E4002A1F6290FB5 /* CLSPrivocyUtils.m */; };
 		66421084F82555750BE73D538D04D332 /* GPBUnknownFields.m in Sources */ = {isa = PBXBuildFile; fileRef = F36D43E0D770E3228B801C4E2169A2D1 /* GPBUnknownFields.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		666E5EA293712D86470B20011AFB65D7 /* CLSCocoa.m in Sources */ = {isa = PBXBuildFile; fileRef = CF4DF5988F23F830B3FCE8E9D5C02254 /* CLSCocoa.m */; };
+		664FCA86958C48A688D77FCABFA04D9C /* CLSResource.m in Sources */ = {isa = PBXBuildFile; fileRef = 15922638F05B931A81D554DABE3162C6 /* CLSResource.m */; };
 		66C593FB4EC3FF5DF00B954216A75835 /* GPBType.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 0597D1DBB7F33757D3462DCF1C4F589E /* GPBType.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		67607C80710BD7E0B43D74104EE602AE /* OCMQuantifier.h in Headers */ = {isa = PBXBuildFile; fileRef = 187FC8D4F6EA9FF9313DAE5BAF721868 /* OCMQuantifier.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		685EE37BC422B6934C4FF9A45B98A529 /* cls_dns_detector.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BD560217424490B2D012EB449FCD661 /* cls_dns_detector.m */; };
 		6997D9898E12375AE37F9BAC5B6E8F93 /* GPBUnknownFieldSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 748119B73F2C7B0B28A6EEC24224729A /* GPBUnknownFieldSet.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		69D74B4FD9884301279690BCC720CAF9 /* ClsLogs.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = 44B3FE2B5A3383A1989F0F32D9ABE1F3 /* ClsLogs.pbobjc.m */; };
 		69EC3BDD4FCE1FB60FEAB52EC083F7D2 /* GPBDescriptor.h in Headers */ = {isa = PBXBuildFile; fileRef = 0C0A0BBA9228A13A426A228D02BC75E4 /* GPBDescriptor.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		6A072BF40C42A9EB26CBD155D5FDF17F /* ClsLogs.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = 44B3FE2B5A3383A1989F0F32D9ABE1F3 /* ClsLogs.pbobjc.m */; };
-		6AD6BF61EB9FDF81F25C98CF6AD607A2 /* TencentCloudLogProducer-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 35CC94EB8569382FF879B1FFECE482B2 /* TencentCloudLogProducer-dummy.m */; };
+		6A47ADF471F6EDF9F54926B22451BEAD /* CLS4Unity.h in Headers */ = {isa = PBXBuildFile; fileRef = 29164D905E2B5D6BFAECFEED65CC2A73 /* CLS4Unity.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6AF86223A35838A57BAEBAC263E3C2BF /* GPBWellKnownTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = D81755349EB39668651DFB98E06648CA /* GPBWellKnownTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6B6A8223FEB87A844F6B8C66454768CE /* GPBEmpty.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = CA2609D45641D2E11388B2D8154BC07E /* GPBEmpty.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		6BB90C2BEF5077A8688E9FA07CCC99DB /* ClsProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 6B6A58BEA7DC927765EAFF6FBDD872EA /* ClsProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6CEAFC9DBB829A1A09338FCC0E9072D2 /* OCMInvocationMatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = 06CAEDA7386911ADD6272573BEA4CA7D /* OCMInvocationMatcher.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		6DA46E3C215092BBB681AB0BC661105B /* GPBRootObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 22B1AA27A70967911C7B210E704C56B8 /* GPBRootObject.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		6DEAF2DD978FF562E13713BE6ED7B077 /* CLSEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = DBFFC9271CFC7CDE73147C07A8003837 /* CLSEvent.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		6ED501A9BA5D74F45BCC7BBD6A333010 /* CLSTcpingV2.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FFF5DD3E0166DAEA09CC9C10B5CE9AF /* CLSTcpingV2.m */; };
-		6F53B55B982892147DEDC66263B6A51B /* CLSResource.h in Headers */ = {isa = PBXBuildFile; fileRef = 5FDA338B88B0759EA984EB1F3428809A /* CLSResource.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		6DE3C9286F0126EB3304C1A03528DC40 /* CLSAttribute.h in Headers */ = {isa = PBXBuildFile; fileRef = 38B614588434A8B3D463126641FEFAB1 /* CLSAttribute.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		700FCD9C14FA276BBED0A2A34D274808 /* OCMPassByRefSetter.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F6B8149B4E5DD63F10C1E85F6E9227E /* OCMPassByRefSetter.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		727CAAD5750C3B463128E091F7E98100 /* network_ios.h in Headers */ = {isa = PBXBuildFile; fileRef = D179EDB2BAA0B68449B2E75DF636EFEB /* network_ios.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		770DC0B07F8F60A368E7DDDB5A66F5B3 /* CLSNetworkUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FA04E9F68E054FF2017A90956C88969 /* CLSNetworkUtils.m */; };
+		71CC51FB1E9CB1E0B105C2F988C2815E /* CLSStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = F0B12C0969F36573E84F1CED99A25BEC /* CLSStorage.m */; };
+		7318F016E907A2ACA9FC46B0B3DA56F3 /* CLSSPan.m in Sources */ = {isa = PBXBuildFile; fileRef = 8D8DC6C959DB65EE4F788A2D19331C7E /* CLSSPan.m */; };
 		777DF7EE911DE5E8A67933FF88906269 /* OCMNotificationPoster.m in Sources */ = {isa = PBXBuildFile; fileRef = 237FBF34DEABC1E4597FC9C370A6EB30 /* OCMNotificationPoster.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		77D697FFB49B719C1F046D8A3EB6DA36 /* GPBSourceContext.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = B063A0DAA23689B7C23661481BBF3508 /* GPBSourceContext.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		78AFFCF76B3E3EA74B65EC173AFB5992 /* CLSRequestValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 2E23F490B8B3215361701926859A647C /* CLSRequestValidator.m */; };
 		7992B71D2FA49BCE4A4559DF1ED9D690 /* GPBUnknownField_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB88E7D7EDD92D833A8EF27E5A1C24F /* GPBUnknownField_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		79D9906E0ED62F928480B84DC00FBDCE /* CLSUserInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 3FF99B85BB168BB55843DE4D2DCAAB4A /* CLSUserInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7A2A5EFE8571CB8A7E354E536997AD1B /* OCProtocolMockObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D437B1B22AE1FA0D624F4A6484F97FC /* OCProtocolMockObject.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		7A822A1AB352B6DB8C5FBD02659E51C1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */; };
+		7A3119966009DA45F602C7B20DF2FFA2 /* cls_dns_detector.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BD560217424490B2D012EB449FCD661 /* cls_dns_detector.m */; };
+		7A822A1AB352B6DB8C5FBD02659E51C1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		7C9155F50E0008C9C19C443D4257818A /* OCMock-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 12EA0C3AD0F6A28269258131844CDF75 /* OCMock-dummy.m */; };
 		7CA138393DE78FE0AFF84DD79AD1783B /* GPBArray_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 378A27BE6C5B8DF4C4D229303457E652 /* GPBArray_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		7D2E8066457576BA5C42D43C38FDE09B /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DC7456F1A59213EA5AE2721260D354B /* XCTest.framework */; };
-		7D5C468933F8FDF4DEB1C2337F4515EE /* ClsLogModel.h in Headers */ = {isa = PBXBuildFile; fileRef = D5152EEFE44656C22D23945695985B0D /* ClsLogModel.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		7D2E8066457576BA5C42D43C38FDE09B /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7776A9021AA617A1E578E9936E1767FD /* XCTest.framework */; };
 		7D8EE3D0CDBB69436929836C33AF4838 /* GPBUnknownFieldSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 96A456A609D0745057F2D266A728AAE1 /* GPBUnknownFieldSet.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		7ED25352F23787565F38483D863EA99C /* CLSRecordableSpan.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D1EF2454A55A0157C86ADD51382BE74 /* CLSRecordableSpan.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F1949553D3C117359C281517A8EF960 /* GPBEmpty.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 64C7273402C9EF0953C70515FAAB5AB6 /* GPBEmpty.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		808EA10ADA21760B5BAE555C2FE72464 /* ClsLogs.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 0D64DDE66233D51760E69B101AB5742A /* ClsLogs.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		810D587E0C53903A68187068CE19567B /* CLSEvent.m in Sources */ = {isa = PBXBuildFile; fileRef = 07F0AF08859B2F46DBCA763384FE4930 /* CLSEvent.m */; };
 		81385B2990FFC4BFB943429BDB2DBD2F /* GPBApi.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F8120976EBC620DC36B5CF13C9ABD48 /* GPBApi.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		8174C42751AFCD44787AF27A54C9CAB8 /* OCMFunctionsPrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 856FB6FE0F5025584A2BF538FD1EEFF2 /* OCMFunctionsPrivate.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		83D606A78D12DD7520D4A2ED67EBF4C2 /* FMDatabaseQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 683D6CF2681F4E20A6278598A35437CA /* FMDatabaseQueue.m */; };
-		847A9B98D1F6C13CF6CA4EAFF3220778 /* TencentCloudLogProducer-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 4F459C02694965AEDA003E9BA4ECB13F /* TencentCloudLogProducer-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		874D7A216D31F2CCA7D71186E6D6957A /* CLSLink.m in Sources */ = {isa = PBXBuildFile; fileRef = E05C839B3D96B3F9D7C703687C10D94A /* CLSLink.m */; };
+		86CEF72B4291755088EF6C9E47C1CA22 /* ClsLogModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D097EF7C281D3403BE6A781300812460 /* ClsLogModel.m */; };
+		87452E81EB3052CC64522AF3140A2652 /* CLSNetworkUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FA04E9F68E054FF2017A90956C88969 /* CLSNetworkUtils.m */; };
 		87D779B124FCB97E5B8F0807A7F956B1 /* GPBExtensionInternals.m in Sources */ = {isa = PBXBuildFile; fileRef = 18C45AFDE7F9F8DE95D1A8B2AC9E1173 /* GPBExtensionInternals.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		88B82F11F953A54EA96CB6692C44B6EB /* CLSPrivocyUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A788FFED43E93C957536C4B779EC70B /* CLSPrivocyUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8A46FC90C3E5D21BC79D1CDCFFDF4EAC /* CLSUserInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF4D01D088A2CD3EA3F2C4F9C0F493A /* CLSUserInfo.m */; };
 		8A5D97580D71011B24EB2F8394C021A3 /* OCPartialMockObject.m in Sources */ = {isa = PBXBuildFile; fileRef = A90F869258A87D774E26204395F0D975 /* OCPartialMockObject.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		8BF90C8E63B886657A08BD62F78CC57C /* FMResultSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 737F29B16E3207C14F4B3744D9F2A031 /* FMResultSet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8C23C9271C42FB5BFC9D762F6E4167A5 /* GPBUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 9E626707538F8804BF5FDF127DF4B41C /* GPBUtilities.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		8CB719D27EE49B32DC206F1DC132D610 /* GPBCodedInputStream.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D53F3FE02ABBAF22712A0716D97D2C9 /* GPBCodedInputStream.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		8D1B9DCA3F14670BD3C94FB81CE7237C /* CLSStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = F0B12C0969F36573E84F1CED99A25BEC /* CLSStorage.m */; };
 		8D4685BEACCAF4340D8A62154E3764DF /* Type.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = FA6914AB832D3782991391C0F9B9EBE0 /* Type.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8D7E391CFE73CCD970E2F8BEAFCBBC63 /* CLSResponse.h in Headers */ = {isa = PBXBuildFile; fileRef = 0AACD5AE0F76E85B736A67CD33579278 /* CLSResponse.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8E0804AC3279DD432CF9F0ABD2CBEA78 /* GPBExtensionInternals.h in Headers */ = {isa = PBXBuildFile; fileRef = 44DE320B114AEC3304FF3DF3529CB652 /* GPBExtensionInternals.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8E0AEE69E2DFB3EC3358444351D332BD /* OCMBlockCaller.m in Sources */ = {isa = PBXBuildFile; fileRef = 66EDFACBE954746E21813842E07D7950 /* OCMBlockCaller.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		8EF861A9244BF4976FA0B712FF30DF96 /* GPBUnknownFields+Additions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121503FED64A97F89AF9EF398C188E48 /* GPBUnknownFields+Additions.swift */; };
 		906C56D18D07B3F6286E09ECB3DC5F3F /* Pods-TencentCloudLogDemoTests-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 1CB70A5E8EBE493E1EF250A516D30D9B /* Pods-TencentCloudLogDemoTests-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		907520C897E664127ACFB48F092F9F57 /* FieldMask.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = FCF3602E082EDC5A2006E445ED9FC61A /* FieldMask.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		913FACFC67F646D5ED1A774F49E1259B /* cls_mtr_detector.h in Headers */ = {isa = PBXBuildFile; fileRef = 10ECB378DD37D5AD6197042341A5F532 /* cls_mtr_detector.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		9136D71359B8C6B08023E12ACB9616AF /* CLSKeyValue.h in Headers */ = {isa = PBXBuildFile; fileRef = F96A75359D24C630D083C606824E1C2A /* CLSKeyValue.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		91898C9672493E98117C81B4DE27F2AC /* FMDatabaseAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 710D8F7BEEE94873FC53BA676055C88D /* FMDatabaseAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		94CE18EE9FBD4F267CB2E22F71D3DF5A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 918CF783D250546938C49E227452C2A3 /* UIKit.framework */; };
 		975A50C74AFB031F994ADE6FFBAFFBCC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 9E8A9853C5D681893055B3814AEED782 /* PrivacyInfo.xcprivacy */; };
 		9763AD649AF2676F642BC9A6707E4B86 /* Empty.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 3438778A6A6254E2A2CD42D475538D77 /* Empty.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		97DE7672B0943F648B8EAF7414286699 /* FMResultSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 286CADCD18B10EEDBDD15E08FCA91AEA /* FMResultSet.m */; };
-		9946C41CBEDD3C8EF4837649C2D521FA /* CLSKeyValue.h in Headers */ = {isa = PBXBuildFile; fileRef = F96A75359D24C630D083C606824E1C2A /* CLSKeyValue.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		980F806A92E89E69C247361EB1DC9D41 /* CLSLink.m in Sources */ = {isa = PBXBuildFile; fileRef = E05C839B3D96B3F9D7C703687C10D94A /* CLSLink.m */; };
 		99D370B84B89C74D916A5E05FCF84DC8 /* GPBRootObject_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 52D43F6059354E56EC27AE78A393C2CE /* GPBRootObject_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		99D57344628F2505D4CA2C3AA1F9C562 /* ClsStringUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 98D3B4F2B4A5E1A80199DB1EDF6765A6 /* ClsStringUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		9B451E1A91DAD2FAECDF338DAB83712E /* CLSDnsping.m in Sources */ = {isa = PBXBuildFile; fileRef = 168A83246057575EE23A0FFD10F3E173 /* CLSDnsping.m */; };
-		9B7CE08B97B272DC87907386B3DA094C /* CLSUserInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 3EF4D01D088A2CD3EA3F2C4F9C0F493A /* CLSUserInfo.m */; };
-		9BAE48FDA7FD5451EB557D915E7AC8E8 /* CLSHttpingV2.h in Headers */ = {isa = PBXBuildFile; fileRef = A523662A5CC2586C95855B071D8375A9 /* CLSHttpingV2.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		9BC7ED14C89A2AB8CD589783BAADB344 /* CLSSpanProviderProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = F85E573616481911FBD14ADA8A66AE0A /* CLSSpanProviderProtocol.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		99F443F1B69272AB7A99F95D37D1D407 /* ClsLogStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = B22BD5AA1773C9CCFDCE92D847F0544C /* ClsLogStorage.m */; };
+		99F85EC5E1048F4B3FC67413373D712A /* ClsSignatureTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 4B678CFE01A1368FCAFFD65371CE7AA4 /* ClsSignatureTool.m */; };
 		9C05A169911849DC9E4DAFA0290A9100 /* OCMArg.m in Sources */ = {isa = PBXBuildFile; fileRef = 19E1B1B809CBD34E19F8CB67A05CB2F9 /* OCMArg.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		9C837C7C84F7968D07BDF60FC4D62AAD /* cls_ping_detector.m in Sources */ = {isa = PBXBuildFile; fileRef = 11FFABDBC18E1FA048447F17C2B6F9A3 /* cls_ping_detector.m */; };
 		9CE079FF1A759CC1F214F57922278767 /* GPBUnknownFields_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 9639F06DBD194CCE9F772335778AE749 /* GPBUnknownFields_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		9D0491B94AF3EE0551E1994475C9CB3C /* CLSNetworkUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 1578D5AB1335F07DAAE9BA416D71603D /* CLSNetworkUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9D44F5E650F3CEC1BC93A939729217BC /* FMDatabasePool.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D4AEB574188C250CE634F4E03A1B758 /* FMDatabasePool.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		9E8EFE2694E925F0E012CD975EC4E8A7 /* ClsLogSender.m in Sources */ = {isa = PBXBuildFile; fileRef = 2AD54E913B0D724BA4ECF81DECC86739 /* ClsLogSender.m */; };
-		9EADF541CCC4DD1A0965EA0FBA93081F /* ClsLogStorage.h in Headers */ = {isa = PBXBuildFile; fileRef = BE9A02A3FFC19366E3D4DB39C789A074 /* ClsLogStorage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9EC5B480172577DC86FD51F18D19C25A /* GPBAny.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = E76ED7B719B80C2B6C343615EDD0CDDE /* GPBAny.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		9FDDA2C19751947AA0DC096A9093F329 /* CLSCocoa.h in Headers */ = {isa = PBXBuildFile; fileRef = 3690F8597A5AFAB78C92C6765135C419 /* CLSCocoa.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A00ECA21D523ED1D698FFEAE82EFC6DE /* GPBCodedInputStream_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 149121978D161A7D896BBD66BD0816B5 /* GPBCodedInputStream_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		A014104C759C17C020470318523A261C /* CLSPingV2.m in Sources */ = {isa = PBXBuildFile; fileRef = 5CAB3576CA067C735810E587EA400A68 /* CLSPingV2.m */; };
 		A04BCE28D4B7FB41973BADA1BC666B7B /* OCMLocation.m in Sources */ = {isa = PBXBuildFile; fileRef = E308CED34EAA6F4C7F6E56A61EE6A691 /* OCMLocation.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		A0579BFD34A4DB5257BF641BAD61356D /* GPBArray.m in Sources */ = {isa = PBXBuildFile; fileRef = 4593E1B370DCAB9F6AC7FF6650B8E72F /* GPBArray.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		A11E90132B32ABEA76703BAC68A86357 /* OCMStubRecorder.h in Headers */ = {isa = PBXBuildFile; fileRef = E59671315DBAB3EEE72BEA7AC9D9DD83 /* OCMStubRecorder.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		A122D812C3A18BD4F454F3AD403488B9 /* cls_lz4.m in Sources */ = {isa = PBXBuildFile; fileRef = 09142147CB93A8A291B014B3AEF3ADC4 /* cls_lz4.m */; };
+		A1DA3E5C8A878A784040C262A71CBEA3 /* CLSIdGenerator.h in Headers */ = {isa = PBXBuildFile; fileRef = C3792A8D4B0A90128D89A7843A168C88 /* CLSIdGenerator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		A2E30FC32AE1033F55B10B8776A49F9A /* TencentCloudLogProducer-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 4F459C02694965AEDA003E9BA4ECB13F /* TencentCloudLogProducer-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A305809A51C3D44F17934E60C7E0839A /* GPBApi.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = DE08EABC5128F0082763E6693E95BA32 /* GPBApi.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		A3F5AA5D73323B17E8F027868D668477 /* ClsStringUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 9E886E05ED2D6C1D4C784066A539F527 /* ClsStringUtils.m */; };
-		A4A7FDE33E5BC1770FD937238FED7755 /* ClsNetworkTool.m in Sources */ = {isa = PBXBuildFile; fileRef = EDE6F45109C26BA1D760B1394C8C66FE /* ClsNetworkTool.m */; };
 		A543C4BC7F666F22D3912798D07C04D5 /* OCMConstraint.h in Headers */ = {isa = PBXBuildFile; fileRef = 33F5703918D29F85FDBE8362BDAF987A /* OCMConstraint.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A5FF072E62B134B8816E19FB9240F843 /* GPBFieldMask.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 9406052F3F0E954DF2A693DE2B74970B /* GPBFieldMask.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A6B6F63BCC3A8BE45E9D30DF50935E0D /* OCMRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 7BA7161FB7375A60C0A204A41B6D74DF /* OCMRecorder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		A7232F3E4B3700A5B95ADF465C4F3B4C /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F172B8BF0ED33B304E5DA37589BB10D9 /* SystemConfiguration.framework */; };
 		A77513C2862A446F87DAB1690C77128D /* GPBFieldMask.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = 14AA71014493BC3D1CFACD83D968B184 /* GPBFieldMask.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		A79A9E7B84E77E2A6862C75C110A2A77 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4555D00C9447F80F88422A03EA5281EB /* PrivacyInfo.xcprivacy */; };
-		A8093E2B4F3DAE73DB409C950F63CD9F /* ClsLogModel.m in Sources */ = {isa = PBXBuildFile; fileRef = D097EF7C281D3403BE6A781300812460 /* ClsLogModel.m */; };
 		A82D2D20823C81B74010B5D81EDD8E45 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4409B061B50398FEBE98136F5C099E61 /* PrivacyInfo.xcprivacy */; };
 		A8B06CAB8D3C0F81058B689563F2F6D2 /* OCPartialMockObject.h in Headers */ = {isa = PBXBuildFile; fileRef = 55427CDBBBB3389244639EE1419C3EC0 /* OCPartialMockObject.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		A9031D4C7A39A8F0CC9B4BB38D378A33 /* OCClassMockObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 59523898EBC28653B7D925E4B7A2DC15 /* OCClassMockObject.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		AA8C1C162218D7414E216D4CC37E10DD /* ClsSignatureTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 4B678CFE01A1368FCAFFD65371CE7AA4 /* ClsSignatureTool.m */; };
+		AC5F32D7757386EC95B6827A8DBDD2A8 /* cls_dns_detector.h in Headers */ = {isa = PBXBuildFile; fileRef = C056EEF594999BCE00BD805D241E15C3 /* cls_dns_detector.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		AC8B2028B465E32EE6264C089B044814 /* FMDatabase.h in Headers */ = {isa = PBXBuildFile; fileRef = 817A2BD479D15E9144EFEB3D16C4892A /* FMDatabase.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		AC93B2FE9098DCFEE6AD4288102FC004 /* GPBWellKnownTypes.m in Sources */ = {isa = PBXBuildFile; fileRef = 6251F542A7C3DD6971899C7504FE7281 /* GPBWellKnownTypes.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		ADA64D3AED75C6B2A7350E222A891081 /* CLSDeviceUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = C76C5ADF938B90AB24372EB60976227D /* CLSDeviceUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		AE237826146830638564B5EDAFEBEC69 /* NSString+CLS.m in Sources */ = {isa = PBXBuildFile; fileRef = C93B3B5AEE7F76D215D8F861BC71F465 /* NSString+CLS.m */; };
-		B13C2503DD42AF17264AA8F1724C831F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */; };
+		AFB5D6E378D3894BD25B46973F1B80F1 /* CLSDnsping.m in Sources */ = {isa = PBXBuildFile; fileRef = 168A83246057575EE23A0FFD10F3E173 /* CLSDnsping.m */; };
+		B0DD7A945D8A61FC290DE2D8B9CC13E0 /* NSString+CLS.m in Sources */ = {isa = PBXBuildFile; fileRef = C93B3B5AEE7F76D215D8F861BC71F465 /* NSString+CLS.m */; };
+		B13C2503DD42AF17264AA8F1724C831F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		B1863EDC31F3CAD3F67478685E2673DC /* Duration.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6AA3E7816F8FEC46037AE89620E7F3 /* Duration.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B244D4AF0F8115F666321FE05AAFAE75 /* OCMObjectReturnValueProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAB1A14A4ACE8FCA1EEE75CAAB8168D /* OCMObjectReturnValueProvider.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		B274840BC120F8BF0053493A5BA09CB9 /* GPBBootstrap.h in Headers */ = {isa = PBXBuildFile; fileRef = 89ED182A14A7AD47A6C3746FF6A2AB0D /* GPBBootstrap.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -221,80 +211,84 @@
 		B448686E41D49FAC044634DE4BACBF49 /* NSValue+OCMAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 95559552F5528E63B06724C1A62CFD0E /* NSValue+OCMAdditions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		B47B9BB155E21E5FB4D01940758EB91D /* NSObject+OCMAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = C779B0BCF0878B49FE0E44B086F1F9D0 /* NSObject+OCMAdditions.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		B49EB728B20A04676F4A4569A18C7515 /* OCMBlockCaller.h in Headers */ = {isa = PBXBuildFile; fileRef = F1CFFDC79781B0649B829802F62E6112 /* OCMBlockCaller.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		B52371889AB7E422845451905EF52725 /* ClsLogStorage.h in Headers */ = {isa = PBXBuildFile; fileRef = BE9A02A3FFC19366E3D4DB39C789A074 /* ClsLogStorage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B5B4DEF5ED5485C7F0212CF50C06F191 /* OCMExpectationRecorder.h in Headers */ = {isa = PBXBuildFile; fileRef = 30CA4AC09F865EA5230C826AE6AD1AAB /* OCMExpectationRecorder.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		B6B77A9DBB88AB37C868D97E54E4AE5A /* Api.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 0794266FBC05173125DAEB3B6D355806 /* Api.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		B8705884D08C93CD9179DD33EC7DCAA5 /* CLSRequestValidator.h in Headers */ = {isa = PBXBuildFile; fileRef = 8F25D5860D3859A174AE1DBEF157C562 /* CLSRequestValidator.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		B8BD3E14C8D7F4B10D3446ED5F83B96A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */; };
-		B8BFC9F3F9288D2BC99917184B367F89 /* CLSDeviceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 8DF7DC082B2D80693A3A2497A2385CD6 /* CLSDeviceUtils.m */; };
 		B91267D4D0CE9A88612A62F9773F318B /* GPBUnknownField.h in Headers */ = {isa = PBXBuildFile; fileRef = 63438722B6A377368121193BEF6FB5DE /* GPBUnknownField.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		B9FF38F35B6B848EFA54EB392E38AA8B /* ClsStringUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 98D3B4F2B4A5E1A80199DB1EDF6765A6 /* ClsStringUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BA1172AA4D566319FBBCEE8D64799A9B /* GPBWrappers.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D2966685011087638EB54B07E6085DA /* GPBWrappers.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		BBDEDDADD0DA1BB5A6F456FAEFF553AA /* CLSSPanBuilder.h in Headers */ = {isa = PBXBuildFile; fileRef = FB3B092EDA91E5FB0DEDF4B480C6A932 /* CLSSPanBuilder.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		BBB3DA99ADDA5E028F3049CE8C82A074 /* CLSSPanBuilder.h in Headers */ = {isa = PBXBuildFile; fileRef = FB3B092EDA91E5FB0DEDF4B480C6A932 /* CLSSPanBuilder.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BD9DC803D8940768668C32B8604857D3 /* FMDatabasePool.m in Sources */ = {isa = PBXBuildFile; fileRef = EC5FAB46FF69D6CDB9B87FE81A340DFD /* FMDatabasePool.m */; };
-		BE391BA7F31368958358092135423B1C /* CLSIdGenerator.h in Headers */ = {isa = PBXBuildFile; fileRef = C3792A8D4B0A90128D89A7843A168C88 /* CLSIdGenerator.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		BFC0417E998D0AEB930D569D3A3A7EBB /* cls_dns_detector.h in Headers */ = {isa = PBXBuildFile; fileRef = C056EEF594999BCE00BD805D241E15C3 /* cls_dns_detector.h */; settings = {ATTRIBUTES = (Project, ); }; };
-		C030C92C14781D84590923854BEA31CA /* CLSRecordableSpan.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E9A4861778A28F983E98AB84FAF753B /* CLSRecordableSpan.m */; };
-		C1BDA8B76108A37941BB346BC34AB19E /* CLSSPanBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = F499BC290D7C8809D3DA2F212CD7FA55 /* CLSSPanBuilder.m */; };
+		C207E19083E52EF84726D10989A04CEC /* CLS4Unity.m in Sources */ = {isa = PBXBuildFile; fileRef = 0CC46C82F90047D132B251CB3051306D /* CLS4Unity.m */; };
 		C41F6F274F27353BD77194414C95204F /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 325155D8DF17CE01360696489CC4E11C /* Reachability.m */; };
 		C628EB8975B98BD99BE9D42903A71F77 /* GPBSourceContext.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = E7AB24876508DDF3F591B0DD77BF0186 /* GPBSourceContext.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C78F24992DF950290A486B4D8B9DEA6F /* Reachability-Reachability_Privacy in Resources */ = {isa = PBXBuildFile; fileRef = DFC89BE171DE7E648C53797695D8A220 /* Reachability-Reachability_Privacy */; };
-		C8E8B65BEECA888E4351BAC793FA68E4 /* cls_lz4.h in Headers */ = {isa = PBXBuildFile; fileRef = B0EA9D1C72AD857BB78449C6ACCDCBCF /* cls_lz4.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C9E5067115DD59497C3258119CFD2C07 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */; };
+		C818AF917D59B6752EECC1B5C5C1B14F /* CLSResource.h in Headers */ = {isa = PBXBuildFile; fileRef = 5FDA338B88B0759EA984EB1F3428809A /* CLSResource.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		C8B03CF70669A602C2DF100472EAB6B8 /* network_ios.h in Headers */ = {isa = PBXBuildFile; fileRef = D179EDB2BAA0B68449B2E75DF636EFEB /* network_ios.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		C9E5067115DD59497C3258119CFD2C07 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		CAC43BBEDA0483D2B04CC0C839C816A9 /* Reachability-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = AA5E2CDB0040346E0392762BF49988B1 /* Reachability-dummy.m */; };
-		CB1B557836B3EBEAEE2A1CE3A3729895 /* CLSKeyValue.m in Sources */ = {isa = PBXBuildFile; fileRef = 4386B0FDF9DC86FDADF8B156E239EE72 /* CLSKeyValue.m */; };
 		CD2D5C2B71BF29BC796199C6A4960927 /* NSObject+OCMAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6CEF9875BC69A4715CB31B803047C8B4 /* NSObject+OCMAdditions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		D0959AA30897EC5180B57C59FFA10849 /* OCMBoxedReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B6326CBDAA5E73C10152CA1A800832C /* OCMBoxedReturnValueProvider.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		D0D12E738C15C9C39A8CDECC7321BEC3 /* Any.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AE73A1B90AF5A376F31C4B1AD03FB1F /* Any.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		D7BAB73531A8204287BAD201C07B2992 /* CLSEvent.m in Sources */ = {isa = PBXBuildFile; fileRef = 07F0AF08859B2F46DBCA763384FE4930 /* CLSEvent.m */; };
 		D7C50F17FD247E49530D1EF5D55EF4E5 /* OCMObserverRecorder.h in Headers */ = {isa = PBXBuildFile; fileRef = 51992A60AA4A2FE39E72FEF092C652CF /* OCMObserverRecorder.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		D7EDA2365543732E2E2DC67C246BF0E2 /* CLSCocoa.m in Sources */ = {isa = PBXBuildFile; fileRef = CF4DF5988F23F830B3FCE8E9D5C02254 /* CLSCocoa.m */; };
+		D90F4ECF67DF0E22F514141533C36ABB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C6BEB81A58BF5B465951844BCDD24C16 /* PrivacyInfo.xcprivacy */; };
 		D94824EC234BFBFF814D88F9DD042BEA /* OCMObserverRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 164B3DA1F722835828DC1CDF61961BB1 /* OCMObserverRecorder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		DA7BC11E2CD623784BBFF0C9939661BC /* GPBWrappers.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = FD09056E55C2DF9F4D59021ADD436E0B /* GPBWrappers.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		DCFCCAC97E4849E715ED7B66287F147B /* CLSStorage.h in Headers */ = {isa = PBXBuildFile; fileRef = A6F910D10AB3683D9296606596C4582D /* CLSStorage.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		DDFA932A05F1C6EF1D45CC033B53EC50 /* CLSResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 8013B8E927BF3B8024D70C9C07A41DD5 /* CLSResponse.m */; };
+		DE0B5E3A0DC6F3DAA4C04EFBC79B7F9C /* CLSUtdid.h in Headers */ = {isa = PBXBuildFile; fileRef = AB9F7F6834D626A488CB76F987BC465D /* CLSUtdid.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		DEB0D80259BBEDAD96C24E2D62E87C47 /* CLSIdGenerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 765C1442F9F634B1581986C0666ECC3B /* CLSIdGenerator.m */; };
 		DFB9ED96872A12083BC849AD5F37B0E4 /* GPBRootObject.h in Headers */ = {isa = PBXBuildFile; fileRef = D4ECE267B99E501F5AE74C36901E8F1A /* GPBRootObject.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E07A92468276197EE7EFACE1A4C7D456 /* OCMMacroState.m in Sources */ = {isa = PBXBuildFile; fileRef = 53FDEF872E01FE5316E9586A8CAA0F09 /* OCMMacroState.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		E14DA2824658B9F062FEB6FFC2EE28D0 /* CLSLink.h in Headers */ = {isa = PBXBuildFile; fileRef = 45CC93CD0DE98C3B198163B1A00A3988 /* CLSLink.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E0D9F6C8CC26A5C0A13A5F8EACFFB42B /* ClsNetworkTool.h in Headers */ = {isa = PBXBuildFile; fileRef = CBE7D5FF807C2959943A14F4DAEA9A0E /* ClsNetworkTool.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E1B2B43AE8AAF2C3028D8EF0219DFCF1 /* CLSResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 8013B8E927BF3B8024D70C9C07A41DD5 /* CLSResponse.m */; };
+		E2386D24CC1C2E47121BA5C8CB818D50 /* CLSNetworkUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 1578D5AB1335F07DAAE9BA416D71603D /* CLSNetworkUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E2920772EA5FF4A56F02ECE79223C825 /* Protobuf-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 9F1E7271878C30D1427BFD0AF82D21A0 /* Protobuf-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E34EC3BBBC326D85CE2DD689904E7862 /* CLSSPan.h in Headers */ = {isa = PBXBuildFile; fileRef = 673030E3124E6A4BBBBF315DFE1805CD /* CLSSPan.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2BFC2821EE7342525552579D0FF0F06 /* ClsLogSender.m in Sources */ = {isa = PBXBuildFile; fileRef = 2AD54E913B0D724BA4ECF81DECC86739 /* ClsLogSender.m */; };
+		E46132C18A080594D1A23E2E07D21A2C /* CLSResponse.h in Headers */ = {isa = PBXBuildFile; fileRef = 0AACD5AE0F76E85B736A67CD33579278 /* CLSResponse.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E4B7809F5A264F92C5F88325A37B5B59 /* GPBUnknownFieldSet_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = F858B8241C137F2B829B30F447AC3D95 /* GPBUnknownFieldSet_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E51B318EE9CB3942B09C1DEA23B3A8A5 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		E58F464BF2649F7F2E4ED53CBFC5C466 /* OCMInvocationStub.h in Headers */ = {isa = PBXBuildFile; fileRef = BECF4B310A2A09B8F2452ED71BC14E54 /* OCMInvocationStub.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		E63DAE47568BD251EE37F4029CAFFEDD /* GPBDuration.pbobjc.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C29287599578D0066630D5AF620E700 /* GPBDuration.pbobjc.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		E814D073BF522A3F03F103F8B92DCF97 /* CLSDnsping.h in Headers */ = {isa = PBXBuildFile; fileRef = 90798B607337DBEBE00B9C57196295FA /* CLSDnsping.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E846E6DBA5F23C32B28E34C2E9C37E99 /* GPBCodedOutputStream.h in Headers */ = {isa = PBXBuildFile; fileRef = 68AF90924E8CF27CF61B30F5279A7960 /* GPBCodedOutputStream.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E87077FBDFB98FEFBCD2EE88AC4B62A4 /* OCMBlockArgCaller.h in Headers */ = {isa = PBXBuildFile; fileRef = 0448BA3C642EE56194207E43A7F2F26A /* OCMBlockArgCaller.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		E8F1A153D3063B75194913D03CA2D383 /* OCMockMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = 3D3796E412AA792BBBC22289DCEA69A0 /* OCMockMacros.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E9A1CF000A77DE48CAB5D003464F54AB /* ClsProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 6B6A58BEA7DC927765EAFF6FBDD872EA /* ClsProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E98FD5B3ECF4035BC20590DBF52ACB82 /* CLSUtdid.m in Sources */ = {isa = PBXBuildFile; fileRef = 537D17C03BACCBA08FE56B2B14601B08 /* CLSUtdid.m */; };
 		E9DE0CCC562C50CD2D2967CD742FF9FF /* FMDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 012590B31959AF0DA8555B4FF1619547 /* FMDatabase.m */; };
+		EABEBC18EDB28D2F4F791CF44106564C /* NSString+CLS.h in Headers */ = {isa = PBXBuildFile; fileRef = 799C631866B1DD78C8E977CD75E25456 /* NSString+CLS.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EB2B34DC4B6CA9FDEAF8EB5964D4EE3B /* OCMIndirectReturnValueProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D85BE83CDEE49158125A9CF3CAB67F9 /* OCMIndirectReturnValueProvider.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		EB8A67631F484856881C553F3DA0B3DC /* ClsSystemCapabilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 22F1C29D3FB41A0435AF72B84117BE32 /* ClsSystemCapabilities.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		EBC87F2C43F5572387D1EBF2B48D1255 /* ClsNetworkDiagnosis.h in Headers */ = {isa = PBXBuildFile; fileRef = 45B53190B9AE331C3EFD40E97313FE2C /* ClsNetworkDiagnosis.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		EBF390234F753FC2B28A7C2899B67DB9 /* ClsNetworkTool.m in Sources */ = {isa = PBXBuildFile; fileRef = EDE6F45109C26BA1D760B1394C8C66FE /* ClsNetworkTool.m */; };
 		ECCC1ADD1B50334B2F6598132824C39C /* Pods-TencentCloudLogDemo-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = C58D5A920C2D1E2C62A0BDFA239F7744 /* Pods-TencentCloudLogDemo-dummy.m */; };
 		EE8AE70BAD73F5BE3689FA838B23AFB7 /* OCObserverMockObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 646418E8D9CBD410A4B5394CB994FE19 /* OCObserverMockObject.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		EECE883C3478BE2D079C4F05D7095124 /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8AB2ABBFEAF34AB67A85890613471E6 /* CoreTelephony.framework */; };
+		EEEF3547A5746630348BC09C90041444 /* CLSStorage.h in Headers */ = {isa = PBXBuildFile; fileRef = A6F910D10AB3683D9296606596C4582D /* CLSStorage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EFF7C575DA2BCEF08D63FBCA667DADD5 /* Protobuf-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = E181263038307238EAACD09C1EC7BCF3 /* Protobuf-dummy.m */; };
+		EFFE5377FA07B56A26B22956FCCA722F /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B83FAAF8F17983A6142E51A94F4B296 /* Network.framework */; };
 		F0A541AAA195CE1E0DB03048E621CC0D /* OCMNonRetainingObjectReturnValueProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = D897A6CD3C42F8246CA13D48B0DB1348 /* OCMNonRetainingObjectReturnValueProvider.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		F16BF2164AA7A01C3C46E80BBEBB14AE /* NSValue+OCMAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 5C6ACEFD5F40127591E0FD0639B98E38 /* NSValue+OCMAdditions.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		F19558DCCE275BD72B143F8ACE45E7E0 /* OCMockObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 5FB6866D7A4FE5D5FDC065A041CA2166 /* OCMockObject.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		F19975303A126195F8FCCF09361CE669 /* GPBMessage_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 62D9F9208206F67D5A8B587559EA25A7 /* GPBMessage_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		F30411A9782A1BCB5CBAA44BD39FF104 /* NSString+CLS.h in Headers */ = {isa = PBXBuildFile; fileRef = 799C631866B1DD78C8E977CD75E25456 /* NSString+CLS.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F1A275CA0695613A4FCD31B24275EC66 /* ClsLogModel.h in Headers */ = {isa = PBXBuildFile; fileRef = D5152EEFE44656C22D23945695985B0D /* ClsLogModel.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F396B0371570F876F8D7DE3EEA8C181D /* GPBTimestamp.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = EC405A90106A67ED3C6FD1BDD16A22D3 /* GPBTimestamp.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F3EC4B7D511F5BCB53EE0A177E0A6545 /* CLSHttpingV2.h in Headers */ = {isa = PBXBuildFile; fileRef = A523662A5CC2586C95855B071D8375A9 /* CLSHttpingV2.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F432C2EF2FDAE1EA39A56AA772932A38 /* NSInvocation+OCMAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 4084037B9FA96A053899A678F1B07B15 /* NSInvocation+OCMAdditions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		F50878ED367723F5493AADE36B3E66E5 /* GPBDescriptor_PackagePrivate.h in Headers */ = {isa = PBXBuildFile; fileRef = 6EBCBFEF6CD070A99745B6EDF2C88FA2 /* GPBDescriptor_PackagePrivate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F5D147CA9C21670C9C509D0C40C55015 /* OCMArgAction.h in Headers */ = {isa = PBXBuildFile; fileRef = 40A73AA40FBFA9BC9DA57D0EED833567 /* OCMArgAction.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		F5E9B7AD93F258223E150D81EC68291A /* OCMExceptionReturnValueProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F97F6B9607911FC9F4F5F7C419550B2 /* OCMExceptionReturnValueProvider.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		F612A40AAFDA7EA06F57B889041508E1 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 342B070A38F1A52B4B2E7F81C9552189 /* SystemConfiguration.framework */; };
-		F9973020C0443F6BDD631421FEF1026F /* CLSTcpingV2.h in Headers */ = {isa = PBXBuildFile; fileRef = 3ACB0C78A9BBFC8F952A2630282437E3 /* CLSTcpingV2.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FB9058C2F4022D73D69D7787E84A7EFF /* CLSHttpingV2.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C79C862FF82454F4D99672319463B4 /* CLSHttpingV2.m */; };
+		F5FA4DCC0C0A9C103957924FE7516A37 /* CLSAttribute.m in Sources */ = {isa = PBXBuildFile; fileRef = 51F76B516039D77D0695EEDC2677103D /* CLSAttribute.m */; };
+		F612A40AAFDA7EA06F57B889041508E1 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F172B8BF0ED33B304E5DA37589BB10D9 /* SystemConfiguration.framework */; };
+		FAD6235D9240C959C84861A4A14BDFE0 /* cls_ping_detector.h in Headers */ = {isa = PBXBuildFile; fileRef = C07F9CDE271B2C13F741324FA2DBB3AE /* cls_ping_detector.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		FB80DA9A573555AB15B00D6090FC47D2 /* ClsSignatureTool.h in Headers */ = {isa = PBXBuildFile; fileRef = 7047953D9E0B1A82E019E921ACA3415D /* ClsSignatureTool.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FCD99584653363EB1F4BA8A6D01E3A9C /* Reachability-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 66FF9951D2DBC6808EA109D5D9CFF945 /* Reachability-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FCECAF8AE496CADE0C4C72E1F5929C3F /* GPBExtensionRegistry.h in Headers */ = {isa = PBXBuildFile; fileRef = DAC3AE2B5B351E0E63793E9B11E2B678 /* GPBExtensionRegistry.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FD9A9C10D63FF9F3832B8FED637EC528 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */; };
+		FD9A9C10D63FF9F3832B8FED637EC528 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		FDB52441E34370C563F4275B8840481D /* Pods-TencentCloudLogDemo-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 8E14B6BD700655617F75980855E64BD7 /* Pods-TencentCloudLogDemo-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FF8243345650D7582A8E05C37889D897 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5206A894618B16763922C5E3369CA398 /* UIKit.framework */; };
+		FEC292FC956373779032CD5DA3003953 /* CLSDeviceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 8DF7DC082B2D80693A3A2497A2385CD6 /* CLSDeviceUtils.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		028A49A3FFC2DD048F314D144366BDD8 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = CAA047C0F5E4106F3904E8497FA17F97;
-			remoteInfo = Reachability;
-		};
 		055CD61EB9A6A7AA623E7B1A17E4E4B3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
@@ -302,21 +296,14 @@
 			remoteGlobalIDString = 8592E0E389D40AC17881400ADC67ABC0;
 			remoteInfo = FMDB;
 		};
-		1CDEE74DFAE2F1B118D931B32DA88993 /* PBXContainerItemProxy */ = {
+		0BC87E28B160AF274C0760C5A70F4FED /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 8E33B2BF1257C71A577488EEB8C80F8D;
 			remoteInfo = "Pods-TencentCloudLogDemo";
 		};
-		5341CD8BAB6CEB750847EC26CD80BEAD /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8592E0E389D40AC17881400ADC67ABC0;
-			remoteInfo = FMDB;
-		};
-		538A2BC3FB605C4742DE01E0EB1774A0 /* PBXContainerItemProxy */ = {
+		48FA5C1ED4241D389105BC1F82A0911E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
 			proxyType = 1;
@@ -344,7 +331,7 @@
 			remoteGlobalIDString = CAA047C0F5E4106F3904E8497FA17F97;
 			remoteInfo = Reachability;
 		};
-		B3336F085E0E613331F4478486ABDFF9 /* PBXContainerItemProxy */ = {
+		9F94B30DB29944067C9D407BC87F0E6A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
 			proxyType = 1;
@@ -365,12 +352,26 @@
 			remoteGlobalIDString = 470FE31978DC918618A329D8B55C85FF;
 			remoteInfo = Protobuf;
 		};
+		CEFC569EF9392F2156C7A384D97E72ED /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8592E0E389D40AC17881400ADC67ABC0;
+			remoteInfo = FMDB;
+		};
 		DD572A5119187A1FAA50EF40CDBB0C15 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 331902F14E62290AA86FB37CAAC6ABB0;
 			remoteInfo = "Protobuf-Protobuf_Privacy";
+		};
+		F10D9EFB9AE2FA9765E8EE356D821C85 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CAA047C0F5E4106F3904E8497FA17F97;
+			remoteInfo = Reachability;
 		};
 		F219DFF1A6A27FA9E642CA07BF3E0291 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -445,7 +446,6 @@
 		325155D8DF17CE01360696489CC4E11C /* Reachability.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		328C420A207243164094E36032FD50AE /* OCMInvocationStub.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMInvocationStub.m; path = Source/OCMock/OCMInvocationStub.m; sourceTree = "<group>"; };
 		33F5703918D29F85FDBE8362BDAF987A /* OCMConstraint.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMConstraint.h; path = Source/OCMock/OCMConstraint.h; sourceTree = "<group>"; };
-		342B070A38F1A52B4B2E7F81C9552189 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/SystemConfiguration.framework; sourceTree = DEVELOPER_DIR; };
 		3438778A6A6254E2A2CD42D475538D77 /* Empty.pbobjc.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = Empty.pbobjc.h; path = objectivec/google/protobuf/Empty.pbobjc.h; sourceTree = "<group>"; };
 		35CC94EB8569382FF879B1FFECE482B2 /* TencentCloudLogProducer-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "TencentCloudLogProducer-dummy.m"; sourceTree = "<group>"; };
 		3641BC6B10EFB046D8A4196D7D1D81D1 /* NSInvocation+OCMAdditions.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "NSInvocation+OCMAdditions.h"; path = "Source/OCMock/NSInvocation+OCMAdditions.h"; sourceTree = "<group>"; };
@@ -488,7 +488,6 @@
 		51524ADCB22CE2539CEA248831BAFB22 /* Pods-TencentCloudLogDemo-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-TencentCloudLogDemo-acknowledgements.plist"; sourceTree = "<group>"; };
 		51992A60AA4A2FE39E72FEF092C652CF /* OCMObserverRecorder.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMObserverRecorder.h; path = Source/OCMock/OCMObserverRecorder.h; sourceTree = "<group>"; };
 		51F76B516039D77D0695EEDC2677103D /* CLSAttribute.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSAttribute.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSAttribute.m; sourceTree = "<group>"; };
-		5206A894618B16763922C5E3369CA398 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
 		52D43F6059354E56EC27AE78A393C2CE /* GPBRootObject_PackagePrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBRootObject_PackagePrivate.h; path = objectivec/GPBRootObject_PackagePrivate.h; sourceTree = "<group>"; };
 		537D17C03BACCBA08FE56B2B14601B08 /* CLSUtdid.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSUtdid.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSUtdid.m; sourceTree = "<group>"; };
 		53FDEF872E01FE5316E9586A8CAA0F09 /* OCMMacroState.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMMacroState.m; path = Source/OCMock/OCMMacroState.m; sourceTree = "<group>"; };
@@ -503,7 +502,6 @@
 		5C6ACEFD5F40127591E0FD0639B98E38 /* NSValue+OCMAdditions.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "NSValue+OCMAdditions.h"; path = "Source/OCMock/NSValue+OCMAdditions.h"; sourceTree = "<group>"; };
 		5CAB3576CA067C735810E587EA400A68 /* CLSPingV2.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSPingV2.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSPingV2.m; sourceTree = "<group>"; };
 		5DB88E7D7EDD92D833A8EF27E5A1C24F /* GPBUnknownField_PackagePrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBUnknownField_PackagePrivate.h; path = objectivec/GPBUnknownField_PackagePrivate.h; sourceTree = "<group>"; };
-		5DC7456F1A59213EA5AE2721260D354B /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		5E9A4861778A28F983E98AB84FAF753B /* CLSRecordableSpan.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSRecordableSpan.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSRecordableSpan.m; sourceTree = "<group>"; };
 		5F479FBBB147EBB3FA9BF0C61BCFF8E9 /* TencentCloudLogProducer.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = TencentCloudLogProducer.release.xcconfig; sourceTree = "<group>"; };
 		5FB6866D7A4FE5D5FDC065A041CA2166 /* OCMockObject.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMockObject.m; path = Source/OCMock/OCMockObject.m; sourceTree = "<group>"; };
@@ -535,7 +533,6 @@
 		6E39725B512684E95CE4386BD1DFF878 /* OCMock.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = OCMock.modulemap; sourceTree = "<group>"; };
 		6EBCBFEF6CD070A99745B6EDF2C88FA2 /* GPBDescriptor_PackagePrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBDescriptor_PackagePrivate.h; path = objectivec/GPBDescriptor_PackagePrivate.h; sourceTree = "<group>"; };
 		7047953D9E0B1A82E019E921ACA3415D /* ClsSignatureTool.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = ClsSignatureTool.h; path = TencentCloudLogProducer/Core/ClsSignatureTool.h; sourceTree = "<group>"; };
-		70E0548B040A694FB8BB72189DE6BE9A /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Network.framework; sourceTree = DEVELOPER_DIR; };
 		710D8F7BEEE94873FC53BA676055C88D /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = FMDatabaseAdditions.h; path = src/fmdb/FMDatabaseAdditions.h; sourceTree = "<group>"; };
 		72BF8B33729B50C5E3BBF501C13DEB69 /* GPBArray.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBArray.h; path = objectivec/GPBArray.h; sourceTree = "<group>"; };
 		737F29B16E3207C14F4B3744D9F2A031 /* FMResultSet.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = FMResultSet.h; path = src/fmdb/FMResultSet.h; sourceTree = "<group>"; };
@@ -543,12 +540,14 @@
 		754726FD6D365CD33DE7A5012FB35D94 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; path = README.md; sourceTree = "<group>"; };
 		7558F3319CE1973111FB7F03D034E7C7 /* OCMInvocationMatcher.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMInvocationMatcher.h; path = Source/OCMock/OCMInvocationMatcher.h; sourceTree = "<group>"; };
 		765C1442F9F634B1581986C0666ECC3B /* CLSIdGenerator.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSIdGenerator.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSIdGenerator.m; sourceTree = "<group>"; };
+		7776A9021AA617A1E578E9936E1767FD /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		799C631866B1DD78C8E977CD75E25456 /* NSString+CLS.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "NSString+CLS.h"; path = "TencentCloudLogProducer/NetWorkDiagnosis/NSString+CLS.h"; sourceTree = "<group>"; };
 		7AC2168D96A47DA124BC3A7B7077016E /* OCMNotificationPoster.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMNotificationPoster.h; path = Source/OCMock/OCMNotificationPoster.h; sourceTree = "<group>"; };
 		7BA7161FB7375A60C0A204A41B6D74DF /* OCMRecorder.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMRecorder.m; path = Source/OCMock/OCMRecorder.m; sourceTree = "<group>"; };
 		7BB53E5CDF8AC65568E9FCDA913296F2 /* FMDB.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = FMDB.debug.xcconfig; sourceTree = "<group>"; };
 		7C29287599578D0066630D5AF620E700 /* GPBDuration.pbobjc.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBDuration.pbobjc.m; path = objectivec/GPBDuration.pbobjc.m; sourceTree = "<group>"; };
 		7D53F3FE02ABBAF22712A0716D97D2C9 /* GPBCodedInputStream.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBCodedInputStream.m; path = objectivec/GPBCodedInputStream.m; sourceTree = "<group>"; };
+		7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		7ECE0F0B86FC97339AEF5ABAFC59E979 /* Reachability.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = Reachability.modulemap; sourceTree = "<group>"; };
 		7F6B8149B4E5DD63F10C1E85F6E9227E /* OCMPassByRefSetter.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMPassByRefSetter.h; path = Source/OCMock/OCMPassByRefSetter.h; sourceTree = "<group>"; };
 		7F8120976EBC620DC36B5CF13C9ABD48 /* GPBApi.pbobjc.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBApi.pbobjc.m; path = objectivec/GPBApi.pbobjc.m; sourceTree = "<group>"; };
@@ -560,9 +559,9 @@
 		856A238B2309351F7BE6CC49D95048CB /* GPBMessage.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBMessage.m; path = objectivec/GPBMessage.m; sourceTree = "<group>"; };
 		856FB6FE0F5025584A2BF538FD1EEFF2 /* OCMFunctionsPrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMFunctionsPrivate.h; path = Source/OCMock/OCMFunctionsPrivate.h; sourceTree = "<group>"; };
 		86E7F5C7F18AE3E948A2D0CC169586E0 /* GPBCodedOutputStream.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBCodedOutputStream.m; path = objectivec/GPBCodedOutputStream.m; sourceTree = "<group>"; };
-		886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		89ED182A14A7AD47A6C3746FF6A2AB0D /* GPBBootstrap.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBBootstrap.h; path = objectivec/GPBBootstrap.h; sourceTree = "<group>"; };
 		8B6326CBDAA5E73C10152CA1A800832C /* OCMBoxedReturnValueProvider.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMBoxedReturnValueProvider.h; path = Source/OCMock/OCMBoxedReturnValueProvider.h; sourceTree = "<group>"; };
+		8B83FAAF8F17983A6142E51A94F4B296 /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Network.framework; sourceTree = DEVELOPER_DIR; };
 		8BAB1A14A4ACE8FCA1EEE75CAAB8168D /* OCMObjectReturnValueProvider.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMObjectReturnValueProvider.m; path = Source/OCMock/OCMObjectReturnValueProvider.m; sourceTree = "<group>"; };
 		8D8DC6C959DB65EE4F788A2D19331C7E /* CLSSPan.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSSPan.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSSPan.m; sourceTree = "<group>"; };
 		8DF7DC082B2D80693A3A2497A2385CD6 /* CLSDeviceUtils.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSDeviceUtils.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSDeviceUtils.m; sourceTree = "<group>"; };
@@ -572,6 +571,7 @@
 		8F25D5860D3859A174AE1DBEF157C562 /* CLSRequestValidator.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSRequestValidator.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSRequestValidator.h; sourceTree = "<group>"; };
 		8FFF5DD3E0166DAEA09CC9C10B5CE9AF /* CLSTcpingV2.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSTcpingV2.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSTcpingV2.m; sourceTree = "<group>"; };
 		90798B607337DBEBE00B9C57196295FA /* CLSDnsping.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSDnsping.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSDnsping.h; sourceTree = "<group>"; };
+		918CF783D250546938C49E227452C2A3 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
 		91932E261488AD315AC4BC9683D055D1 /* Reachability-prefix.pch */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "Reachability-prefix.pch"; sourceTree = "<group>"; };
 		939BF10E4DF39B9524752E4481B3B536 /* GPBUnknownField+Additions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = "GPBUnknownField+Additions.swift"; path = "objectivec/GPBUnknownField+Additions.swift"; sourceTree = "<group>"; };
 		9406052F3F0E954DF2A693DE2B74970B /* GPBFieldMask.pbobjc.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBFieldMask.pbobjc.h; path = objectivec/GPBFieldMask.pbobjc.h; sourceTree = "<group>"; };
@@ -655,6 +655,7 @@
 		D5152EEFE44656C22D23945695985B0D /* ClsLogModel.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = ClsLogModel.h; path = TencentCloudLogProducer/Core/ClsLogModel.h; sourceTree = "<group>"; };
 		D81755349EB39668651DFB98E06648CA /* GPBWellKnownTypes.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBWellKnownTypes.h; path = objectivec/GPBWellKnownTypes.h; sourceTree = "<group>"; };
 		D897A6CD3C42F8246CA13D48B0DB1348 /* OCMNonRetainingObjectReturnValueProvider.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMNonRetainingObjectReturnValueProvider.m; path = Source/OCMock/OCMNonRetainingObjectReturnValueProvider.m; sourceTree = "<group>"; };
+		D8AB2ABBFEAF34AB67A85890613471E6 /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/CoreTelephony.framework; sourceTree = DEVELOPER_DIR; };
 		D8B55B95466A1876A5466DD5C572EF21 /* Reachability.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
 		DA5A0C4EA4B8F7F477A227BDCD1488C1 /* FMDatabaseQueue.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = FMDatabaseQueue.h; path = src/fmdb/FMDatabaseQueue.h; sourceTree = "<group>"; };
 		DAC3AE2B5B351E0E63793E9B11E2B678 /* GPBExtensionRegistry.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBExtensionRegistry.h; path = objectivec/GPBExtensionRegistry.h; sourceTree = "<group>"; };
@@ -690,6 +691,7 @@
 		F03E8CB4765E0534EC56A269849890A9 /* FMDB-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "FMDB-umbrella.h"; sourceTree = "<group>"; };
 		F0B12C0969F36573E84F1CED99A25BEC /* CLSStorage.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSStorage.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSStorage.m; sourceTree = "<group>"; };
 		F1349A2AA02F11F22D8F6205CA9844E9 /* OCMArg.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMArg.h; path = Source/OCMock/OCMArg.h; sourceTree = "<group>"; };
+		F172B8BF0ED33B304E5DA37589BB10D9 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/SystemConfiguration.framework; sourceTree = DEVELOPER_DIR; };
 		F1CFFDC79781B0649B829802F62E6112 /* OCMBlockCaller.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMBlockCaller.h; path = Source/OCMock/OCMBlockCaller.h; sourceTree = "<group>"; };
 		F30C125DB91902F63DC73AEF0B0E6111 /* OCMock */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = OCMock; path = OCMock.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F36D43E0D770E3228B801C4E2169A2D1 /* GPBUnknownFields.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBUnknownFields.m; path = objectivec/GPBUnknownFields.m; sourceTree = "<group>"; };
@@ -719,13 +721,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		25BFB6BEC8C820792297D75B0FDA2CA4 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		37321F4089F9C0B4D4B036CF0C1358C9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -774,18 +769,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		CCD691B207BA83E97BB2C1FFAD01AC91 /* Frameworks */ = {
+		CF0D1A941BC287E598687F5961F54656 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B8BD3E14C8D7F4B10D3446ED5F83B96A /* Foundation.framework in Frameworks */,
-				2DBFE0AB762F1424C0458359C24CC597 /* Network.framework in Frameworks */,
-				2439F9CC9761E433DDCBC8D5A130CC9D /* SystemConfiguration.framework in Frameworks */,
-				FF8243345650D7582A8E05C37889D897 /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		CF0D1A941BC287E598687F5961F54656 /* Frameworks */ = {
+		DD2D1CC3EDD3A7DDA309B18A21C3A303 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -796,6 +787,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FDE42D0571A5343E65C1AD0BE574B421 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EECE883C3478BE2D079C4F05D7095124 /* CoreTelephony.framework in Frameworks */,
+				E51B318EE9CB3942B09C1DEA23B3A8A5 /* Foundation.framework in Frameworks */,
+				EFFE5377FA07B56A26B22956FCCA722F /* Network.framework in Frameworks */,
+				A7232F3E4B3700A5B95ADF465C4F3B4C /* SystemConfiguration.framework in Frameworks */,
+				94CE18EE9FBD4F267CB2E22F71D3DF5A /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1153,6 +1156,19 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		B14162146DAD9B344D963B56633F126C /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				D8AB2ABBFEAF34AB67A85890613471E6 /* CoreTelephony.framework */,
+				7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */,
+				8B83FAAF8F17983A6142E51A94F4B296 /* Network.framework */,
+				F172B8BF0ED33B304E5DA37589BB10D9 /* SystemConfiguration.framework */,
+				918CF783D250546938C49E227452C2A3 /* UIKit.framework */,
+				7776A9021AA617A1E578E9936E1767FD /* XCTest.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		B1D644F4E07BDE8EFA2BD97627E523F0 /* Support Files */ = {
 			isa = PBXGroup;
 			children = (
@@ -1186,20 +1202,12 @@
 			name = Resources;
 			sourceTree = "<group>";
 		};
-		B94D7768568A9992200DB461E8CF687F /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				F6CEE1CA98D7EBA1C09A37749F706D3C /* iOS */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		CF1408CF629C7361332E53B88F7BD30C = {
 			isa = PBXGroup;
 			children = (
 				9D940727FF8FB9C785EB98E56350EF41 /* Podfile */,
 				7082607C7B0887440052B7611B5AA1CC /* Development Pods */,
-				B94D7768568A9992200DB461E8CF687F /* Frameworks */,
+				D68CA58901FBF589D75F5E40F1EAF5BA /* Frameworks */,
 				629D74D362ED1F5423DCDFBD3C9D546D /* Pods */,
 				9D61178E2658A5186CCFBA7EEBD69D28 /* Products */,
 				4B1DEBC651CD42318E907E148093BE1F /* Targets Support Files */,
@@ -1216,6 +1224,14 @@
 			);
 			name = TencentCloudLogProducer;
 			path = ../../..;
+			sourceTree = "<group>";
+		};
+		D68CA58901FBF589D75F5E40F1EAF5BA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B14162146DAD9B344D963B56633F126C /* iOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		DCF0896852CC9A6A9DF79458F7334A7F /* Resources */ = {
@@ -1342,18 +1358,6 @@
 			name = NetWorkDiagnosis;
 			sourceTree = "<group>";
 		};
-		F6CEE1CA98D7EBA1C09A37749F706D3C /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				886E738C278247E78BDF7962BD6F91A4 /* Foundation.framework */,
-				70E0548B040A694FB8BB72189DE6BE9A /* Network.framework */,
-				342B070A38F1A52B4B2E7F81C9552189 /* SystemConfiguration.framework */,
-				5206A894618B16763922C5E3369CA398 /* UIKit.framework */,
-				5DC7456F1A59213EA5AE2721260D354B /* XCTest.framework */,
-			);
-			name = iOS;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -1411,57 +1415,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		605AA380A078518D3645E81E2761F854 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4B85017BC5718EF3A2B82CD29DBC90B6 /* CLS4Unity.h in Headers */,
-				BFC0417E998D0AEB930D569D3A3A7EBB /* cls_dns_detector.h in Headers */,
-				C8E8B65BEECA888E4351BAC793FA68E4 /* cls_lz4.h in Headers */,
-				913FACFC67F646D5ED1A774F49E1259B /* cls_mtr_detector.h in Headers */,
-				5F27C1119848EAE18B169FCE05BF1913 /* cls_ping_detector.h in Headers */,
-				2DFA99406D5F829F960D342FB39E9318 /* CLSAppUtils.h in Headers */,
-				4C07DB5E1F447D8F7FD4420327417A83 /* CLSAttribute.h in Headers */,
-				32E1E387621F82B65DB94A4632C384D6 /* CLSCocoa.h in Headers */,
-				ADA64D3AED75C6B2A7350E222A891081 /* CLSDeviceUtils.h in Headers */,
-				4DF6E8F00C623C943A22E8C9BCEE1B18 /* CLSDnsping.h in Headers */,
-				6DEAF2DD978FF562E13713BE6ED7B077 /* CLSEvent.h in Headers */,
-				9BAE48FDA7FD5451EB557D915E7AC8E8 /* CLSHttpingV2.h in Headers */,
-				BE391BA7F31368958358092135423B1C /* CLSIdGenerator.h in Headers */,
-				9946C41CBEDD3C8EF4837649C2D521FA /* CLSKeyValue.h in Headers */,
-				E14DA2824658B9F062FEB6FFC2EE28D0 /* CLSLink.h in Headers */,
-				7D5C468933F8FDF4DEB1C2337F4515EE /* ClsLogModel.h in Headers */,
-				808EA10ADA21760B5BAE555C2FE72464 /* ClsLogs.pbobjc.h in Headers */,
-				25BD2F0A52F0B0B74BB108BD3D578A09 /* ClsLogSender.h in Headers */,
-				9EADF541CCC4DD1A0965EA0FBA93081F /* ClsLogStorage.h in Headers */,
-				37205E90048702A89E64AF1BEE9A66A0 /* CLSMtrping.h in Headers */,
-				154EF705C6B47F8BB5047D7B6DF28671 /* ClsNetworkDiagnosis.h in Headers */,
-				5DA79AC50D19467423E6EF3AFBDE39AD /* ClsNetworkTool.h in Headers */,
-				9D0491B94AF3EE0551E1994475C9CB3C /* CLSNetworkUtils.h in Headers */,
-				5F4002088DEC34F71C1945594FE840B5 /* CLSPingV2.h in Headers */,
-				1E41E77C1E4AF8EAB5FE5B1B25A99E01 /* CLSPrivocyUtils.h in Headers */,
-				E9A1CF000A77DE48CAB5D003464F54AB /* ClsProtocols.h in Headers */,
-				2F05ED23943FB754A93D7086DE5AA8AB /* CLSRecordableSpan.h in Headers */,
-				B8705884D08C93CD9179DD33EC7DCAA5 /* CLSRequestValidator.h in Headers */,
-				6F53B55B982892147DEDC66263B6A51B /* CLSResource.h in Headers */,
-				8D7E391CFE73CCD970E2F8BEAFCBBC63 /* CLSResponse.h in Headers */,
-				41DCDFC3DD25C775BB6CAF22070245C1 /* ClsSignatureTool.h in Headers */,
-				E34EC3BBBC326D85CE2DD689904E7862 /* CLSSPan.h in Headers */,
-				BBDEDDADD0DA1BB5A6F456FAEFF553AA /* CLSSPanBuilder.h in Headers */,
-				9BC7ED14C89A2AB8CD589783BAADB344 /* CLSSpanProviderProtocol.h in Headers */,
-				DCFCCAC97E4849E715ED7B66287F147B /* CLSStorage.h in Headers */,
-				99D57344628F2505D4CA2C3AA1F9C562 /* ClsStringUtils.h in Headers */,
-				37EBC4EEBD6EFA72B8E93B431D0F631C /* ClsSystemCapabilities.h in Headers */,
-				F9973020C0443F6BDD631421FEF1026F /* CLSTcpingV2.h in Headers */,
-				79D9906E0ED62F928480B84DC00FBDCE /* CLSUserInfo.h in Headers */,
-				589307232E19F94AC1202411257558BC /* CLSUtdid.h in Headers */,
-				727CAAD5750C3B463128E091F7E98100 /* network_ios.h in Headers */,
-				085FB989E76BC842C6B94BB07A51FBCF /* network_ios-Swift.h in Headers */,
-				F30411A9782A1BCB5CBAA44BD39FF104 /* NSString+CLS.h in Headers */,
-				847A9B98D1F6C13CF6CA4EAFF3220778 /* TencentCloudLogProducer-umbrella.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		7494B5D0050C6C5AD7AD359264C8AAE3 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -1482,6 +1435,57 @@
 				63D8A88D36948E62F745594854E0677F /* FMDB.h in Headers */,
 				524E2E7ABD52874B06C8644AF2955AEE /* FMDB-umbrella.h in Headers */,
 				8BF90C8E63B886657A08BD62F78CC57C /* FMResultSet.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		85CC0987DAC3516A96B7B51B890400BD /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6A47ADF471F6EDF9F54926B22451BEAD /* CLS4Unity.h in Headers */,
+				AC5F32D7757386EC95B6827A8DBDD2A8 /* cls_dns_detector.h in Headers */,
+				0BEE58F0C2CB7A98AD5AB6DF6592CC21 /* cls_lz4.h in Headers */,
+				32E094FEBDD6F78265AB1E36D2C79E8C /* cls_mtr_detector.h in Headers */,
+				FAD6235D9240C959C84861A4A14BDFE0 /* cls_ping_detector.h in Headers */,
+				5015BC30A64010E2CB3C87ADD6A17E6E /* CLSAppUtils.h in Headers */,
+				6DE3C9286F0126EB3304C1A03528DC40 /* CLSAttribute.h in Headers */,
+				9FDDA2C19751947AA0DC096A9093F329 /* CLSCocoa.h in Headers */,
+				274CEA84995BE7BD178B244A4028ABF6 /* CLSDeviceUtils.h in Headers */,
+				E814D073BF522A3F03F103F8B92DCF97 /* CLSDnsping.h in Headers */,
+				5090267B6183608A7B5D960C4EC0A703 /* CLSEvent.h in Headers */,
+				F3EC4B7D511F5BCB53EE0A177E0A6545 /* CLSHttpingV2.h in Headers */,
+				A1DA3E5C8A878A784040C262A71CBEA3 /* CLSIdGenerator.h in Headers */,
+				9136D71359B8C6B08023E12ACB9616AF /* CLSKeyValue.h in Headers */,
+				1ADF2FA497586C4470EA924F80C02082 /* CLSLink.h in Headers */,
+				F1A275CA0695613A4FCD31B24275EC66 /* ClsLogModel.h in Headers */,
+				081235E4B6172D2361F09576ED0C0044 /* ClsLogs.pbobjc.h in Headers */,
+				263F17591F947A4BF62E9A6ECBE6245D /* ClsLogSender.h in Headers */,
+				B52371889AB7E422845451905EF52725 /* ClsLogStorage.h in Headers */,
+				581CC76657F116A0FF0B27976FBB4E04 /* CLSMtrping.h in Headers */,
+				EBC87F2C43F5572387D1EBF2B48D1255 /* ClsNetworkDiagnosis.h in Headers */,
+				E0D9F6C8CC26A5C0A13A5F8EACFFB42B /* ClsNetworkTool.h in Headers */,
+				E2386D24CC1C2E47121BA5C8CB818D50 /* CLSNetworkUtils.h in Headers */,
+				425B05F2C11F6C414A7278F05E3FE46E /* CLSPingV2.h in Headers */,
+				88B82F11F953A54EA96CB6692C44B6EB /* CLSPrivocyUtils.h in Headers */,
+				6BB90C2BEF5077A8688E9FA07CCC99DB /* ClsProtocols.h in Headers */,
+				7ED25352F23787565F38483D863EA99C /* CLSRecordableSpan.h in Headers */,
+				57831CCD7A32C6B7DF90354676D37B66 /* CLSRequestValidator.h in Headers */,
+				C818AF917D59B6752EECC1B5C5C1B14F /* CLSResource.h in Headers */,
+				E46132C18A080594D1A23E2E07D21A2C /* CLSResponse.h in Headers */,
+				FB80DA9A573555AB15B00D6090FC47D2 /* ClsSignatureTool.h in Headers */,
+				2905E6D22702AD4965102C9AC8BCC5DD /* CLSSPan.h in Headers */,
+				BBB3DA99ADDA5E028F3049CE8C82A074 /* CLSSPanBuilder.h in Headers */,
+				5E2929FAD1D5954139854B4CBFD8BF54 /* CLSSpanProviderProtocol.h in Headers */,
+				EEEF3547A5746630348BC09C90041444 /* CLSStorage.h in Headers */,
+				B9FF38F35B6B848EFA54EB392E38AA8B /* ClsStringUtils.h in Headers */,
+				EB8A67631F484856881C553F3DA0B3DC /* ClsSystemCapabilities.h in Headers */,
+				2D8520572130305F17A0DE90D9073DD7 /* CLSTcpingV2.h in Headers */,
+				207ABC3E371EDB8AF453B6515FD23E0E /* CLSUserInfo.h in Headers */,
+				DE0B5E3A0DC6F3DAA4C04EFBC79B7F9C /* CLSUtdid.h in Headers */,
+				C8B03CF70669A602C2DF100472EAB6B8 /* network_ios.h in Headers */,
+				58E9D98682C35EE2FCCDF317962CA790 /* network_ios-Swift.h in Headers */,
+				EABEBC18EDB28D2F4F791CF44106564C /* NSString+CLS.h in Headers */,
+				A2E30FC32AE1033F55B10B8776A49F9A /* TencentCloudLogProducer-umbrella.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1611,20 +1615,20 @@
 		};
 		89B9E11BFFFDFD68227A95487680DE65 /* TencentCloudLogProducer */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0336F22CF8005AF6DA635CB56C4B411C /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer" */;
+			buildConfigurationList = 4AAC2FC6186BD717E79341BA4D4E2974 /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer" */;
 			buildPhases = (
-				605AA380A078518D3645E81E2761F854 /* Headers */,
-				DF705DF5F04AB511149BD968989A1D7A /* Sources */,
-				CCD691B207BA83E97BB2C1FFAD01AC91 /* Frameworks */,
-				EAE3BD944D7B9938F060063E7E454C72 /* Resources */,
+				85CC0987DAC3516A96B7B51B890400BD /* Headers */,
+				A8D5E615F12DFF9BAFA288E9B552B18A /* Sources */,
+				FDE42D0571A5343E65C1AD0BE574B421 /* Frameworks */,
+				A4BF30D8A69BD50E5C969F0ED337364C /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				FF0B11C6CDEA323B3409FD5CB6F082F9 /* PBXTargetDependency */,
-				302BAE45BECF61CF0EB4C5EBA49C437C /* PBXTargetDependency */,
-				9B16482C8A4A8083A84401F2E0377E74 /* PBXTargetDependency */,
-				E146A4F1D20F78438B3403508400009B /* PBXTargetDependency */,
+				4CCDD56D28E3A1E342539AA4D90B5366 /* PBXTargetDependency */,
+				E0839CF5D8C7C1CC8C5A70A6FF9140EC /* PBXTargetDependency */,
+				9DBDF73B4A2B21776B88AE25C49BC20D /* PBXTargetDependency */,
+				41A00208C9D762E507C76095C27D0B92 /* PBXTargetDependency */,
 			);
 			name = TencentCloudLogProducer;
 			productName = TencentCloudLogProducer;
@@ -1690,11 +1694,11 @@
 		};
 		C70993D12A1AD7397E6FE1EB22EE5F55 /* TencentCloudLogProducer-TencentCloudLogProducer */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AF222C8B3D0F27E21781D330507DC97D /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer-TencentCloudLogProducer" */;
+			buildConfigurationList = A51F245E76C92916C6DD4CCA7E54DAE3 /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer-TencentCloudLogProducer" */;
 			buildPhases = (
-				A7907FB9C371B214BD66D52F9961C5D4 /* Sources */,
-				37321F4089F9C0B4D4B036CF0C1358C9 /* Frameworks */,
-				AB7CE223690A737CA505B8C73934B73B /* Resources */,
+				EF89C1F0667A0C23CA546A8D00389755 /* Sources */,
+				DD2D1CC3EDD3A7DDA309B18A21C3A303 /* Frameworks */,
+				7C7EF327E906422E71FD73F2B5110015 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -1754,7 +1758,7 @@
 			);
 			dependencies = (
 				AD381DDA9935E32465019A55C1328B7B /* PBXTargetDependency */,
-				FD9FA1D61099CF27180074C8046CDAAC /* PBXTargetDependency */,
+				39A80AFEDB8FFB6EC8E7A94ACC56B256 /* PBXTargetDependency */,
 			);
 			name = "Pods-TencentCloudLogDemoTests";
 			productName = Pods_TencentCloudLogDemoTests;
@@ -1848,11 +1852,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AB7CE223690A737CA505B8C73934B73B /* Resources */ = {
+		7C7EF327E906422E71FD73F2B5110015 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0252C8DD48984987C5F1DA50F5386E78 /* PrivacyInfo.xcprivacy in Resources */,
+				D90F4ECF67DF0E22F514141533C36ABB /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A4BF30D8A69BD50E5C969F0ED337364C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				347C9015B3B5A863502734167D3BBC10 /* TencentCloudLogProducer-TencentCloudLogProducer in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1861,14 +1873,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A79A9E7B84E77E2A6862C75C110A2A77 /* PrivacyInfo.xcprivacy in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		EAE3BD944D7B9938F060063E7E454C72 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				324B18C2D37BD538D5CD0244EE66819B /* TencentCloudLogProducer-TencentCloudLogProducer in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1997,10 +2001,49 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A7907FB9C371B214BD66D52F9961C5D4 /* Sources */ = {
+		A8D5E615F12DFF9BAFA288E9B552B18A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C207E19083E52EF84726D10989A04CEC /* CLS4Unity.m in Sources */,
+				7A3119966009DA45F602C7B20DF2FFA2 /* cls_dns_detector.m in Sources */,
+				0D1C77BFE103C06429BAB5886FDE26DD /* cls_lz4.m in Sources */,
+				156F9ABE0DBBA9D15D56FA4E510602C8 /* cls_mtr_detector.m in Sources */,
+				9C837C7C84F7968D07BDF60FC4D62AAD /* cls_ping_detector.m in Sources */,
+				367415C67B0D57266410E8355D96A5F0 /* CLSAppUtils.m in Sources */,
+				F5FA4DCC0C0A9C103957924FE7516A37 /* CLSAttribute.m in Sources */,
+				D7EDA2365543732E2E2DC67C246BF0E2 /* CLSCocoa.m in Sources */,
+				FEC292FC956373779032CD5DA3003953 /* CLSDeviceUtils.m in Sources */,
+				AFB5D6E378D3894BD25B46973F1B80F1 /* CLSDnsping.m in Sources */,
+				810D587E0C53903A68187068CE19567B /* CLSEvent.m in Sources */,
+				51382C88402418D5FE1D451671573EBF /* CLSHttpingV2.m in Sources */,
+				DEB0D80259BBEDAD96C24E2D62E87C47 /* CLSIdGenerator.m in Sources */,
+				0E53EC7C71859C933DF4D42EB792E755 /* CLSKeyValue.m in Sources */,
+				980F806A92E89E69C247361EB1DC9D41 /* CLSLink.m in Sources */,
+				86CEF72B4291755088EF6C9E47C1CA22 /* ClsLogModel.m in Sources */,
+				69D74B4FD9884301279690BCC720CAF9 /* ClsLogs.pbobjc.m in Sources */,
+				E2BFC2821EE7342525552579D0FF0F06 /* ClsLogSender.m in Sources */,
+				99F443F1B69272AB7A99F95D37D1D407 /* ClsLogStorage.m in Sources */,
+				02BD99C7386FF7731FE81E74687D567F /* CLSMtrping.m in Sources */,
+				580459172F2394F325FD10A1B6207308 /* ClsNetworkDiagnosis.m in Sources */,
+				EBF390234F753FC2B28A7C2899B67DB9 /* ClsNetworkTool.m in Sources */,
+				87452E81EB3052CC64522AF3140A2652 /* CLSNetworkUtils.m in Sources */,
+				A014104C759C17C020470318523A261C /* CLSPingV2.m in Sources */,
+				66420E17ED37E531F7E345AD0AF75DD4 /* CLSPrivocyUtils.m in Sources */,
+				10904A1362CD966840B286E32AE81212 /* CLSRecordableSpan.m in Sources */,
+				12D163F555ADCEB88C451716FD8C2D3F /* CLSRequestValidator.m in Sources */,
+				664FCA86958C48A688D77FCABFA04D9C /* CLSResource.m in Sources */,
+				E1B2B43AE8AAF2C3028D8EF0219DFCF1 /* CLSResponse.m in Sources */,
+				99F85EC5E1048F4B3FC67413373D712A /* ClsSignatureTool.m in Sources */,
+				7318F016E907A2ACA9FC46B0B3DA56F3 /* CLSSPan.m in Sources */,
+				190F57CC14B399F860DF5863E74E3991 /* CLSSPanBuilder.m in Sources */,
+				71CC51FB1E9CB1E0B105C2F988C2815E /* CLSStorage.m in Sources */,
+				4ADE189D2310A1510E8C826F834AD533 /* ClsStringUtils.m in Sources */,
+				1178357AD3E450F02C1742037056C640 /* CLSTcpingV2.m in Sources */,
+				8A46FC90C3E5D21BC79D1CDCFFDF4EAC /* CLSUserInfo.m in Sources */,
+				E98FD5B3ECF4035BC20590DBF52ACB82 /* CLSUtdid.m in Sources */,
+				B0DD7A945D8A61FC290DE2D8B9CC13E0 /* NSString+CLS.m in Sources */,
+				555144658C5231A8152E5C089AB5C355 /* TencentCloudLogProducer-dummy.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2020,52 +2063,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		DF705DF5F04AB511149BD968989A1D7A /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4FAE59209F015CDE9CFF9E0E163E9278 /* CLS4Unity.m in Sources */,
-				685EE37BC422B6934C4FF9A45B98A529 /* cls_dns_detector.m in Sources */,
-				A122D812C3A18BD4F454F3AD403488B9 /* cls_lz4.m in Sources */,
-				41D32A93AB45DB60BAAD3B11DFCFBD47 /* cls_mtr_detector.m in Sources */,
-				35BC7832A621827C8887C6B9F448FDBD /* cls_ping_detector.m in Sources */,
-				1AD74F32B06612483092D993C9A219BF /* CLSAppUtils.m in Sources */,
-				024D9DD8B6E41C7D8CDE6DE71036843E /* CLSAttribute.m in Sources */,
-				666E5EA293712D86470B20011AFB65D7 /* CLSCocoa.m in Sources */,
-				B8BFC9F3F9288D2BC99917184B367F89 /* CLSDeviceUtils.m in Sources */,
-				9B451E1A91DAD2FAECDF338DAB83712E /* CLSDnsping.m in Sources */,
-				D7BAB73531A8204287BAD201C07B2992 /* CLSEvent.m in Sources */,
-				FB9058C2F4022D73D69D7787E84A7EFF /* CLSHttpingV2.m in Sources */,
-				1378519DBF5DA0DBD78B065D3DFE60E7 /* CLSIdGenerator.m in Sources */,
-				CB1B557836B3EBEAEE2A1CE3A3729895 /* CLSKeyValue.m in Sources */,
-				874D7A216D31F2CCA7D71186E6D6957A /* CLSLink.m in Sources */,
-				A8093E2B4F3DAE73DB409C950F63CD9F /* ClsLogModel.m in Sources */,
-				6A072BF40C42A9EB26CBD155D5FDF17F /* ClsLogs.pbobjc.m in Sources */,
-				9E8EFE2694E925F0E012CD975EC4E8A7 /* ClsLogSender.m in Sources */,
-				4EF6D8F6577BC5E18B9154A57A2E6DAA /* ClsLogStorage.m in Sources */,
-				0DC41E6D8838C4E8B718517A2AB5D945 /* CLSMtrping.m in Sources */,
-				62E073173C4E099F8836F65F1E3AE152 /* ClsNetworkDiagnosis.m in Sources */,
-				A4A7FDE33E5BC1770FD937238FED7755 /* ClsNetworkTool.m in Sources */,
-				770DC0B07F8F60A368E7DDDB5A66F5B3 /* CLSNetworkUtils.m in Sources */,
-				2E9B1EA5770DF5383EE972EDB816823F /* CLSPingV2.m in Sources */,
-				25929E738660A950AD9B60023A112FF9 /* CLSPrivocyUtils.m in Sources */,
-				C030C92C14781D84590923854BEA31CA /* CLSRecordableSpan.m in Sources */,
-				78AFFCF76B3E3EA74B65EC173AFB5992 /* CLSRequestValidator.m in Sources */,
-				5EE2B942D319C38368606F17F92E6AF5 /* CLSResource.m in Sources */,
-				DDFA932A05F1C6EF1D45CC033B53EC50 /* CLSResponse.m in Sources */,
-				AA8C1C162218D7414E216D4CC37E10DD /* ClsSignatureTool.m in Sources */,
-				137F591DF4CB75CB4EFB530BBD7AEEF3 /* CLSSPan.m in Sources */,
-				C1BDA8B76108A37941BB346BC34AB19E /* CLSSPanBuilder.m in Sources */,
-				8D1B9DCA3F14670BD3C94FB81CE7237C /* CLSStorage.m in Sources */,
-				A3F5AA5D73323B17E8F027868D668477 /* ClsStringUtils.m in Sources */,
-				6ED501A9BA5D74F45BCC7BBD6A333010 /* CLSTcpingV2.m in Sources */,
-				9B7CE08B97B272DC87907386B3DA094C /* CLSUserInfo.m in Sources */,
-				1480D6B410AC402E5BAA14660FAA9FCB /* CLSUtdid.m in Sources */,
-				AE237826146830638564B5EDAFEBEC69 /* NSString+CLS.m in Sources */,
-				6AD6BF61EB9FDF81F25C98CF6AD607A2 /* TencentCloudLogProducer-dummy.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		EE82668DB7FF66FBDD3BD04E7798771D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2079,6 +2076,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EF89C1F0667A0C23CA546A8D00389755 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -2088,11 +2092,23 @@
 			target = 8592E0E389D40AC17881400ADC67ABC0 /* FMDB */;
 			targetProxy = 055CD61EB9A6A7AA623E7B1A17E4E4B3 /* PBXContainerItemProxy */;
 		};
-		302BAE45BECF61CF0EB4C5EBA49C437C /* PBXTargetDependency */ = {
+		39A80AFEDB8FFB6EC8E7A94ACC56B256 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			name = Protobuf;
-			target = 470FE31978DC918618A329D8B55C85FF /* Protobuf */;
-			targetProxy = 538A2BC3FB605C4742DE01E0EB1774A0 /* PBXContainerItemProxy */;
+			name = "Pods-TencentCloudLogDemo";
+			target = 8E33B2BF1257C71A577488EEB8C80F8D /* Pods-TencentCloudLogDemo */;
+			targetProxy = 0BC87E28B160AF274C0760C5A70F4FED /* PBXContainerItemProxy */;
+		};
+		41A00208C9D762E507C76095C27D0B92 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "TencentCloudLogProducer-TencentCloudLogProducer";
+			target = C70993D12A1AD7397E6FE1EB22EE5F55 /* TencentCloudLogProducer-TencentCloudLogProducer */;
+			targetProxy = 9F94B30DB29944067C9D407BC87F0E6A /* PBXContainerItemProxy */;
+		};
+		4CCDD56D28E3A1E342539AA4D90B5366 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FMDB;
+			target = 8592E0E389D40AC17881400ADC67ABC0 /* FMDB */;
+			targetProxy = CEFC569EF9392F2156C7A384D97E72ED /* PBXContainerItemProxy */;
 		};
 		6B7E33EF8A35D3E7CB235BA868B13D73 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2112,11 +2128,11 @@
 			target = D2787856C227A709315E3C9C4355A440 /* Reachability-Reachability_Privacy */;
 			targetProxy = 54651FFAC23BCC814B41A1FFCF50EE00 /* PBXContainerItemProxy */;
 		};
-		9B16482C8A4A8083A84401F2E0377E74 /* PBXTargetDependency */ = {
+		9DBDF73B4A2B21776B88AE25C49BC20D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = Reachability;
 			target = CAA047C0F5E4106F3904E8497FA17F97 /* Reachability */;
-			targetProxy = 028A49A3FFC2DD048F314D144366BDD8 /* PBXContainerItemProxy */;
+			targetProxy = F10D9EFB9AE2FA9765E8EE356D821C85 /* PBXContainerItemProxy */;
 		};
 		A068E6703AA3428CDE0C2CABFDC3813C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2142,65 +2158,15 @@
 			target = 89B9E11BFFFDFD68227A95487680DE65 /* TencentCloudLogProducer */;
 			targetProxy = F219DFF1A6A27FA9E642CA07BF3E0291 /* PBXContainerItemProxy */;
 		};
-		E146A4F1D20F78438B3403508400009B /* PBXTargetDependency */ = {
+		E0839CF5D8C7C1CC8C5A70A6FF9140EC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			name = "TencentCloudLogProducer-TencentCloudLogProducer";
-			target = C70993D12A1AD7397E6FE1EB22EE5F55 /* TencentCloudLogProducer-TencentCloudLogProducer */;
-			targetProxy = B3336F085E0E613331F4478486ABDFF9 /* PBXContainerItemProxy */;
-		};
-		FD9FA1D61099CF27180074C8046CDAAC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = "Pods-TencentCloudLogDemo";
-			target = 8E33B2BF1257C71A577488EEB8C80F8D /* Pods-TencentCloudLogDemo */;
-			targetProxy = 1CDEE74DFAE2F1B118D931B32DA88993 /* PBXContainerItemProxy */;
-		};
-		FF0B11C6CDEA323B3409FD5CB6F082F9 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = FMDB;
-			target = 8592E0E389D40AC17881400ADC67ABC0 /* FMDB */;
-			targetProxy = 5341CD8BAB6CEB750847EC26CD80BEAD /* PBXContainerItemProxy */;
+			name = Protobuf;
+			target = 470FE31978DC918618A329D8B55C85FF /* Protobuf */;
+			targetProxy = 48FA5C1ED4241D389105BC1F82A0911E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		0016BBEB9E6B1F56DB00EBC4DA2BE32C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0C7D617165CCC55F4104C957DD05424B /* TencentCloudLogProducer.debug.xcconfig */;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				GCC_PREFIX_HEADER = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-prefix.pch";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-Info.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MODULEMAP_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer.modulemap";
-				PRODUCT_MODULE_NAME = TencentCloudLogProducer;
-				PRODUCT_NAME = TencentCloudLogProducer;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
-				SWIFT_INSTALL_OBJC_HEADER = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Debug;
-		};
 		0BB25EEB52E15EE0D58A8B2BC80EECE3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7BB53E5CDF8AC65568E9FCDA913296F2 /* FMDB.debug.xcconfig */;
@@ -2336,7 +2302,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Target Support Files/Protobuf/Protobuf-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -2462,6 +2428,44 @@
 			};
 			name = Release;
 		};
+		471A036AF148022A14F9A8305EC7E05A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C7D617165CCC55F4104C957DD05424B /* TencentCloudLogProducer.debug.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_PREFIX_HEADER = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-prefix.pch";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MODULEMAP_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer.modulemap";
+				PRODUCT_MODULE_NAME = TencentCloudLogProducer;
+				PRODUCT_NAME = TencentCloudLogProducer;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
+				SWIFT_INSTALL_OBJC_HEADER = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
 		63FAF33E1C55B71A5F5A8B3CC8749F99 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2571,42 +2575,8 @@
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/Protobuf";
 				IBSC_MODULE = Protobuf;
 				INFOPLIST_FILE = "Target Support Files/Protobuf/ResourceBundle-Protobuf_Privacy-Protobuf-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				PRODUCT_NAME = Protobuf_Privacy;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				WRAPPER_EXTENSION = bundle;
-			};
-			name = Release;
-		};
-		81F3AFD08EF6643ADEB2E0AFDEEC4912 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0C7D617165CCC55F4104C957DD05424B /* TencentCloudLogProducer.debug.xcconfig */;
-			buildSettings = {
-				CODE_SIGNING_ALLOWED = NO;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/TencentCloudLogProducer";
-				IBSC_MODULE = TencentCloudLogProducer;
-				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/ResourceBundle-TencentCloudLogProducer-TencentCloudLogProducer-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				PRODUCT_NAME = TencentCloudLogProducer;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				WRAPPER_EXTENSION = bundle;
-			};
-			name = Debug;
-		};
-		89F2FE8859F1DDFE16CCF5AB9163C2F9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5F479FBBB147EBB3FA9BF0C61BCFF8E9 /* TencentCloudLogProducer.release.xcconfig */;
-			buildSettings = {
-				CODE_SIGNING_ALLOWED = NO;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/TencentCloudLogProducer";
-				IBSC_MODULE = TencentCloudLogProducer;
-				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/ResourceBundle-TencentCloudLogProducer-TencentCloudLogProducer-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				PRODUCT_NAME = TencentCloudLogProducer;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -2622,7 +2592,7 @@
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/Protobuf";
 				IBSC_MODULE = Protobuf;
 				INFOPLIST_FILE = "Target Support Files/Protobuf/ResourceBundle-Protobuf_Privacy-Protobuf-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				PRODUCT_NAME = Protobuf_Privacy;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -2709,6 +2679,45 @@
 			};
 			name = Debug;
 		};
+		A9FAE859FA6853A44E8E44E70AE3B129 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5F479FBBB147EBB3FA9BF0C61BCFF8E9 /* TencentCloudLogProducer.release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_PREFIX_HEADER = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-prefix.pch";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MODULEMAP_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer.modulemap";
+				PRODUCT_MODULE_NAME = TencentCloudLogProducer;
+				PRODUCT_NAME = TencentCloudLogProducer;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
+				SWIFT_INSTALL_OBJC_HEADER = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
 		B7A6028027E95FBB5EDF5846B95A9A24 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0D80934794AFF9F8C9B9B1D232D12B10 /* Protobuf.release.xcconfig */;
@@ -2728,7 +2737,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Target Support Files/Protobuf/Protobuf-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -2746,6 +2755,40 @@
 				VALIDATE_PRODUCT = YES;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		C7F4B64B8E26A3162D93429B77ED9C27 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C7D617165CCC55F4104C957DD05424B /* TencentCloudLogProducer.debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/TencentCloudLogProducer";
+				IBSC_MODULE = TencentCloudLogProducer;
+				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/ResourceBundle-TencentCloudLogProducer-TencentCloudLogProducer-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_NAME = TencentCloudLogProducer;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = bundle;
+			};
+			name = Debug;
+		};
+		CEAA29FA587604DCA92DA374DC8481A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5F479FBBB147EBB3FA9BF0C61BCFF8E9 /* TencentCloudLogProducer.release.xcconfig */;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/TencentCloudLogProducer";
+				IBSC_MODULE = TencentCloudLogProducer;
+				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/ResourceBundle-TencentCloudLogProducer-TencentCloudLogProducer-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_NAME = TencentCloudLogProducer;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = bundle;
 			};
 			name = Release;
 		};
@@ -2862,45 +2905,6 @@
 			};
 			name = Release;
 		};
-		F0C5C46C272F5A07CE9348237EEAA9AF /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5F479FBBB147EBB3FA9BF0C61BCFF8E9 /* TencentCloudLogProducer.release.xcconfig */;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				GCC_PREFIX_HEADER = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-prefix.pch";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer-Info.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MODULEMAP_FILE = "Target Support Files/TencentCloudLogProducer/TencentCloudLogProducer.modulemap";
-				PRODUCT_MODULE_NAME = TencentCloudLogProducer;
-				PRODUCT_NAME = TencentCloudLogProducer;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
-				SWIFT_INSTALL_OBJC_HEADER = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Release;
-		};
 		F8FD1FC19F0C08AA2EBB449F0F3E16A8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7BB53E5CDF8AC65568E9FCDA913296F2 /* FMDB.debug.xcconfig */;
@@ -2977,15 +2981,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0336F22CF8005AF6DA635CB56C4B411C /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				0016BBEB9E6B1F56DB00EBC4DA2BE32C /* Debug */,
-				F0C5C46C272F5A07CE9348237EEAA9AF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		12C55F0B79D6F626367E83A4CDD2C659 /* Build configuration list for PBXNativeTarget "Reachability-Reachability_Privacy" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -3000,6 +2995,15 @@
 			buildConfigurations = (
 				2B9E26EAE2CD392AD762421F663075A1 /* Debug */,
 				63FAF33E1C55B71A5F5A8B3CC8749F99 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4AAC2FC6186BD717E79341BA4D4E2974 /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				471A036AF148022A14F9A8305EC7E05A /* Debug */,
+				A9FAE859FA6853A44E8E44E70AE3B129 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -3040,11 +3044,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AF222C8B3D0F27E21781D330507DC97D /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer-TencentCloudLogProducer" */ = {
+		A51F245E76C92916C6DD4CCA7E54DAE3 /* Build configuration list for PBXNativeTarget "TencentCloudLogProducer-TencentCloudLogProducer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				81F3AFD08EF6643ADEB2E0AFDEEC4912 /* Debug */,
-				89F2FE8859F1DDFE16CCF5AB9163C2F9 /* Release */,
+				C7F4B64B8E26A3162D93429B77ED9C27 /* Debug */,
+				CEAA29FA587604DCA92DA374DC8481A9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -58,7 +58,10 @@
       },
       "source_files": "TencentCloudLogProducer/NetWorkDiagnosis/**/*.{m,h}",
       "public_header_files": "TencentCloudLogProducer/NetWorkDiagnosis/*.h",
-      "frameworks": "Network",
+      "frameworks": [
+        "CoreTelephony",
+        "Network"
+      ],
       "libraries": "resolv",
       "pod_target_xcconfig": {
         "GCC_PREPROCESSOR_DEFINITIONS": "CLS_HAS_CORE_TELEPHONY=1"

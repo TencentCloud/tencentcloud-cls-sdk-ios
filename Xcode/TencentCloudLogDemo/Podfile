@@ -16,3 +16,17 @@ target 'TencentCloudLogDemo' do
 #    inherit! :search_paths
 #  end
 end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      # 修复 Protobuf 部署目标版本警告
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      
+      # 禁用测试 target 的 sandbox（修复权限问题）
+      if target.name.include?('Tests')
+        config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+      end
+    end
+  end
+end
