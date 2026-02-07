@@ -11,13 +11,58 @@
 #import "CLSStringUtils.h"
 #import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
 #import <Network/Network.h>
+#import <netdb.h>
+#import <arpa/inet.h>
+#import <dlfcn.h>
 #if __has_include(<Security/SecProtocolOptions.h>)
 #import <Security/SecProtocolOptions.h>
 #endif
 
+/// 释放 Network.framework 的 C 对象（path/endpoint 等），通过 dlsym 调用避免 ARC 将 nw_release 解析为 objc release
+static void cls_nw_object_release(void *obj) {
+    if (!obj) return;
+    static void (*release_fn)(void *) = NULL;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        release_fn = (void (*)(void *))dlsym(RTLD_DEFAULT, "nw_release");
+    });
+    if (release_fn) release_fn(obj);
+}
+
+/// 根据 nw_connection_state_failed 的 nw_error 及是否为 HTTPS，生成可读的 NSError（便于上报和日志分析）
+static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
+    NSString *msg = nil;
+    if (nw_err) {
+        static int (*get_code)(nw_error_t) = NULL;
+        static dispatch_once_t once;
+        dispatch_once(&once, ^{
+            get_code = (int (*)(nw_error_t))dlsym(RTLD_DEFAULT, "nw_error_get_error_code");
+        });
+        if (get_code) {
+            int code = get_code(nw_err);
+            // POSIX 无专门“证书校验失败”，TLS 失败在部分系统上会映射到 errSec 或特定 code；这里仅做提示
+            if (isHTTPS && (code != 0))
+                msg = [NSString stringWithFormat:@"Connection failed (TLS/certificate verify failed, code=%d)", code];
+        }
+    }
+    if (!msg) msg = isHTTPS ? @"Connection failed (TLS/certificate verify failed?)" : @"Connection failed";
+    return [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: msg}];
+}
+
 @interface CLSMultiInterfaceHttping ()
 /// Network.framework 路径下解析到的 HTTP 状态码，用于 buildFinalReportDictWithTask 在 task 为 nil 时使用
 @property (nonatomic, assign) NSInteger networkResultStatusCode;
+/// Network.framework 路径下首次收到响应数据的时间（用于填充 firstByteTime/desc）
+@property (nonatomic, assign) CFAbsoluteTime firstByteArrivalTime;
+/// Network.framework 路径下连接就绪时间（TCP+TLS 完成），用于填充 connectEnd/secureConnectEnd、tcpTime/sslTime
+@property (nonatomic, assign) CFAbsoluteTime connectionReadyTime;
+/// Network.framework 路径下 DNS 解析开始/结束时间（getaddrinfo 测得，用于真实 dnsStart/dnsEnd/dnsTime）
+@property (nonatomic, assign) CFAbsoluteTime dnsStartTime;
+@property (nonatomic, assign) CFAbsoluteTime dnsEndTime;
+/// Network.framework 路径下解析到的远端 IP（用于 remoteAddr / host_ip）
+@property (nonatomic, copy) NSString *resolvedRemoteAddress;
+/// Network.framework 路径下已发送字节数（用于 buildFinalReportDict 的 sendBytes）
+@property (nonatomic, assign) NSUInteger sentBytes;
 @end
 
 @implementation CLSMultiInterfaceHttping
@@ -30,15 +75,17 @@
         _responseData = [NSMutableData data];
         _interfaceInfo = @{};
         _networkResultStatusCode = -2;
+        _firstByteArrivalTime = 0;
+        _connectionReadyTime = 0;
+        _dnsStartTime = 0;
+        _dnsEndTime = 0;
+        _sentBytes = 0;
     }
     return self;
 }
 
 - (void)dealloc {
-    if (_timeoutTimer) {
-        dispatch_source_cancel(_timeoutTimer);
-        _timeoutTimer = nil;
-    }
+    // Network.framework 和 NSURLSession 路径都使用 dispatch_after 超时，无需 timer 清理
 }
 
 - (NSURLSessionConfiguration *)createSessionConfigurationForInterface {
@@ -97,8 +144,13 @@
     NSString *interfaceName = self.interfaceInfo[@"name"] ?: @"";
 #if __has_include(<Network/Network.h>) && TARGET_OS_IPHONE
     // 参考 Ping/MTR：使用 Network.framework 强制按接口类型探测（requiredInterfaceType），避免系统始终走 WiFi
+    // ⚠️ 模拟器环境禁用 Network.framework：旧版模拟器（Xcode 15.2 / iOS 17.2）的 nw_parameters_set_required_interface_type 存在 bug，导致连接超时
+#if TARGET_OS_SIMULATOR
+    BOOL useNetworkFramework = NO;  // 模拟器环境强制使用 NSURLSession 路径
+#else
     BOOL useNetworkFramework = (interfaceName.length > 0 &&
         ([interfaceName hasPrefix:@"en"] || [interfaceName hasPrefix:@"pdp_ip"]));
+#endif
     if (useNetworkFramework && @available(iOS 12.0, *)) {
         [self startHttpingWithNetworkFrameworkCompletion:completion];
         return;
@@ -172,51 +224,99 @@ API_AVAILABLE(ios(12.0)) {
     }
 
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-    nw_parameters_t params;
-    if (isHTTPS) {
-        params = nw_parameters_create_secure_tcp(NULL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
-    } else {
-        params = nw_parameters_create();
-        if (params) {
-            nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(params);
-            if (protocol_stack) {
-                nw_protocol_options_t tcp_options = nw_tcp_create_options();
-                if (tcp_options) {
-                    nw_protocol_stack_set_transport_protocol(protocol_stack, tcp_options);
-                }
-            }
+    __block NSString *hostCopy = [host copy];
+    __block NSMutableString *requestURICopy = [requestURI mutableCopy];
+
+    dispatch_async(queue, ^{
+        // 1. 先做 DNS 解析并记录真实 dnsStart/dnsEnd（getaddrinfo），带 5 秒超时
+        const int64_t dnsTimeoutNs = (int64_t)(5 * NSEC_PER_SEC);
+        dispatch_semaphore_t dnsSem = dispatch_semaphore_create(0);
+        __block struct addrinfo *res = NULL;
+        __block int gaiRet = EAI_AGAIN;
+
+        self.dnsStartTime = CFAbsoluteTimeGetCurrent();
+        dispatch_async(queue, ^{
+            struct addrinfo hints = {0};
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+            gaiRet = getaddrinfo(hostC, portC, &hints, &res);
+            dispatch_semaphore_signal(dnsSem);
+        });
+        if (dispatch_semaphore_wait(dnsSem, dispatch_time(DISPATCH_TIME_NOW, dnsTimeoutNs)) != 0) {
+            gaiRet = EAI_AGAIN;
         }
-    }
-    if (!params) {
-        NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create parameters"}];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
-        });
-        return;
-    }
+        self.dnsEndTime = CFAbsoluteTimeGetCurrent();
+        if (gaiRet != 0 || !res) {
+            if (res) freeaddrinfo(res);
+            res = NULL;
+            self.dnsStartTime = 0;
+            self.dnsEndTime = 0;
+        }
 
-    NSString *ifName = self.interfaceInfo[@"name"] ?: @"";
-    if ([ifName hasPrefix:@"en"]) {
-        nw_parameters_set_required_interface_type(params, nw_interface_type_wifi);
-        nw_parameters_prohibit_interface_type(params, nw_interface_type_cellular);
-    } else if ([ifName hasPrefix:@"pdp_ip"]) {
-        nw_parameters_set_required_interface_type(params, nw_interface_type_cellular);
-        nw_parameters_prohibit_interface_type(params, nw_interface_type_wifi);
-    }
+        nw_endpoint_t endpoint = NULL;
+        if (res && res->ai_addr) {
+            struct sockaddr_storage storage = {0};
+            size_t addrlen = (res->ai_addr->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
+            memcpy(&storage, res->ai_addr, (res->ai_addrlen < addrlen ? res->ai_addrlen : addrlen));
+            if (res->ai_addr->sa_family == AF_INET) {
+                ((struct sockaddr_in *)&storage)->sin_port = htons(port);
+            } else if (res->ai_addr->sa_family == AF_INET6) {
+                ((struct sockaddr_in6 *)&storage)->sin6_port = htons(port);
+            }
+            // HTTPS 且启用系统 TLS 校验时必须用 host endpoint，否则 TLS 层无 hostname 校验证书会失败或挂起直至超时（enableSSLVerification=YES 超时的原因）
+            endpoint = isHTTPS ? nw_endpoint_create_host(hostC, portC) : nw_endpoint_create_address((struct sockaddr *)&storage);
+            char ipStr[INET6_ADDRSTRLEN];
+            const void *ipPtr = (res->ai_addr->sa_family == AF_INET)
+                ? (const void *)&((struct sockaddr_in *)res->ai_addr)->sin_addr
+                : (const void *)&((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
+            if (inet_ntop(res->ai_addr->sa_family, ipPtr, ipStr, sizeof(ipStr))) {
+                self.resolvedRemoteAddress = [NSString stringWithUTF8String:ipStr];
+            }
+            freeaddrinfo(res);
+        }
+        if (!endpoint) {
+            endpoint = nw_endpoint_create_host(hostC, portC);
+        }
 
-    nw_endpoint_t endpoint = nw_endpoint_create_host(hostC, portC);
-    if (!endpoint) {
-        params = NULL;  // ARC: 释放我们持有的引用
-        NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid endpoint"}];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
-        });
-        return;
-    }
+        // 使用显式 block 创建 parameters，避免在部分系统/模拟器上传 NULL 导致 nw_parameters_create_secure_tcp 返回 NULL（HTTP 探测 HTTPS 时报 "Failed to create parameters"）
+        nw_parameters_t params = NULL;
+        if (isHTTPS) {
+            nw_parameters_configure_protocol_block_t use_default_tls = ^(nw_protocol_options_t tls_options) {
+                (void)tls_options;  // 使用系统默认 TLS，不修改 options
+            };
+            params = nw_parameters_create_secure_tcp(use_default_tls, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        } else {
+            params = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        }
+        if (!params) {
+            NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create parameters"}];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
+            });
+            return;
+        }
 
-    __block nw_connection_t c_conn = nw_connection_create(endpoint, params);
-    params = NULL;   // 连接已持有，ARC 下不再持有
-    endpoint = NULL;
+        NSString *ifName = self.interfaceInfo[@"name"] ?: @"";
+        if ([ifName hasPrefix:@"en"]) {
+            nw_parameters_set_required_interface_type(params, nw_interface_type_wifi);
+            nw_parameters_prohibit_interface_type(params, nw_interface_type_cellular);
+        } else if ([ifName hasPrefix:@"pdp_ip"]) {
+            nw_parameters_set_required_interface_type(params, nw_interface_type_cellular);
+            nw_parameters_prohibit_interface_type(params, nw_interface_type_wifi);
+        }
+
+        if (!endpoint) {
+            params = NULL;
+            NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid endpoint"}];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
+            });
+            return;
+        }
+
+        __block nw_connection_t c_conn = nw_connection_create(endpoint, params);
+        params = NULL;
+        endpoint = NULL;
     if (!c_conn) {
         NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create connection"}];
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -229,41 +329,84 @@ API_AVAILABLE(ios(12.0)) {
     __block NSUInteger receivedBytes = 0;
     __block NSInteger statusCode = -2;
     __block CFAbsoluteTime taskStart = CFAbsoluteTimeGetCurrent();
+    __weak __typeof(self) weakSelf = self;
 
-    void (^finish)(NSError *) = ^(NSError *error) {
+    // connectionAlreadyDead=YES 时不再调用 nw_connection_cancel，避免在 state_failed/state_cancelled 时对已由系统回收的连接再 cancel 导致异常退出（Enqueued from com.apple.root.default-qos）
+    void (^finish)(NSError *, BOOL) = ^(NSError *error, BOOL connectionAlreadyDead) {
         if (completed) return;
         completed = YES;
+        nw_connection_t connToCancel = NULL;
         if (c_conn) {
-            nw_connection_cancel(c_conn);
-            c_conn = NULL;  // ARC: 释放连接引用
+            if (!connectionAlreadyDead) {
+                connToCancel = c_conn;
+                c_conn = NULL;
+                // 避免在 connection 回调栈内同步 cancel 导致崩溃（Enqueued from com.apple.network.connections）
+                dispatch_async(queue, ^{
+                    if (connToCancel) nw_connection_cancel(connToCancel);
+                });
+            } else {
+                c_conn = NULL;
+            }
         }
-        self.taskStartTime = taskStart;
-        self.receivedBytes = receivedBytes;
-        self.networkResultStatusCode = statusCode;
-        NSDictionary *dict = [self buildFinalReportDictWithTask:nil error:error];
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        strongSelf.taskStartTime = taskStart;
+        strongSelf.receivedBytes = receivedBytes;
+        strongSelf.networkResultStatusCode = statusCode;
+        NSDictionary *dict = [strongSelf buildFinalReportDictWithTask:nil error:error];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completion) completion(dict, error);
         });
     };
 
-    nw_connection_set_queue(c_conn, queue);
-    nw_connection_set_state_changed_handler(c_conn, ^(nw_connection_state_t state, nw_error_t error) {
-        switch (state) {
+        nw_connection_set_queue(c_conn, queue);
+        nw_connection_set_state_changed_handler(c_conn, ^(nw_connection_state_t state, nw_error_t error) {
+            __strong __typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            switch (state) {
             case nw_connection_state_ready: {
-                NSString *req = [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\nHost: %@\r\nUser-Agent: CLSHttping/2.0.0\r\nConnection: close\r\n\r\n", requestURI, host];
+                if (strongSelf.connectionReadyTime == 0) {
+                    strongSelf.connectionReadyTime = CFAbsoluteTimeGetCurrent();
+                }
+                if (!strongSelf.resolvedRemoteAddress && @available(iOS 14.0, *)) {
+                    nw_path_t path = nw_connection_copy_current_path(c_conn);
+                    if (path) {
+                        nw_endpoint_t remote_ep = nw_path_copy_effective_remote_endpoint(path);
+                        if (remote_ep) {
+                            const struct sockaddr *addr = nw_endpoint_get_address(remote_ep);
+                            if (addr) {
+                                char ipStr[INET6_ADDRSTRLEN];
+                                const void *ipPtr = (addr->sa_family == AF_INET)
+                                    ? (const void *)&((const struct sockaddr_in *)addr)->sin_addr
+                                    : (const void *)&((const struct sockaddr_in6 *)addr)->sin6_addr;
+                                if (inet_ntop(addr->sa_family, ipPtr, ipStr, sizeof(ipStr))) {
+                                    strongSelf.resolvedRemoteAddress = [NSString stringWithUTF8String:ipStr];
+                                }
+                            }
+                            cls_nw_object_release((__bridge void *)remote_ep);
+                        }
+                        cls_nw_object_release((__bridge void *)path);
+                    }
+                }
+                NSString *req = [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\nHost: %@\r\nUser-Agent: CLSHttping/2.0.0\r\nConnection: close\r\n\r\n", requestURICopy, hostCopy];
                 NSData *reqData = [req dataUsingEncoding:NSUTF8StringEncoding];
+                strongSelf.sentBytes = reqData.length;
                 dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, queue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 nw_connection_send(c_conn, sendData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t sendError) {
                     if (sendError) {
-                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}]);
+                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
                         return;
                     }
                     nw_connection_receive(c_conn, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t recvError) {
                         if (recvError) {
-                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}]);
+                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}], NO);
                             return;
                         }
                         if (content && dispatch_data_get_size(content) > 0) {
+                            __strong __typeof(weakSelf) strongSelfRecv = weakSelf;
+                            if (strongSelfRecv && strongSelfRecv.firstByteArrivalTime == 0) {
+                                strongSelfRecv.firstByteArrivalTime = CFAbsoluteTimeGetCurrent();
+                            }
                             size_t size = 0;
                             const void *buf = NULL;
                             dispatch_data_t mapped = dispatch_data_create_map(content, &buf, &size);
@@ -281,16 +424,17 @@ API_AVAILABLE(ios(12.0)) {
                             }
                             (void)mapped;
                         }
-                        finish(nil);
+                        // 成功收到数据后不再 cancel，避免与 connection 自关闭竞争导致崩溃
+                        finish(nil, YES);
                     });
                 });
                 break;
             }
             case nw_connection_state_failed:
-                finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection failed"}]);
+                finish(cls_connection_failed_error(error, isHTTPS), YES);  // 连接已由系统置为 failed，不再 cancel
                 break;
             case nw_connection_state_cancelled:
-                if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection cancelled"}]);
+                if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection cancelled"}], YES);
                 break;
             default:
                 break;
@@ -301,8 +445,9 @@ API_AVAILABLE(ios(12.0)) {
     // timeout 从毫秒转换为纳秒
     int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), queue, ^{
-        if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}]);
+        if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}], NO);
     });
+    }); // end dispatch_async(queue)
 }
 
 #if __has_include(<Security/SecProtocolOptions.h>)
@@ -372,18 +517,30 @@ API_AVAILABLE(ios(12.0)) {
     __block NSUInteger receivedBytes = 0;
     __block NSInteger statusCode = -2;
     __block CFAbsoluteTime taskStart = CFAbsoluteTimeGetCurrent();
+    __weak __typeof(self) weakSelf = self;
 
-    void (^finish)(NSError *) = ^(NSError *error) {
+    void (^finish)(NSError *, BOOL) = ^(NSError *error, BOOL connectionAlreadyDead) {
         if (completed) return;
         completed = YES;
+        nw_connection_t connToCancel = NULL;
         if (c_conn) {
-            nw_connection_cancel(c_conn);
-            c_conn = NULL;
+            if (!connectionAlreadyDead) {
+                connToCancel = c_conn;
+                c_conn = NULL;
+                // 避免在 connection 回调栈内同步 cancel 导致崩溃（Enqueued from com.apple.network.connections）
+                dispatch_async(queue, ^{
+                    if (connToCancel) nw_connection_cancel(connToCancel);
+                });
+            } else {
+                c_conn = NULL;
+            }
         }
-        self.taskStartTime = taskStart;
-        self.receivedBytes = receivedBytes;
-        self.networkResultStatusCode = statusCode;
-        NSDictionary *dict = [self buildFinalReportDictWithTask:nil error:error];
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        strongSelf.taskStartTime = taskStart;
+        strongSelf.receivedBytes = receivedBytes;
+        strongSelf.networkResultStatusCode = statusCode;
+        NSDictionary *dict = [strongSelf buildFinalReportDictWithTask:nil error:error];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completion) completion(dict, error);
         });
@@ -391,22 +548,52 @@ API_AVAILABLE(ios(12.0)) {
 
     nw_connection_set_queue(c_conn, queue);
     nw_connection_set_state_changed_handler(c_conn, ^(nw_connection_state_t state, nw_error_t error) {
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
         switch (state) {
             case nw_connection_state_ready: {
+                if (strongSelf.connectionReadyTime == 0) {
+                    strongSelf.connectionReadyTime = CFAbsoluteTimeGetCurrent();
+                }
+                if (!strongSelf.resolvedRemoteAddress && @available(iOS 14.0, *)) {
+                    nw_path_t path_copy = nw_connection_copy_current_path(c_conn);
+                    if (path_copy) {
+                        nw_endpoint_t remote_ep = nw_path_copy_effective_remote_endpoint(path_copy);
+                        if (remote_ep) {
+                            const struct sockaddr *addr = nw_endpoint_get_address(remote_ep);
+                            if (addr) {
+                                char ipStr[INET6_ADDRSTRLEN];
+                                const void *ipPtr = (addr->sa_family == AF_INET)
+                                    ? (const void *)&((const struct sockaddr_in *)addr)->sin_addr
+                                    : (const void *)&((const struct sockaddr_in6 *)addr)->sin6_addr;
+                                if (inet_ntop(addr->sa_family, ipPtr, ipStr, sizeof(ipStr))) {
+                                    strongSelf.resolvedRemoteAddress = [NSString stringWithUTF8String:ipStr];
+                                }
+                            }
+                            cls_nw_object_release((__bridge void *)remote_ep);
+                        }
+                        cls_nw_object_release((__bridge void *)path_copy);
+                    }
+                }
                 NSString *req = [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\nHost: %@\r\nUser-Agent: CLSHttping/2.0.0\r\nConnection: close\r\n\r\n", path, host];
                 NSData *reqData = [req dataUsingEncoding:NSUTF8StringEncoding];
+                strongSelf.sentBytes = reqData.length;
                 dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, queue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 nw_connection_send(c_conn, sendData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t sendError) {
                     if (sendError) {
-                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}]);
+                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
                         return;
                     }
                     nw_connection_receive(c_conn, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t recvError) {
                         if (recvError) {
-                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}]);
+                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}], NO);
                             return;
                         }
                         if (content && dispatch_data_get_size(content) > 0) {
+                            __strong __typeof(weakSelf) strongSelfRecv = weakSelf;
+                            if (strongSelfRecv && strongSelfRecv.firstByteArrivalTime == 0) {
+                                strongSelfRecv.firstByteArrivalTime = CFAbsoluteTimeGetCurrent();
+                            }
                             size_t size = 0;
                             const void *buf = NULL;
                             dispatch_data_t mapped = dispatch_data_create_map(content, &buf, &size);
@@ -424,16 +611,17 @@ API_AVAILABLE(ios(12.0)) {
                             }
                             (void)mapped;  // 保持映射区域有效直至解析完成
                         }
-                        finish(nil);
+                        // 成功收到数据后不再 cancel，避免与 connection 自关闭竞争导致崩溃（block_invoke_5）
+                        finish(nil, YES);
                     });
                 });
                 break;
             }
             case nw_connection_state_failed:
-                finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection failed"}]);
+                finish(cls_connection_failed_error(error, YES), YES);  // NoSSL 路径仅用于 HTTPS；连接已 failed，不再 cancel
                 break;
             case nw_connection_state_cancelled:
-                if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection cancelled"}]);
+                if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Connection cancelled"}], YES);
                 break;
             default:
                 break;
@@ -444,45 +632,15 @@ API_AVAILABLE(ios(12.0)) {
     // timeout 从毫秒转换为纳秒（NoSSL 路径）
     int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), queue, ^{
-        if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}]);
+        if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}], NO);
     });
 }
 #endif
 #endif
 
-- (void)setupTimeoutTimer {
-    if (_timeoutTimer) {
-        dispatch_source_cancel(_timeoutTimer);
-    }
 
-    _timeoutTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-    if (_timeoutTimer) {
-        // timeout 从毫秒转换为纳秒
-        int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
-        dispatch_source_set_timer(_timeoutTimer,
-                                 dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds),
-                                 DISPATCH_TIME_FOREVER, 0);
-
-        __weak __typeof(self) weakSelf = self;
-        dispatch_source_set_event_handler(_timeoutTimer, ^{
-            __strong __typeof(weakSelf) strongSelf = weakSelf;
-            if (strongSelf) {
-                NSError *timeoutError = [NSError errorWithDomain:@"CLSHttpingErrorDomain"
-                                                          code:-1
-                                                      userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}];
-                [strongSelf completeWithError:timeoutError];
-            }
-        });
-        dispatch_resume(_timeoutTimer);
-    }
-}
 
 - (void)completeWithError:(NSError *)error {
-    if (_timeoutTimer) {
-        dispatch_source_cancel(_timeoutTimer);
-        _timeoutTimer = nil;
-    }
-
     // 直接生成最终上报字典
     NSDictionary *finalReportDict = [self buildFinalReportDictWithTask:nil error:error];
 
@@ -511,14 +669,9 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task
 didCompleteWithError:(NSError *)error {
-    if (_timeoutTimer) {
-        dispatch_source_cancel(_timeoutTimer);
-        _timeoutTimer = nil;
-    }
-
     // ✅ 增强错误日志：输出详细错误信息
     if (error) {
-        NSLog(@"[HTTP] 请求失败 - Domain: %@, Code: %ld, Description: %@", 
+        NSLog(@"[HTTP] 请求失败 - Domain: %@, Code: %ld, Description: %@",
               error.domain, (long)error.code, error.localizedDescription);
         NSLog(@"[HTTP] 请求 URL: %@", task.originalRequest.URL.absoluteString);
         NSLog(@"[HTTP] 网卡接口: %@", self.interfaceInfo[@"name"]);
@@ -675,6 +828,83 @@ didReceiveData:(NSData *)data {
     NSMutableDictionary *finalReportDict = [NSMutableDictionary dictionary];
     CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
     NSTimeInterval totalTime = (endTime - self.processStartTime) * 1000;
+
+    // Network.framework 路径（task 为 nil）无 NSURLSessionTaskMetrics，用 taskStart/end 与首包时间填充 timingMetrics，避免 desc 与时间指标全空
+    if (!task && self.taskStartTime > 0) {
+        NSDate *startDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.taskStartTime];
+        NSDate *endDate = [NSDate dateWithTimeIntervalSinceReferenceDate:endTime];
+        NSString *startStr = [CLSStringUtils formatDateToMillisecondString:startDate];
+        NSString *endStr = [CLSStringUtils formatDateToMillisecondString:endDate];
+        self.timingMetrics[@"callStart"] = startStr;
+        self.timingMetrics[@"callEnd"] = endStr;
+        self.timingMetrics[@"connectionReleased"] = endStr;
+        // 连接/首包时间：优先首包时间；否则用 connectionReadyTime（TCP+TLS 就绪）；再否则用 start
+        NSDate *connectEndDate = startDate;
+        NSString *connectEndStr = startStr;
+        if (self.firstByteArrivalTime > 0) {
+            NSTimeInterval firstByteMs = (self.firstByteArrivalTime - self.taskStartTime) * 1000;
+            self.timingMetrics[@"firstByteTime"] = @(firstByteMs);
+            NSDate *firstByteDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.firstByteArrivalTime];
+            connectEndDate = firstByteDate;
+            connectEndStr = [CLSStringUtils formatDateToMillisecondString:firstByteDate];
+            self.timingMetrics[@"responseHeadersStart"] = connectEndStr;
+            self.timingMetrics[@"responseHeaderEnd"] = connectEndStr;
+            self.timingMetrics[@"responseBodyStart"] = connectEndStr;
+        } else if (self.connectionReadyTime > 0) {
+            connectEndDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.connectionReadyTime];
+            connectEndStr = [CLSStringUtils formatDateToMillisecondString:connectEndDate];
+        }
+        self.timingMetrics[@"responseBodyEnd"] = endStr;
+        self.timingMetrics[@"allByteTime"] = @(totalTime);
+        self.timingMetrics[@"httpProtocol"] = @"HTTP/1.1";
+        // tcpTime/sslTime：连接就绪时间 = TCP(+TLS) 建立完成，HTTPS 记为 sslTime，HTTP 记为 tcpTime
+        NSURL *urlForScheme = [NSURL URLWithString:self.request.domain];
+        BOOL isHTTPS = urlForScheme && [urlForScheme.scheme.lowercaseString isEqualToString:@"https"];
+        if (self.connectionReadyTime > 0 && self.taskStartTime > 0) {
+            NSTimeInterval connectMs = (self.connectionReadyTime - self.taskStartTime) * 1000;
+            if (connectMs < 0) connectMs = 0;
+            if (isHTTPS) {
+                self.timingMetrics[@"tcpTime"] = @0;
+                self.timingMetrics[@"sslTime"] = @(connectMs);
+            } else {
+                self.timingMetrics[@"tcpTime"] = @(connectMs);
+                self.timingMetrics[@"sslTime"] = @0;
+            }
+        } else {
+            self.timingMetrics[@"tcpTime"] = @0;
+            self.timingMetrics[@"sslTime"] = @0;
+        }
+        if (self.sentBytes > 0) {
+            self.timingMetrics[@"sendBytes"] = @(self.sentBytes);
+        }
+        // 补全 desc 其余字段；若有真实 DNS 时间（getaddrinfo 测得）则优先使用
+        if (self.dnsStartTime > 0 && self.dnsEndTime > 0) {
+            NSDate *dnsStartDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.dnsStartTime];
+            NSDate *dnsEndDate = [NSDate dateWithTimeIntervalSinceReferenceDate:self.dnsEndTime];
+            self.timingMetrics[@"dnsStart"] = [CLSStringUtils formatDateToMillisecondString:dnsStartDate];
+            self.timingMetrics[@"dnsEnd"] = [CLSStringUtils formatDateToMillisecondString:dnsEndDate];
+            NSTimeInterval dnsTimeMs = (self.dnsEndTime - self.dnsStartTime) * 1000;
+            self.timingMetrics[@"dnsTime"] = @(dnsTimeMs);
+            NSTimeInterval waitDnsMs = (self.dnsStartTime - self.processStartTime) * 1000;
+            if (waitDnsMs >= 0) self.timingMetrics[@"waitDnsTime"] = @(waitDnsMs);
+        } else {
+            self.timingMetrics[@"dnsStart"] = startStr;
+            self.timingMetrics[@"dnsEnd"] = startStr;
+            self.timingMetrics[@"dnsTime"] = @0;
+        }
+        if (self.resolvedRemoteAddress.length > 0) {
+            self.timingMetrics[@"remoteAddr"] = self.resolvedRemoteAddress;
+        }
+        self.timingMetrics[@"connectStart"] = startStr;
+        self.timingMetrics[@"connectEnd"] = connectEndStr;
+        self.timingMetrics[@"requestHeaderStart"] = startStr;
+        self.timingMetrics[@"requestHeaderEnd"] = connectEndStr;
+        if (isHTTPS) {
+            self.timingMetrics[@"secureConnectStart"] = startStr;
+            self.timingMetrics[@"secureConnectEnd"] = connectEndStr;
+        }
+    }
+
     // -------------------------- 1. 构建原netOrigin核心字段 --------------------------
     NSString *remoteAddr = self.timingMetrics[@"remoteAddr"] ?: @"";
     NSURL *requestURL = [NSURL URLWithString:self.request.domain];
@@ -925,3 +1155,4 @@ didReceiveData:(NSData *)data {
 }
 
 @end
+

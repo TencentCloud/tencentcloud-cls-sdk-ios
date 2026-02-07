@@ -39,7 +39,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSMutableData *responseData;
 @property (nonatomic, copy) void (^completionHandler)(NSDictionary *resultDict, NSError *error);
 @property (nonatomic, strong) NSDictionary *interfaceInfo;
-@property (nonatomic, strong) dispatch_source_t timeoutTimer;
 @property (nonatomic, strong, readonly) CLSHttpRequest *request;
 
 - (instancetype)initWithRequest:(CLSHttpRequest *)request;
