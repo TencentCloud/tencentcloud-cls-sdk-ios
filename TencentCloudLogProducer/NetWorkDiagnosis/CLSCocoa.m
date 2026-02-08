@@ -138,6 +138,17 @@
     }
     
     NSString *carrier = [CLSDeviceUtils getCarrier];
+    // 非真实运营商名或占位符时使用平台标识
+    NSString *trimmed = [carrier stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (!carrier || carrier.length == 0 ||
+        [trimmed isEqualToString:@"Unknown"] ||
+        [trimmed isEqualToString:@"无运营商"] ||
+        [trimmed isEqualToString:@"-"] ||
+        [trimmed isEqualToString:@"--"] ||
+        [trimmed isEqualToString:@"占位符"] ||
+        [trimmed caseInsensitiveCompare:@"placeholder"] == NSOrderedSame) {
+        carrier = @"IOS";
+    }
     
     NSLog(@"🌐 [CLSCocoa] interfaceName = [%@]", interfaceName ?: @"(nil)");
     NSLog(@"🌐 [CLSCocoa] networkType = [%@], length=%lu", networkType, (unsigned long)networkType.length);
