@@ -619,6 +619,13 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
           (long)self.request.port, totalProbes, self.request.timeout);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
+    if (availableInterfaces.count == 0) {
+        NSLog(@"TCPing 无可用网卡接口（网卡可能被禁用）");
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (complete) complete(emptyResult);
+        return;
+    }
+    
     for (NSDictionary *currentInterface in availableInterfaces) {
         NSLog(@"availableInterfaces:%@", currentInterface);
         

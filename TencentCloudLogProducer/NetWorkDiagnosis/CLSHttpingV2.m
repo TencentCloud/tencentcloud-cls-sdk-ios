@@ -1124,6 +1124,12 @@ didReceiveData:(NSData *)data {
     NSLog(@"✅ HTTP探测参数: timeout=%dms, size=%d bytes", self.request.timeout, self.request.size);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
+    if (availableInterfaces.count == 0) {
+        NSLog(@"HTTPing 无可用网卡接口（网卡可能被禁用）");
+        CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
+        if (complate) complate(emptyResult);
+        return;
+    }
     
     // ✅ 多网卡模式：使用串行队列 + 信号量等待每个探测完成（参考 TCPing 实现）
     // ✅ 单网卡模式：for 循环只执行一次，无需后台队列
