@@ -54,9 +54,9 @@ void set_userex(NSDictionary* userEx){
 }
 
 // ICMP Ping 探测
-void cls_ping(const char* host, unsigned int size, unsigned int maxTimes, unsigned int timeout, 
+void cls_ping(const char* host, unsigned int size, unsigned int maxTimes, unsigned int timeout,
               int interval, int prefer, const char* appKey, const char* pageName,
-              void(*callback)(const char*), NSDictionary* userEx, NSDictionary* detectEx, const char* traceId)
+              void(*callback)(const char*), NSDictionary* detectEx, const char* traceId)
 {
     if (!host || !appKey) {
         return;
@@ -94,7 +94,7 @@ void cls_ping(const char* host, unsigned int size, unsigned int maxTimes, unsign
 // TCP 连接探测
 void cls_tcp_ping(const char* host, unsigned int port, unsigned int maxTimes, unsigned int timeout,
                   const char* appKey, const char* pageName,
-                  void(*callback)(const char*), NSDictionary* userEx, NSDictionary* detectEx, const char* traceId)
+                  void(*callback)(const char*), NSDictionary* detectEx, const char* traceId)
 {
     if (!host || !appKey) {
         return;
@@ -128,9 +128,9 @@ void cls_tcp_ping(const char* host, unsigned int port, unsigned int maxTimes, un
 }
 
 // HTTP 探测
-void cls_http_ping(const char* host, unsigned int maxTimes, unsigned int timeout, 
+void cls_http_ping(const char* host, unsigned int maxTimes, unsigned int timeout,
                    int enableSSLVerification, const char* appKey, const char* pageName,
-                   void(*callback)(const char*), NSDictionary* userEx, NSDictionary* detectEx, const char* traceId)
+                   void(*callback)(const char*), NSDictionary* detectEx, const char* traceId)
 {
     if (!host || !appKey) {
         return;
@@ -164,9 +164,9 @@ void cls_http_ping(const char* host, unsigned int maxTimes, unsigned int timeout
 }
 
 // DNS 解析探测
-void cls_dns_ping(const char* host, const char* nameServer, unsigned int timeout, 
+void cls_dns_ping(const char* host, const char* nameServer, unsigned int timeout,
                   int prefer, const char* appKey, const char* pageName,
-                  void(*callback)(const char*), NSDictionary* userEx, NSDictionary* detectEx, const char* traceId)
+                  void(*callback)(const char*), NSDictionary* detectEx, const char* traceId)
 {
     if (!host || !appKey) {
         return;
@@ -205,7 +205,7 @@ void cls_dns_ping(const char* host, const char* nameServer, unsigned int timeout
 // MTR 路径探测
 void cls_mtr_ping(const char* host, unsigned int maxTTL, unsigned int maxTimes, unsigned int timeout,
                   const char* protocol, int prefer, const char* appKey, const char* pageName,
-                  void(*callback)(const char*), NSDictionary* userEx, NSDictionary* detectEx, const char* traceId)
+                  void(*callback)(const char*), NSDictionary* detectEx, const char* traceId)
 {
     if (!host || !appKey) {
         return;
