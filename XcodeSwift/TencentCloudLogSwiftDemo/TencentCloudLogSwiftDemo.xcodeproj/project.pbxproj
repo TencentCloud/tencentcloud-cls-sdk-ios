@@ -8,15 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		7C7D58A69F9455A54D83C2A8 /* Pods_TencentCloudLogSwiftDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CA80B8460FF39E456B9F81E /* Pods_TencentCloudLogSwiftDemo.framework */; };
+		5E6C157D9D2044E999C30400 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ADC80D158D144958A542898 /* MainViewController.swift */; };
+		3113353CFFA242F38A071EDE /* LogUploadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C96147BBED8474CA01DB4BB /* LogUploadViewController.swift */; };
+		2508DAE65E8A4F368CDACCB1 /* NetworkDetectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDCBB83EA5D643779EF2E016 /* NetworkDetectViewController.swift */; };
 		996E3F802859905E00982B7E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F7F2859905E00982B7E /* AppDelegate.swift */; };
 		996E3F822859905E00982B7E /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F812859905E00982B7E /* SceneDelegate.swift */; };
-		996E3F842859905E00982B7E /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F832859905E00982B7E /* ViewController.swift */; };
+
 		996E3F872859905E00982B7E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F852859905E00982B7E /* Main.storyboard */; };
 		996E3F892859906000982B7E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F882859906000982B7E /* Assets.xcassets */; };
 		996E3F8C2859906000982B7E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F8A2859906000982B7E /* LaunchScreen.storyboard */; };
-		996E3F9E2859913600982B7E /* utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F942859913600982B7E /* utils.swift */; };
+
 		996E3F9F2859913600982B7E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F962859913600982B7E /* Assets.xcassets */; };
-		996E3FA02859913600982B7E /* sendcallback.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F972859913600982B7E /* sendcallback.m */; };
 		996E3FA12859913600982B7E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F9A2859913600982B7E /* LaunchScreen.storyboard */; };
 		996E3FA22859913600982B7E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F9C2859913600982B7E /* Main.storyboard */; };
 /* End PBXBuildFile section */
@@ -26,17 +28,18 @@
 		96D4F3ED8FF3201AE22E171A /* Pods-TencentCloudLogSwiftDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogSwiftDemo.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogSwiftDemo/Pods-TencentCloudLogSwiftDemo.release.xcconfig"; sourceTree = "<group>"; };
 		996E3F7C2859905E00982B7E /* TencentCloudLogSwiftDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TencentCloudLogSwiftDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		996E3F7F2859905E00982B7E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		7ADC80D158D144958A542898 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		3C96147BBED8474CA01DB4BB /* LogUploadViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogUploadViewController.swift; sourceTree = "<group>"; };
+		EDCBB83EA5D643779EF2E016 /* NetworkDetectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDetectViewController.swift; sourceTree = "<group>"; };
 		996E3F812859905E00982B7E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		996E3F832859905E00982B7E /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+
 		996E3F862859905E00982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		996E3F882859906000982B7E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		996E3F8B2859906000982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		996E3F8D2859906000982B7E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		996E3F932859913600982B7E /* TencentCloudLogSwiftDemo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TencentCloudLogSwiftDemo-Bridging-Header.h"; sourceTree = "<group>"; };
-		996E3F942859913600982B7E /* utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = utils.swift; sourceTree = "<group>"; };
-		996E3F952859913600982B7E /* sendcallback.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sendcallback.h; sourceTree = "<group>"; };
+
 		996E3F962859913600982B7E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		996E3F972859913600982B7E /* sendcallback.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = sendcallback.m; sourceTree = "<group>"; };
 		996E3F982859913600982B7E /* TencentCloundLogSwiftDemo-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "TencentCloundLogSwiftDemo-Bridging-Header.h"; sourceTree = "<group>"; };
 		996E3F9B2859913600982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		996E3F9D2859913600982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Main.storyboard; sourceTree = "<group>"; };
@@ -95,13 +98,12 @@
 			children = (
 				996E3F962859913600982B7E /* Assets.xcassets */,
 				996E3F992859913600982B7E /* Base.lproj */,
-				996E3F952859913600982B7E /* sendcallback.h */,
-				996E3F972859913600982B7E /* sendcallback.m */,
 				996E3F982859913600982B7E /* TencentCloundLogSwiftDemo-Bridging-Header.h */,
-				996E3F942859913600982B7E /* utils.swift */,
 				996E3F7F2859905E00982B7E /* AppDelegate.swift */,
+				7ADC80D158D144958A542898 /* MainViewController.swift */,
+				3C96147BBED8474CA01DB4BB /* LogUploadViewController.swift */,
+				EDCBB83EA5D643779EF2E016 /* NetworkDetectViewController.swift */,
 				996E3F812859905E00982B7E /* SceneDelegate.swift */,
-				996E3F832859905E00982B7E /* ViewController.swift */,
 				996E3F852859905E00982B7E /* Main.storyboard */,
 				996E3F882859906000982B7E /* Assets.xcassets */,
 				996E3F8A2859906000982B7E /* LaunchScreen.storyboard */,
@@ -239,11 +241,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				996E3F842859905E00982B7E /* ViewController.swift in Sources */,
 				996E3F802859905E00982B7E /* AppDelegate.swift in Sources */,
+				5E6C157D9D2044E999C30400 /* MainViewController.swift in Sources */,
+				3113353CFFA242F38A071EDE /* LogUploadViewController.swift in Sources */,
+				2508DAE65E8A4F368CDACCB1 /* NetworkDetectViewController.swift in Sources */,
 				996E3F822859905E00982B7E /* SceneDelegate.swift in Sources */,
-				996E3FA02859913600982B7E /* sendcallback.m in Sources */,
-				996E3F9E2859913600982B7E /* utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -413,10 +415,10 @@
 				INFOPLIST_FILE = TencentCloudLogSwiftDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -446,10 +448,10 @@
 				INFOPLIST_FILE = TencentCloudLogSwiftDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

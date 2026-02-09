@@ -1,13 +1,12 @@
 ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES
 CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO
-EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64
-FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/FMDB" "${PODS_CONFIGURATION_BUILD_DIR}/Protobuf" "${PODS_CONFIGURATION_BUILD_DIR}/Reachability" "${PODS_CONFIGURATION_BUILD_DIR}/TencentCloudLogProducer" "${PODS_ROOT}/GMOpenSSL/GMFrameworks"
+FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/FMDB" "${PODS_CONFIGURATION_BUILD_DIR}/Protobuf" "${PODS_CONFIGURATION_BUILD_DIR}/Reachability" "${PODS_CONFIGURATION_BUILD_DIR}/TencentCloudLogProducer"
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1 $(inherited) GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS=1
 HEADER_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/FMDB/FMDB.framework/Headers" "${PODS_CONFIGURATION_BUILD_DIR}/Protobuf/Protobuf.framework/Headers" "${PODS_CONFIGURATION_BUILD_DIR}/Reachability/Reachability.framework/Headers" "${PODS_CONFIGURATION_BUILD_DIR}/TencentCloudLogProducer/TencentCloudLogProducer.framework/Headers"
 LD_RUNPATH_SEARCH_PATHS = $(inherited) /usr/lib/swift '@executable_path/Frameworks' '@loader_path/Frameworks'
-LIBRARY_SEARCH_PATHS = $(inherited) "${PODS_ROOT}/../../../TencentCloudLogProducer/tencentcloud-log-c-sdk/curl/lib" "${TOOLCHAIN_DIR}/usr/lib/swift/${PLATFORM_NAME}" /usr/lib/swift
-OTHER_LDFLAGS = $(inherited) -ObjC -l"curl" -l"sqlite3" -framework "FMDB" -framework "Foundation" -framework "Protobuf" -framework "Reachability" -framework "SystemConfiguration" -framework "TencentCloudLogProducer" -framework "openssl"
-OTHER_MODULE_VERIFIER_FLAGS = $(inherited) "-F${PODS_CONFIGURATION_BUILD_DIR}/FMDB" "-F${PODS_CONFIGURATION_BUILD_DIR}/GMOpenSSL" "-F${PODS_CONFIGURATION_BUILD_DIR}/Protobuf" "-F${PODS_CONFIGURATION_BUILD_DIR}/Reachability" "-F${PODS_CONFIGURATION_BUILD_DIR}/TencentCloudLogProducer"
+LIBRARY_SEARCH_PATHS = $(inherited) "${TOOLCHAIN_DIR}/usr/lib/swift/${PLATFORM_NAME}" /usr/lib/swift
+OTHER_LDFLAGS = $(inherited) -l"resolv" -l"sqlite3" -l"z" -framework "CoreTelephony" -framework "FMDB" -framework "Foundation" -framework "Network" -framework "Protobuf" -framework "Reachability" -framework "SystemConfiguration" -framework "TencentCloudLogProducer" -framework "UIKit"
+OTHER_MODULE_VERIFIER_FLAGS = $(inherited) "-F${PODS_CONFIGURATION_BUILD_DIR}/FMDB" "-F${PODS_CONFIGURATION_BUILD_DIR}/Protobuf" "-F${PODS_CONFIGURATION_BUILD_DIR}/Reachability" "-F${PODS_CONFIGURATION_BUILD_DIR}/TencentCloudLogProducer"
 OTHER_SWIFT_FLAGS = $(inherited) -D COCOAPODS
 PODS_BUILD_DIR = ${BUILD_DIR}
 PODS_CONFIGURATION_BUILD_DIR = ${PODS_BUILD_DIR}/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)
