@@ -1,1 +1,16 @@
 .idea/**
+
+# 分析报告目录（自动生成的报告文件，不提交到 Git）
+reports/
+
+# AI 技能相关文件（本地开发工具，不提交到 Git）
+.codebuddy/
+SKILL_README.md
+cls-ios-sdk.zip
+
+# 脚本目录（开发工具脚本，不提交到 Git）
+scripts/
+
+# CodeBuddy 生成的分析报告（不提交到 Git）
+.codebuddy/reports/
+*.codebuddy.md

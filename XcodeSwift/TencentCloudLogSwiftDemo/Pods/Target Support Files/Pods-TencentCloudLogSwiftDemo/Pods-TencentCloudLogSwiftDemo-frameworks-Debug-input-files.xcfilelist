@@ -2,3 +2,4 @@ ${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogSwiftDemo/Pods-TencentClou
 ${BUILT_PRODUCTS_DIR}/FMDB/FMDB.framework
 ${BUILT_PRODUCTS_DIR}/Protobuf/Protobuf.framework
 ${BUILT_PRODUCTS_DIR}/Reachability/Reachability.framework
+${BUILT_PRODUCTS_DIR}/TencentCloudLogProducer/TencentCloudLogProducer.framework

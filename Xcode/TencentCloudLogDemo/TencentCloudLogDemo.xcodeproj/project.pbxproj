@@ -3,147 +3,177 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 55;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		996E3F2A28598AF600982B7E /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F2928598AF600982B7E /* AppDelegate.m */; };
-		996E3F2D28598AF600982B7E /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F2C28598AF600982B7E /* SceneDelegate.m */; };
-		996E3F3028598AF600982B7E /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F2F28598AF600982B7E /* ViewController.m */; };
-		996E3F3328598AF600982B7E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F3128598AF600982B7E /* Main.storyboard */; };
-		996E3F3528598AF800982B7E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F3428598AF800982B7E /* Assets.xcassets */; };
-		996E3F3828598AF800982B7E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 996E3F3628598AF800982B7E /* LaunchScreen.storyboard */; };
-		996E3F3B28598AF800982B7E /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F3A28598AF800982B7E /* main.m */; };
-		996E3F4D28598C7E00982B7E /* ClsProducerExampleDestroyController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4428598C7E00982B7E /* ClsProducerExampleDestroyController.m */; };
-		996E3F4E28598C7E00982B7E /* ProducerExampleController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4528598C7E00982B7E /* ProducerExampleController.m */; };
-		996E3F4F28598C7E00982B7E /* ExampleViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4828598C7E00982B7E /* ExampleViewController.m */; };
-		996E3F5028598C7E00982B7E /* UtilInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4928598C7E00982B7E /* UtilInfo.m */; };
-		996E3F5128598C7E00982B7E /* MainViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3F4C28598C7E00982B7E /* MainViewController.m */; };
-		996E3FA52860210800982B7E /* ProducerExampleNetDiaController.m in Sources */ = {isa = PBXBuildFile; fileRef = 996E3FA32860210800982B7E /* ProducerExampleNetDiaController.m */; };
-		B356C4E9DDFFB1A77DCDB2A8 /* Pods_TencentCloudLogDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02C857C1E889B15883FAF761 /* Pods_TencentCloudLogDemo.framework */; };
+		2D8C1E44BED2FAEC3FE268C8 /* Pods_TencentCloudLogDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1172D28E830566012A993087 /* Pods_TencentCloudLogDemo.framework */; };
+		D7CA45D38465D3BA780D17BB /* Pods_TencentCloudLogDemoTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 982C618FB43BCD4A88EDD864 /* Pods_TencentCloudLogDemoTests.framework */; };
+		EB7C38792F372DC100346035 /* CLSWiFiOnlyDetectionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EB7C386E2F372DC100346035 /* CLSWiFiOnlyDetectionTests.m */; };
+		EB7C387A2F372DC100346035 /* ZhiyanMtrDetectionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EB7C386F2F372DC100346035 /* ZhiyanMtrDetectionTests.m */; };
+		EB7C387B2F372DC100346035 /* ZhiyanTcppingDetectionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EB7C38702F372DC100346035 /* ZhiyanTcppingDetectionTests.m */; };
+		EB7C387C2F372DC100346035 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = EB7C38712F372DC100346035 /* README.md */; };
+		EB7C387D2F372DC100346035 /* ZhiyanDnsDetectionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EB7C38722F372DC100346035 /* ZhiyanDnsDetectionTests.m */; };
+		EB7C387F2F372DC100346035 /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = EB7C38752F372DC100346035 /* TestPlan.xctestplan */; };
+		EB7C38802F372DC100346035 /* CLSNetworkDiagnosisBaseTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EB7C38762F372DC100346035 /* CLSNetworkDiagnosisBaseTests.m */; };
+		EB7C38812F372DC100346035 /* ZhiyanPingDetectionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EB7C38772F372DC100346035 /* ZhiyanPingDetectionTests.m */; };
+		EB7C38822F372DC100346035 /* TencentcloudLogHttpping.m in Sources */ = {isa = PBXBuildFile; fileRef = EB7C38782F372DC100346035 /* TencentcloudLogHttpping.m */; };
+		EBAE1BE42EE17789009551F0 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = EBAE1BE32EE17789009551F0 /* AppDelegate.m */; };
+		EBAE1BED2EE17789009551F0 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EBAE1BEB2EE17789009551F0 /* Main.storyboard */; };
+		EBAE1BEF2EE1778A009551F0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EBAE1BEE2EE1778A009551F0 /* Assets.xcassets */; };
+		EBAE1BF22EE1778A009551F0 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EBAE1BF02EE1778A009551F0 /* LaunchScreen.storyboard */; };
+		EBAE1BF52EE1778A009551F0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = EBAE1BF42EE1778A009551F0 /* main.m */; };
+		EBCC8ABB2EE28A4E006B5797 /* CLSMainViewController.h in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8ABA2EE28A4E006B5797 /* CLSMainViewController.h */; };
+		EBCC8ABD2EE28A5D006B5797 /* CLSMainViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8ABC2EE28A5D006B5797 /* CLSMainViewController.m */; };
+		EBCC8ABF2EE28A80006B5797 /* CLSLogUploadViewController.h in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8ABE2EE28A80006B5797 /* CLSLogUploadViewController.h */; };
+		EBCC8AC12EE28A8C006B5797 /* CLSLogUploadViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8AC02EE28A8C006B5797 /* CLSLogUploadViewController.m */; };
+		EBCC8AC32EE28AC8006B5797 /* CLSNetworkDetectViewController.h in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8AC22EE28AC8006B5797 /* CLSNetworkDetectViewController.h */; };
+		EBCC8AC52EE28AD7006B5797 /* CLSNetworkDetectViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = EBCC8AC42EE28AD7006B5797 /* CLSNetworkDetectViewController.m */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		EBAE1BFB2EE1778A009551F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EBAE1BD72EE17789009551F0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EBAE1BDE2EE17789009551F0;
+			remoteInfo = TencentCloudLogDemo;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
-		02C857C1E889B15883FAF761 /* Pods_TencentCloudLogDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TencentCloudLogDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		996E3F2528598AF600982B7E /* TencentCloudLogDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TencentCloudLogDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		996E3F2828598AF600982B7E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		996E3F2928598AF600982B7E /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		996E3F2B28598AF600982B7E /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
-		996E3F2C28598AF600982B7E /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
-		996E3F2E28598AF600982B7E /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
-		996E3F2F28598AF600982B7E /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		996E3F3228598AF600982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		996E3F3428598AF800982B7E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		996E3F3728598AF800982B7E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		996E3F3928598AF800982B7E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		996E3F3A28598AF800982B7E /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		996E3F4128598C7E00982B7E /* ExampleViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleViewController.h; sourceTree = "<group>"; };
-		996E3F4428598C7E00982B7E /* ClsProducerExampleDestroyController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClsProducerExampleDestroyController.m; sourceTree = "<group>"; };
-		996E3F4528598C7E00982B7E /* ProducerExampleController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProducerExampleController.m; sourceTree = "<group>"; };
-		996E3F4628598C7E00982B7E /* ClsProducerExampleDestroyController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClsProducerExampleDestroyController.h; sourceTree = "<group>"; };
-		996E3F4728598C7E00982B7E /* ProducerExampleController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProducerExampleController.h; sourceTree = "<group>"; };
-		996E3F4828598C7E00982B7E /* ExampleViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExampleViewController.m; sourceTree = "<group>"; };
-		996E3F4928598C7E00982B7E /* UtilInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UtilInfo.m; sourceTree = "<group>"; };
-		996E3F4A28598C7E00982B7E /* UtilInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UtilInfo.h; sourceTree = "<group>"; };
-		996E3F4B28598C7E00982B7E /* MainViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MainViewController.h; sourceTree = "<group>"; };
-		996E3F4C28598C7E00982B7E /* MainViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainViewController.m; sourceTree = "<group>"; };
-		996E3F5228598C9C00982B7E /* PrefixHeader.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PrefixHeader.pch; sourceTree = "<group>"; };
-		996E3FA32860210800982B7E /* ProducerExampleNetDiaController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProducerExampleNetDiaController.m; sourceTree = "<group>"; };
-		996E3FA42860210800982B7E /* ProducerExampleNetDiaController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProducerExampleNetDiaController.h; sourceTree = "<group>"; };
-		C152E08A9E9828A37344776C /* Pods-TencentCloudLogDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.release.xcconfig"; sourceTree = "<group>"; };
-		E8051E07B9E2F732C1AD21CA /* Pods-TencentCloudLogDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.debug.xcconfig"; sourceTree = "<group>"; };
+		10CCD9C0D9E2642295FFA231 /* Pods-TencentCloudLogDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.release.xcconfig"; sourceTree = "<group>"; };
+		1172D28E830566012A993087 /* Pods_TencentCloudLogDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TencentCloudLogDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B748AE9EABB9A2BFA90FEE2 /* libPods-TencentCloudLogDemoUITests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TencentCloudLogDemoUITests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3EEAC34CDC444E94649BB130 /* Pods-TencentCloudLogDemoUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoUITests.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoUITests/Pods-TencentCloudLogDemoUITests.debug.xcconfig"; sourceTree = "<group>"; };
+		802D771F1115D64CC374912A /* Pods-TencentCloudLogDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.debug.xcconfig"; sourceTree = "<group>"; };
+		88EACAC4DE0B0CA20764BA86 /* Pods-TencentCloudLogDemoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoTests.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests.release.xcconfig"; sourceTree = "<group>"; };
+		982C618FB43BCD4A88EDD864 /* Pods_TencentCloudLogDemoTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TencentCloudLogDemoTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C051D4D41B6E18515315BADD /* Pods-TencentCloudLogDemoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoTests.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests.debug.xcconfig"; sourceTree = "<group>"; };
+		EB7C386E2F372DC100346035 /* CLSWiFiOnlyDetectionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CLSWiFiOnlyDetectionTests.m; sourceTree = "<group>"; };
+		EB7C386F2F372DC100346035 /* ZhiyanMtrDetectionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZhiyanMtrDetectionTests.m; sourceTree = "<group>"; };
+		EB7C38702F372DC100346035 /* ZhiyanTcppingDetectionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZhiyanTcppingDetectionTests.m; sourceTree = "<group>"; };
+		EB7C38712F372DC100346035 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		EB7C38722F372DC100346035 /* ZhiyanDnsDetectionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZhiyanDnsDetectionTests.m; sourceTree = "<group>"; };
+		EB7C38732F372DC100346035 /* CLSNetworkDiagnosisBaseTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CLSNetworkDiagnosisBaseTests.h; sourceTree = "<group>"; };
+		EB7C38752F372DC100346035 /* TestPlan.xctestplan */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
+		EB7C38762F372DC100346035 /* CLSNetworkDiagnosisBaseTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CLSNetworkDiagnosisBaseTests.m; sourceTree = "<group>"; };
+		EB7C38772F372DC100346035 /* ZhiyanPingDetectionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZhiyanPingDetectionTests.m; sourceTree = "<group>"; };
+		EB7C38782F372DC100346035 /* TencentcloudLogHttpping.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TencentcloudLogHttpping.m; sourceTree = "<group>"; };
+		EBAE1BDF2EE17789009551F0 /* TencentCloudLogDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TencentCloudLogDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EBAE1BE22EE17789009551F0 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		EBAE1BE32EE17789009551F0 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		EBAE1BEC2EE17789009551F0 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		EBAE1BEE2EE1778A009551F0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EBAE1BF12EE1778A009551F0 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		EBAE1BF32EE1778A009551F0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		EBAE1BF42EE1778A009551F0 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		EBAE1BFA2EE1778A009551F0 /* TencentCloudLogDemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TencentCloudLogDemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EBCC8ABA2EE28A4E006B5797 /* CLSMainViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CLSMainViewController.h; sourceTree = "<group>"; };
+		EBCC8ABC2EE28A5D006B5797 /* CLSMainViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CLSMainViewController.m; sourceTree = "<group>"; };
+		EBCC8ABE2EE28A80006B5797 /* CLSLogUploadViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CLSLogUploadViewController.h; sourceTree = "<group>"; };
+		EBCC8AC02EE28A8C006B5797 /* CLSLogUploadViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CLSLogUploadViewController.m; sourceTree = "<group>"; };
+		EBCC8AC22EE28AC8006B5797 /* CLSNetworkDetectViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CLSNetworkDetectViewController.h; sourceTree = "<group>"; };
+		EBCC8AC42EE28AD7006B5797 /* CLSNetworkDetectViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CLSNetworkDetectViewController.m; sourceTree = "<group>"; };
+		EBE721352BD12779DBE58DFA /* Pods-TencentCloudLogDemoUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoUITests.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoUITests/Pods-TencentCloudLogDemoUITests.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		996E3F2228598AF600982B7E /* Frameworks */ = {
+		EBAE1BDC2EE17789009551F0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B356C4E9DDFFB1A77DCDB2A8 /* Pods_TencentCloudLogDemo.framework in Frameworks */,
+				2D8C1E44BED2FAEC3FE268C8 /* Pods_TencentCloudLogDemo.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EBAE1BF72EE1778A009551F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D7CA45D38465D3BA780D17BB /* Pods_TencentCloudLogDemoTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		6E7F18F07AB257BC55EAEC5B /* Frameworks */ = {
+		05A3D48F995F3124020BE694 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				02C857C1E889B15883FAF761 /* Pods_TencentCloudLogDemo.framework */,
+				3B748AE9EABB9A2BFA90FEE2 /* libPods-TencentCloudLogDemoUITests.a */,
+				1172D28E830566012A993087 /* Pods_TencentCloudLogDemo.framework */,
+				982C618FB43BCD4A88EDD864 /* Pods_TencentCloudLogDemoTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		996E3F1C28598AF600982B7E = {
+		EBAE1BD62EE17789009551F0 = {
 			isa = PBXGroup;
 			children = (
-				996E3F5228598C9C00982B7E /* PrefixHeader.pch */,
-				996E3F2728598AF600982B7E /* TencentCloudLogDemo */,
-				996E3F2628598AF600982B7E /* Products */,
-				D7C5F74C05ACDECCCEC0900D /* Pods */,
-				6E7F18F07AB257BC55EAEC5B /* Frameworks */,
+				EBAE1BE12EE17789009551F0 /* TencentCloudLogDemo */,
+				EBAE1BFD2EE1778A009551F0 /* TencentCloudLogDemoTests */,
+				EBAE1BE02EE17789009551F0 /* Products */,
+				FF832DE7CBFC7B1986668689 /* Pods */,
+				05A3D48F995F3124020BE694 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
-		996E3F2628598AF600982B7E /* Products */ = {
+		EBAE1BE02EE17789009551F0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				996E3F2528598AF600982B7E /* TencentCloudLogDemo.app */,
+				EBAE1BDF2EE17789009551F0 /* TencentCloudLogDemo.app */,
+				EBAE1BFA2EE1778A009551F0 /* TencentCloudLogDemoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		996E3F2728598AF600982B7E /* TencentCloudLogDemo */ = {
+		EBAE1BE12EE17789009551F0 /* TencentCloudLogDemo */ = {
 			isa = PBXGroup;
 			children = (
-				996E3F4228598C7E00982B7E /* Example */,
-				996E3F4128598C7E00982B7E /* ExampleViewController.h */,
-				996E3F4828598C7E00982B7E /* ExampleViewController.m */,
-				996E3F4B28598C7E00982B7E /* MainViewController.h */,
-				996E3F4C28598C7E00982B7E /* MainViewController.m */,
-				996E3F4A28598C7E00982B7E /* UtilInfo.h */,
-				996E3F4928598C7E00982B7E /* UtilInfo.m */,
-				996E3F2828598AF600982B7E /* AppDelegate.h */,
-				996E3F2928598AF600982B7E /* AppDelegate.m */,
-				996E3F2B28598AF600982B7E /* SceneDelegate.h */,
-				996E3F2C28598AF600982B7E /* SceneDelegate.m */,
-				996E3F2E28598AF600982B7E /* ViewController.h */,
-				996E3F2F28598AF600982B7E /* ViewController.m */,
-				996E3F3128598AF600982B7E /* Main.storyboard */,
-				996E3F3428598AF800982B7E /* Assets.xcassets */,
-				996E3F3628598AF800982B7E /* LaunchScreen.storyboard */,
-				996E3F3928598AF800982B7E /* Info.plist */,
-				996E3F3A28598AF800982B7E /* main.m */,
+				EBAE1BE22EE17789009551F0 /* AppDelegate.h */,
+				EBAE1BE32EE17789009551F0 /* AppDelegate.m */,
+				EBAE1BEB2EE17789009551F0 /* Main.storyboard */,
+				EBAE1BEE2EE1778A009551F0 /* Assets.xcassets */,
+				EBAE1BF02EE1778A009551F0 /* LaunchScreen.storyboard */,
+				EBAE1BF32EE1778A009551F0 /* Info.plist */,
+				EBAE1BF42EE1778A009551F0 /* main.m */,
+				EBCC8ABA2EE28A4E006B5797 /* CLSMainViewController.h */,
+				EBCC8ABC2EE28A5D006B5797 /* CLSMainViewController.m */,
+				EBCC8ABE2EE28A80006B5797 /* CLSLogUploadViewController.h */,
+				EBCC8AC02EE28A8C006B5797 /* CLSLogUploadViewController.m */,
+				EBCC8AC22EE28AC8006B5797 /* CLSNetworkDetectViewController.h */,
+				EBCC8AC42EE28AD7006B5797 /* CLSNetworkDetectViewController.m */,
 			);
 			path = TencentCloudLogDemo;
 			sourceTree = "<group>";
 		};
-		996E3F4228598C7E00982B7E /* Example */ = {
+		EBAE1BFD2EE1778A009551F0 /* TencentCloudLogDemoTests */ = {
 			isa = PBXGroup;
 			children = (
-				996E3F4328598C7E00982B7E /* Producer */,
+				EB7C38732F372DC100346035 /* CLSNetworkDiagnosisBaseTests.h */,
+				EB7C38762F372DC100346035 /* CLSNetworkDiagnosisBaseTests.m */,
+				EB7C386E2F372DC100346035 /* CLSWiFiOnlyDetectionTests.m */,
+				EB7C38712F372DC100346035 /* README.md */,
+				EB7C38782F372DC100346035 /* TencentcloudLogHttpping.m */,
+				EB7C38752F372DC100346035 /* TestPlan.xctestplan */,
+				EB7C38722F372DC100346035 /* ZhiyanDnsDetectionTests.m */,
+				EB7C386F2F372DC100346035 /* ZhiyanMtrDetectionTests.m */,
+				EB7C38772F372DC100346035 /* ZhiyanPingDetectionTests.m */,
+				EB7C38702F372DC100346035 /* ZhiyanTcppingDetectionTests.m */,
 			);
-			path = Example;
+			path = TencentCloudLogDemoTests;
 			sourceTree = "<group>";
 		};
-		996E3F4328598C7E00982B7E /* Producer */ = {
+		FF832DE7CBFC7B1986668689 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				996E3FA42860210800982B7E /* ProducerExampleNetDiaController.h */,
-				996E3FA32860210800982B7E /* ProducerExampleNetDiaController.m */,
-				996E3F4428598C7E00982B7E /* ClsProducerExampleDestroyController.m */,
-				996E3F4528598C7E00982B7E /* ProducerExampleController.m */,
-				996E3F4628598C7E00982B7E /* ClsProducerExampleDestroyController.h */,
-				996E3F4728598C7E00982B7E /* ProducerExampleController.h */,
-			);
-			path = Producer;
-			sourceTree = "<group>";
-		};
-		D7C5F74C05ACDECCCEC0900D /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				E8051E07B9E2F732C1AD21CA /* Pods-TencentCloudLogDemo.debug.xcconfig */,
-				C152E08A9E9828A37344776C /* Pods-TencentCloudLogDemo.release.xcconfig */,
+				802D771F1115D64CC374912A /* Pods-TencentCloudLogDemo.debug.xcconfig */,
+				10CCD9C0D9E2642295FFA231 /* Pods-TencentCloudLogDemo.release.xcconfig */,
+				3EEAC34CDC444E94649BB130 /* Pods-TencentCloudLogDemoUITests.debug.xcconfig */,
+				EBE721352BD12779DBE58DFA /* Pods-TencentCloudLogDemoUITests.release.xcconfig */,
+				C051D4D41B6E18515315BADD /* Pods-TencentCloudLogDemoTests.debug.xcconfig */,
+				88EACAC4DE0B0CA20764BA86 /* Pods-TencentCloudLogDemoTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -151,15 +181,15 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		996E3F2428598AF600982B7E /* TencentCloudLogDemo */ = {
+		EBAE1BDE2EE17789009551F0 /* TencentCloudLogDemo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 996E3F3E28598AF800982B7E /* Build configuration list for PBXNativeTarget "TencentCloudLogDemo" */;
+			buildConfigurationList = EBAE1C0E2EE1778A009551F0 /* Build configuration list for PBXNativeTarget "TencentCloudLogDemo" */;
 			buildPhases = (
-				BC3787EC2BAFBAD400B15296 /* [CP] Check Pods Manifest.lock */,
-				996E3F2128598AF600982B7E /* Sources */,
-				996E3F2228598AF600982B7E /* Frameworks */,
-				996E3F2328598AF600982B7E /* Resources */,
-				FCFA3118BEE68EF13534E8E2 /* [CP] Embed Pods Frameworks */,
+				6AA51426DB5DDB3E768A04B1 /* [CP] Check Pods Manifest.lock */,
+				EBAE1BDB2EE17789009551F0 /* Sources */,
+				EBAE1BDC2EE17789009551F0 /* Frameworks */,
+				EBAE1BDD2EE17789009551F0 /* Resources */,
+				903BA522547C7E83DFB05589 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -167,56 +197,90 @@
 			);
 			name = TencentCloudLogDemo;
 			productName = TencentCloudLogDemo;
-			productReference = 996E3F2528598AF600982B7E /* TencentCloudLogDemo.app */;
+			productReference = EBAE1BDF2EE17789009551F0 /* TencentCloudLogDemo.app */;
 			productType = "com.apple.product-type.application";
+		};
+		EBAE1BF92EE1778A009551F0 /* TencentCloudLogDemoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EBAE1C112EE1778A009551F0 /* Build configuration list for PBXNativeTarget "TencentCloudLogDemoTests" */;
+			buildPhases = (
+				CF4BEE7478E62074BF738829 /* [CP] Check Pods Manifest.lock */,
+				EBAE1BF62EE1778A009551F0 /* Sources */,
+				EBAE1BF72EE1778A009551F0 /* Frameworks */,
+				EBAE1BF82EE1778A009551F0 /* Resources */,
+				B6A91E974A64603E7438FE21 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EBAE1BFC2EE1778A009551F0 /* PBXTargetDependency */,
+			);
+			name = TencentCloudLogDemoTests;
+			productName = TencentCloudLogDemoTests;
+			productReference = EBAE1BFA2EE1778A009551F0 /* TencentCloudLogDemoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		996E3F1D28598AF600982B7E /* Project object */ = {
+		EBAE1BD72EE17789009551F0 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastUpgradeCheck = 1330;
+				LastUpgradeCheck = 1520;
 				TargetAttributes = {
-					996E3F2428598AF600982B7E = {
-						CreatedOnToolsVersion = 13.3;
+					EBAE1BDE2EE17789009551F0 = {
+						CreatedOnToolsVersion = 15.2;
+					};
+					EBAE1BF92EE1778A009551F0 = {
+						CreatedOnToolsVersion = 15.2;
+						TestTargetID = EBAE1BDE2EE17789009551F0;
 					};
 				};
 			};
-			buildConfigurationList = 996E3F2028598AF600982B7E /* Build configuration list for PBXProject "TencentCloudLogDemo" */;
-			compatibilityVersion = "Xcode 13.0";
+			buildConfigurationList = EBAE1BDA2EE17789009551F0 /* Build configuration list for PBXProject "TencentCloudLogDemo" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = 996E3F1C28598AF600982B7E;
-			productRefGroup = 996E3F2628598AF600982B7E /* Products */;
+			mainGroup = EBAE1BD62EE17789009551F0;
+			productRefGroup = EBAE1BE02EE17789009551F0 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				996E3F2428598AF600982B7E /* TencentCloudLogDemo */,
+				EBAE1BDE2EE17789009551F0 /* TencentCloudLogDemo */,
+				EBAE1BF92EE1778A009551F0 /* TencentCloudLogDemoTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		996E3F2328598AF600982B7E /* Resources */ = {
+		EBAE1BDD2EE17789009551F0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				996E3F3828598AF800982B7E /* LaunchScreen.storyboard in Resources */,
-				996E3F3528598AF800982B7E /* Assets.xcassets in Resources */,
-				996E3F3328598AF600982B7E /* Main.storyboard in Resources */,
+				EBAE1BF22EE1778A009551F0 /* LaunchScreen.storyboard in Resources */,
+				EBAE1BEF2EE1778A009551F0 /* Assets.xcassets in Resources */,
+				EBAE1BED2EE17789009551F0 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EBAE1BF82EE1778A009551F0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB7C387F2F372DC100346035 /* TestPlan.xctestplan in Resources */,
+				EB7C387C2F372DC100346035 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		BC3787EC2BAFBAD400B15296 /* [CP] Check Pods Manifest.lock */ = {
+		6AA51426DB5DDB3E768A04B1 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -238,7 +302,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		FCFA3118BEE68EF13534E8E2 /* [CP] Embed Pods Frameworks */ = {
+		903BA522547C7E83DFB05589 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -255,41 +319,100 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		B6A91E974A64603E7438FE21 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		CF4BEE7478E62074BF738829 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-TencentCloudLogDemoTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		996E3F2128598AF600982B7E /* Sources */ = {
+		EBAE1BDB2EE17789009551F0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				996E3F3028598AF600982B7E /* ViewController.m in Sources */,
-				996E3F4D28598C7E00982B7E /* ClsProducerExampleDestroyController.m in Sources */,
-				996E3F2A28598AF600982B7E /* AppDelegate.m in Sources */,
-				996E3FA52860210800982B7E /* ProducerExampleNetDiaController.m in Sources */,
-				996E3F3B28598AF800982B7E /* main.m in Sources */,
-				996E3F5128598C7E00982B7E /* MainViewController.m in Sources */,
-				996E3F4E28598C7E00982B7E /* ProducerExampleController.m in Sources */,
-				996E3F4F28598C7E00982B7E /* ExampleViewController.m in Sources */,
-				996E3F2D28598AF600982B7E /* SceneDelegate.m in Sources */,
-				996E3F5028598C7E00982B7E /* UtilInfo.m in Sources */,
+				EBCC8AC32EE28AC8006B5797 /* CLSNetworkDetectViewController.h in Sources */,
+				EBCC8ABD2EE28A5D006B5797 /* CLSMainViewController.m in Sources */,
+				EBCC8AC12EE28A8C006B5797 /* CLSLogUploadViewController.m in Sources */,
+				EBAE1BE42EE17789009551F0 /* AppDelegate.m in Sources */,
+				EBCC8ABB2EE28A4E006B5797 /* CLSMainViewController.h in Sources */,
+				EBCC8ABF2EE28A80006B5797 /* CLSLogUploadViewController.h in Sources */,
+				EBCC8AC52EE28AD7006B5797 /* CLSNetworkDetectViewController.m in Sources */,
+				EBAE1BF52EE1778A009551F0 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EBAE1BF62EE1778A009551F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB7C38812F372DC100346035 /* ZhiyanPingDetectionTests.m in Sources */,
+				EB7C387D2F372DC100346035 /* ZhiyanDnsDetectionTests.m in Sources */,
+				EB7C38822F372DC100346035 /* TencentcloudLogHttpping.m in Sources */,
+				EB7C387A2F372DC100346035 /* ZhiyanMtrDetectionTests.m in Sources */,
+				EB7C387B2F372DC100346035 /* ZhiyanTcppingDetectionTests.m in Sources */,
+				EB7C38792F372DC100346035 /* CLSWiFiOnlyDetectionTests.m in Sources */,
+				EB7C38802F372DC100346035 /* CLSNetworkDiagnosisBaseTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		EBAE1BFC2EE1778A009551F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EBAE1BDE2EE17789009551F0 /* TencentCloudLogDemo */;
+			targetProxy = EBAE1BFB2EE1778A009551F0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXVariantGroup section */
-		996E3F3128598AF600982B7E /* Main.storyboard */ = {
+		EBAE1BEB2EE17789009551F0 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				996E3F3228598AF600982B7E /* Base */,
+				EBAE1BEC2EE17789009551F0 /* Base */,
 			);
 			name = Main.storyboard;
 			sourceTree = "<group>";
 		};
-		996E3F3628598AF800982B7E /* LaunchScreen.storyboard */ = {
+		EBAE1BF02EE1778A009551F0 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				996E3F3728598AF800982B7E /* Base */,
+				EBAE1BF12EE1778A009551F0 /* Base */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
@@ -297,13 +420,14 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		996E3F3C28598AF800982B7E /* Debug */ = {
+		EBAE1C0C2EE1778A009551F0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -331,9 +455,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+			ENABLE_STRICT_OBJC_MSGSEND = YES;
+			ENABLE_TESTABILITY = YES;
+			ENABLE_USER_SCRIPT_SANDBOXING = NO;
+			GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -347,7 +472,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -355,13 +481,14 @@
 			};
 			name = Debug;
 		};
-		996E3F3D28598AF800982B7E /* Release */ = {
+		EBAE1C0D2EE1778A009551F0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -389,9 +516,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+			ENABLE_NS_ASSERTIONS = NO;
+			ENABLE_STRICT_OBJC_MSGSEND = YES;
+			ENABLE_USER_SCRIPT_SANDBOXING = NO;
+			GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -399,7 +527,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -407,15 +536,16 @@
 			};
 			name = Release;
 		};
-		996E3F3F28598AF800982B7E /* Debug */ = {
+		EBAE1C0F2EE1778A009551F0 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E8051E07B9E2F732C1AD21CA /* Pods-TencentCloudLogDemo.debug.xcconfig */;
+			baseConfigurationReference = 802D771F1115D64CC374912A /* Pods-TencentCloudLogDemo.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2N5UVZXKN3;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TencentCloudLogDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -423,28 +553,29 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = herrylv1;
+				PRODUCT_BUNDLE_IDENTIFIER = "-477314-qq.com.TencentCloudLogDemo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		996E3F4028598AF800982B7E /* Release */ = {
+		EBAE1C102EE1778A009551F0 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C152E08A9E9828A37344776C /* Pods-TencentCloudLogDemo.release.xcconfig */;
+			baseConfigurationReference = 10CCD9C0D9E2642295FFA231 /* Pods-TencentCloudLogDemo.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2N5UVZXKN3;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TencentCloudLogDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -452,42 +583,88 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = herrylv1;
+				PRODUCT_BUNDLE_IDENTIFIER = "-477314-qq.com.TencentCloudLogDemo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
+		EBAE1C122EE1778A009551F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C051D4D41B6E18515315BADD /* Pods-TencentCloudLogDemoTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2N5UVZXKN3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "-83477314-qq.com.TencentCloudLogDemoTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TencentCloudLogDemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TencentCloudLogDemo";
+			};
+			name = Debug;
+		};
+		EBAE1C132EE1778A009551F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 88EACAC4DE0B0CA20764BA86 /* Pods-TencentCloudLogDemoTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2N5UVZXKN3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "-83477314-qq.com.TencentCloudLogDemoTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TencentCloudLogDemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TencentCloudLogDemo";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		996E3F2028598AF600982B7E /* Build configuration list for PBXProject "TencentCloudLogDemo" */ = {
+		EBAE1BDA2EE17789009551F0 /* Build configuration list for PBXProject "TencentCloudLogDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				996E3F3C28598AF800982B7E /* Debug */,
-				996E3F3D28598AF800982B7E /* Release */,
+				EBAE1C0C2EE1778A009551F0 /* Debug */,
+				EBAE1C0D2EE1778A009551F0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		996E3F3E28598AF800982B7E /* Build configuration list for PBXNativeTarget "TencentCloudLogDemo" */ = {
+		EBAE1C0E2EE1778A009551F0 /* Build configuration list for PBXNativeTarget "TencentCloudLogDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				996E3F3F28598AF800982B7E /* Debug */,
-				996E3F4028598AF800982B7E /* Release */,
+				EBAE1C0F2EE1778A009551F0 /* Debug */,
+				EBAE1C102EE1778A009551F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EBAE1C112EE1778A009551F0 /* Build configuration list for PBXNativeTarget "TencentCloudLogDemoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBAE1C122EE1778A009551F0 /* Debug */,
+				EBAE1C132EE1778A009551F0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 996E3F1D28598AF600982B7E /* Project object */;
+	rootObject = EBAE1BD72EE17789009551F0 /* Project object */;
 }

@@ -1,31 +1,30 @@
 //
 //  AppDelegate.swift
-//  TencentCloundLogSwiftDemo
+//  TencentCloudLogSwiftDemo
 //
-//  Created by herrylv on 2022/5/26.
+//  Created by CLS Team on 2025/02/09.
 //
 
 import UIKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
-
-
+    
+    var window: UIWindow?
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        let utils = DemoUtils.shared
-        utils.endpoint = "ap-guangzhou.cls.tencentcs.com"
-        utils.accessKeyId = "";
-        utils.accessKeySecret = "";
-        utils.topic = "";
         
-        print("endpoint:",utils.endpoint)
-        print("accessKeyId:",utils.accessKeyId)
-        print("accessKeySecret:",utils.accessKeySecret)
-        print("topic:",utils.topic)
+        // 创建主窗口
+        window = UIWindow(frame: UIScreen.main.bounds)
+        
+        // 创建导航控制器
+        let mainVC = MainViewController()
+        let navigationController = UINavigationController(rootViewController: mainVC)
+        
+        window?.rootViewController = navigationController
+        window?.makeKeyAndVisible()
+        
         return true
     }
-
-
 }
 
