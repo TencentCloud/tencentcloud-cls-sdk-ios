@@ -53,7 +53,7 @@
 
 - ✅ **5 种探测方式**：HTTP Ping、TCP Ping、ICMP Ping、DNS 解析、MTR 路由跟踪
 - ✅ **多网卡探测**：支持 WiFi/蜂窝网络并发探测，单独统计
-- ✅ **IPv4/IPv6 控制**：支持协议偏好设置（v2.1.0 新增）
+- ✅ **IPv4/IPv6 控制**：支持协议偏好设置（v3.0.0 新增）
 - ✅ **详细指标**：15+ 个 HTTP 生命周期时间点、完整 TCP/ICMP 统计
 - ✅ **底层实现**：基于 C 语言实现，高性能、低开销
 - ✅ **OpenTelemetry 兼容**：符合 OTLP Span 数据格式
@@ -69,7 +69,7 @@
 
 ## 🎉 最新更新
 
-### v2.1.0 (2025-02-09)
+### v3.0.0 (预计发布)
 
 #### 🆕 新增功能
 
@@ -131,7 +131,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/Core', '~> 2.1.0'
+  pod 'TencentCloudLogProducer/Core', '~> 3.0.0'
 end
 ```
 
@@ -145,7 +145,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 2.1.0'
+  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 3.0.0'
 end
 ```
 
@@ -809,7 +809,7 @@ request.timeout = 10000;  // 超时 10 秒
 }];
 ```
 
-#### IP 协议偏好控制（v2.1.0 新增）
+#### IP 协议偏好控制（v3.0.0 新增）
 
 ```objectivec
 CLSPingRequest *request = [[CLSPingRequest alloc] init];
@@ -938,7 +938,7 @@ request.timeout = 60000;  // 超时 60 秒（路由跟踪耗时长）
 
 ### IP 协议偏好控制
 
-v2.1.0 版本新增 `prefer` 参数，支持 IPv4/IPv6 协议偏好设置。
+v3.0.0 版本新增 `prefer` 参数，支持 IPv4/IPv6 协议偏好设置。
 
 #### prefer 参数说明
 
@@ -1083,7 +1083,7 @@ request.protocol = @"icmp";
 | 属性 | 类型 | 说明 |
 |------|------|------|
 | `interval` | int | Ping 间隔（毫秒，默认 200） |
-| `prefer` | int | IP 协议偏好（v2.1.0 新增） |
+| `prefer` | int | IP 协议偏好（v3.0.0 新增） |
 
 #### CLSDnsRequest
 
@@ -1092,7 +1092,7 @@ request.protocol = @"icmp";
 | 属性 | 类型 | 说明 |
 |------|------|------|
 | `nameServer` | NSString | DNS 服务器（如 "8.8.8.8"） |
-| `prefer` | int | IP 协议偏好（v2.1.0 新增） |
+| `prefer` | int | IP 协议偏好（v3.0.0 新增） |
 
 #### CLSMtrRequest
 
@@ -1102,7 +1102,7 @@ request.protocol = @"icmp";
 |------|------|------|
 | `maxTTL` | int | 最大跳数（1-64，默认 30） |
 | `protocol` | NSString | 协议（"icmp" / "udp"） |
-| `prefer` | int | IP 协议偏好（v2.1.0 新增） |
+| `prefer` | int | IP 协议偏好（v3.0.0 新增） |
 
 #### CLSResponse
 
@@ -1528,7 +1528,7 @@ pingRequest.domain = @"api.example.com";
 
 ## 📝 更新日志
 
-### v2.1.0 (2025-02-09)
+### v3.0.0 (预计发布)
 
 #### 🆕 新增功能
 - ✅ 新增 IP 协议偏好控制（`prefer` 参数），支持 IPv4/IPv6 优先、仅 IPv4/IPv6、自动检测
