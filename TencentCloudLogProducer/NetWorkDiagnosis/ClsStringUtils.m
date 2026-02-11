@@ -187,6 +187,6 @@
     NSString *version = [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
     
     // 如果无法从 bundle 读取（例如未打包场景），使用默认版本号
-    return version ?: @"3.0.0";
+    return version ?: @"3.1.0";
 }
 @end

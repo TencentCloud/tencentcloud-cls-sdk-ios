@@ -418,7 +418,8 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                                                                                   appKey:self.appKey
                                                                                     uin:self.uin
                                                                                 endpoint:self.endPoint
-                                                                           interfaceDNS:self.interface[@"dns"]];
+                                                                           interfaceDNS:self.interface[@"dns"]
+                                                                          interfaceName:self.interface[@"name"]];
     
     // 6. 构建上报数据（所有浮点数字段使用字符串，避免精度问题）
     NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:@{
@@ -553,7 +554,8 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                                                                                   appKey:self.appKey
                                                                                     uin:self.uin
                                                                                 endpoint:self.endPoint
-                                                                           interfaceDNS:self.interface[@"dns"]];
+                                                                           interfaceDNS:self.interface[@"dns"]
+                                                                          interfaceName:self.interface[@"name"]];
     
     // ===== 5. 构建上报数据（浮点数字段使用字符串）=====
     NSMutableDictionary *reportData = [NSMutableDictionary dictionaryWithDictionary:@{
@@ -681,12 +683,8 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
             NSDictionary *aggregatedResult = [probeInstance buildAggregatedReportDictForProbeCount:totalProbes];
             
             // 上报汇总结果（使用独立对象的数据）
-            // ✅ 创建 extraProvider 并传递接口名称
-            CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
-            [extraProvider setExtra:@"network.interface.name" value:capturedInterface[@"name"] ?: @""];
-            
             CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" 
-                                                                   provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
+                                                                   provider:[[CLSSpanProviderDelegate alloc] init]];
             [builder setURL:probeInstance.request.domain];
             [builder setpageName:probeInstance.request.pageName];
             if (probeInstance.request.traceId) {

@@ -13,13 +13,14 @@
     [super setUp];
     
     // ⚙️ 配置 CLS 日志上报
-    ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:@"ap-guangzhou-open.cls.tencentcs.com"
-                                                          accessKeyId:@""
-                                                            accessKey:@""];
     
     // ⚙️ 配置网络探测实例
+    
+    ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:@"ap-guangzhou-open.cls.tencentcs.com"
+                                                       accessKeyId:@""
+                                                         accessKey:@""];
     self.diagnosis = [ClsNetworkDiagnosis sharedInstance];
-    [self.diagnosis setupLogSenderWithConfig:config netToken:@""];
+    [[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config netToken:@""];
     [self.diagnosis setUserEx:@{@"cls_sdk_test": @"!@#$%^&*()_+-=[]{}|;:\'\",.<>/?", @"cls_sdk_test2": @"!@#$%^&*()_+-=[]{}|;:\'\",.<>/?",@"业务": @"日志服务"}];
 
 }
@@ -131,7 +132,49 @@
     for (NSString *key in requiredKeys) {
         [self validateNonNilValueInDict:resource key:key failureMessage:[NSString stringWithFormat:@"缺失 resource 字段: %@", key]];
     }
+    
+    // 验证 carrier 字段（iOS 16.4+ 运营商信息可能为占位符）
+    [self validateCarrierField:resource];
+    
     NSLog(@"   ✅ Resource字段验证通过");
+}
+
+/// 验证运营商字段不是占位符
+/// iOS 16.4+ 系统可能返回空值或占位符，SDK应将其替换为 "IOS"
+- (void)validateCarrierField:(NSDictionary *)resource {
+    NSString *carrier = resource[@"carrier"];
+    NSLog(@"📱 验证carrier字段: [%@]", carrier ?: @"(nil)");
+    
+    // carrier 字段应该存在
+    XCTAssertNotNil(carrier, @"缺失 carrier 字段");
+    
+    // carrier 不应为空字符串
+    XCTAssertGreaterThan(carrier.length, 0, @"carrier 不应为空字符串");
+    
+    NSString *trimmed = [carrier stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
+    // 定义无效的占位符列表
+    NSArray *invalidPlaceholders = @[
+        @"-", @"--", @"---",
+        @"Unknown", @"unknown",
+        @"无运营商",
+        @"占位符",
+        @"placeholder", @"Placeholder",
+        @"Carrier", @"carrier",
+        @"null", @"nil", @"n/a", @"N/A"
+    ];
+    
+    // 验证 carrier 不是占位符
+    for (NSString *placeholder in invalidPlaceholders) {
+        XCTAssertFalse([trimmed caseInsensitiveCompare:placeholder] == NSOrderedSame,
+                      @"carrier 不应为占位符 '%@'，iOS 16.4+ 应填充为 'IOS'，实际值: '%@'", placeholder, carrier);
+    }
+    
+    // 验证 carrier 长度大于1（单字符通常是无效占位符）
+    XCTAssertGreaterThan(trimmed.length, 1,
+                        @"carrier 长度应大于1（单字符通常是占位符），iOS 16.4+ 应填充为 'IOS'，实际值: '%@'", carrier);
+    
+    NSLog(@"   ✅ carrier字段验证通过: %@", carrier);
 }
 
 - (void)validateAttributeFields:(NSDictionary *)data expectedType:(NSString *)type {
@@ -169,7 +212,7 @@
     NSLog(@"   ✅ netInfo字段验证通过");
 }
 
-- (void)validateExtensionFields:(NSDictionary *)data 
+- (void)validateExtensionFields:(NSDictionary *)data
                expectedDetectEx:(NSDictionary *)expectedDetectEx {
     NSLog(@"📋 验证扩展字段...");
     
@@ -185,7 +228,7 @@
     NSLog(@"   ✅ 扩展字段验证通过");
 }
 
-- (void)validateUserExFields:(NSDictionary *)data 
+- (void)validateUserExFields:(NSDictionary *)data
               expectedUserEx:(NSDictionary *)expectedUserEx {
     NSLog(@"📋 验证 userEx 全局字段...");
     
@@ -222,8 +265,8 @@
     NSLog(@"📋 验证Ping专用字段...");
     
     // Ping 必需字段（根据规范）
-    NSArray *requiredKeys = @[@"host", @"host_ip", @"interface", @"count", @"size", @"total", @"loss", 
-                               @"latency_min", @"latency_max", @"latency", @"stddev", 
+    NSArray *requiredKeys = @[@"host", @"host_ip", @"interface", @"count", @"size", @"total", @"loss",
+                               @"latency_min", @"latency_max", @"latency", @"stddev",
                                @"responseNum", @"exceptionNum", @"bindFailed"];
     for (NSString *key in requiredKeys) {
         [self validateNonNilValueInDict:origin key:key failureMessage:[NSString stringWithFormat:@"Ping缺失字段: %@", key]];
@@ -334,7 +377,7 @@
     NSLog(@"📋 验证HTTP专用字段...");
     
     // HTTP 必需字段（根据规范）
-    NSArray *requiredKeys = @[@"url", @"host_ip", @"domain", @"remoteAddr", 
+    NSArray *requiredKeys = @[@"url", @"host_ip", @"domain", @"remoteAddr",
                                @"dnsTime", @"tcpTime", @"sslTime", @"firstByteTime", @"allByteTime", @"requestTime",
                                @"httpCode", @"httpProtocol", @"sendBytes", @"receiveBytes"];
     for (NSString *key in requiredKeys) {
@@ -411,7 +454,7 @@
         if (![path isKindOfClass:[NSDictionary class]]) continue;
         
         // path 必需字段（根据规范）
-        NSArray *pathKeys = @[@"host", @"host_ip", @"type", @"path", @"lastHop", @"timestamp", 
+        NSArray *pathKeys = @[@"host", @"host_ip", @"type", @"path", @"lastHop", @"timestamp",
                                @"interface", @"protocol", @"exceptionNum", @"bindFailed", @"result"];
         for (NSString *key in pathKeys) {
             [self validateNonNilValueInDict:path key:key failureMessage:[NSString stringWithFormat:@"MTR path缺失字段: %@", key]];
@@ -489,3 +532,4 @@
 }
 
 @end
+

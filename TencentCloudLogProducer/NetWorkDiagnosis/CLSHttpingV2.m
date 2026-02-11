@@ -1077,7 +1077,8 @@ didReceiveData:(NSData *)data {
                                                                           appKey:self.appKey
                                                                             uin:self.uin
                                                                         endpoint:self.endPoint
-                                                                   interfaceDNS:self.interfaceInfo[@"dns"]];
+                                                                   interfaceDNS:self.interfaceInfo[@"dns"]
+                                                                  interfaceName:self.interfaceInfo[@"name"]];
 
     // 合并到最终字典
     finalReportDict[@"headers"] = headers;
@@ -1146,12 +1147,8 @@ didReceiveData:(NSData *)data {
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
                 
                 // 执行单次探测
-                // ✅ 创建 extraProvider 并传递接口名称
-                CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
-                [extraProvider setExtra:@"network.interface.name" value:capturedInterface[@"name"] ?: @""];
-                
                 CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
-                                                                       provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
+                                                                       provider:[[CLSSpanProviderDelegate alloc] init]];
                 [builder setURL:self.request.domain];
                 [builder setpageName:self.request.pageName];
                 if (self.request.traceId) {
@@ -1208,12 +1205,8 @@ didReceiveData:(NSData *)data {
             NSLog(@"interface:%@", currentInterface);
             
             // 执行单次探测
-            // ✅ 创建 extraProvider 并传递接口名称
-            CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
-            [extraProvider setExtra:@"network.interface.name" value:currentInterface[@"name"] ?: @""];
-            
             CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
-                                                                   provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
+                                                                   provider:[[CLSSpanProviderDelegate alloc] init]];
             [builder setURL:self.request.domain];
             [builder setpageName:self.request.pageName];
             if (self.request.traceId) {

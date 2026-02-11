@@ -59,7 +59,7 @@
             [self validateNetInfo:[self safeConvertToDictionary:origin[@"netInfo"]]];
             
             // 4. 扩展字段校验
-            [self validateExtensionFields:origin 
+            [self validateExtensionFields:origin
                          expectedDetectEx:@{@"case_id": @"PING-001"}];
             
             // 5. 全局 userEx 字段校验（验证 setUserEx 设置成功）
@@ -657,10 +657,10 @@
             if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                 hasWiFi = YES;
                 NSLog(@"📍 回调#%ld - 检测到Wi-Fi网络", (long)callbackCount);
-            } else if ([lowerUsedNet containsString:@"4g"] || 
-                       [lowerUsedNet containsString:@"5g"] || 
-                       [lowerUsedNet containsString:@"3g"] || 
-                       [lowerUsedNet containsString:@"2g"] || 
+            } else if ([lowerUsedNet containsString:@"4g"] ||
+                       [lowerUsedNet containsString:@"5g"] ||
+                       [lowerUsedNet containsString:@"3g"] ||
+                       [lowerUsedNet containsString:@"2g"] ||
                        [lowerUsedNet containsString:@"cellular"] ||
                        [lowerUsedNet containsString:@"lte"] ||
                        [lowerUsedNet containsString:@"wwan"]) {
@@ -690,11 +690,11 @@
             NSLog(@"   - Wi-Fi: %@, 蜂窝: %@", hasWiFi ? @"✅" : @"❌", hasCellular ? @"✅" : @"❌");
             
             // 核心断言：必须同时检测到Wi-Fi和蜂窝网络
-            XCTAssertEqual(callbackCount, expectedCallbackCount, 
+            XCTAssertEqual(callbackCount, expectedCallbackCount,
                           @"多网卡探测应产生%ld次回调，实际: %ld", (long)expectedCallbackCount, (long)callbackCount);
             XCTAssertTrue(hasWiFi, @"多网卡探测应检测到Wi-Fi网络，实际检测到: %@", detectedNetworks);
             XCTAssertTrue(hasCellular, @"多网卡探测应检测到蜂窝网络(4G/5G等)，实际检测到: %@", detectedNetworks);
-            XCTAssertEqual(detectedInterfaces.count, 2, 
+            XCTAssertEqual(detectedInterfaces.count, 2,
                           @"应检测到2个不同的网络接口，实际: %@", detectedInterfaces);
             
             [expectation fulfill];
@@ -755,7 +755,7 @@
             // 注意：可能存在格式差异，如 "wifi" vs "Wi-Fi"，需要标准化比较
             NSString *normalizedUsedNet = [[usedNet lowercaseString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
             NSString *normalizedDefaultNet = [[defaultNet lowercaseString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
-            XCTAssertTrue([normalizedUsedNet isEqualToString:normalizedDefaultNet], 
+            XCTAssertTrue([normalizedUsedNet isEqualToString:normalizedDefaultNet],
                          @"单端口模式下usedNet应等于defaultNet，usedNet=%@, defaultNet=%@", usedNet, defaultNet);
             
         } @catch (NSException *exception) {
@@ -811,10 +811,10 @@
                 NSString *lowerUsedNet = [usedNet lowercaseString];
                 if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                     hasWiFi = YES;
-                } else if ([lowerUsedNet containsString:@"4g"] || 
-                           [lowerUsedNet containsString:@"5g"] || 
-                           [lowerUsedNet containsString:@"3g"] || 
-                           [lowerUsedNet containsString:@"2g"] || 
+                } else if ([lowerUsedNet containsString:@"4g"] ||
+                           [lowerUsedNet containsString:@"5g"] ||
+                           [lowerUsedNet containsString:@"3g"] ||
+                           [lowerUsedNet containsString:@"2g"] ||
                            [lowerUsedNet containsString:@"cellular"] ||
                            [lowerUsedNet containsString:@"lte"] ||
                            [lowerUsedNet containsString:@"wwan"]) {
@@ -1284,3 +1284,4 @@
 }
 
 @end
+

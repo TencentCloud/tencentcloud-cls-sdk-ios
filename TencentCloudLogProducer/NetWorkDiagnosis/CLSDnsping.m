@@ -172,11 +172,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     NSDictionary *reportData = [self buildReportDataFromDnsResult:jsonString];
     
     // 6. 上报链路数据并获取返回字典
-    // ✅ 创建 extraProvider 并传递接口名称
-    CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
-    [extraProvider setExtra:@"network.interface.name" value:interfaceName ?: @""];
-    
-    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
     [builder setURL:self.request.domain];
     [builder setpageName:self.request.pageName];
     // 设置自定义traceId
@@ -233,11 +229,12 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     // 优先使用request中的traceId，如果没有则自动生成
     reportData[@"trace_id"] = self.request.traceId ?: CLSIdGenerator.generateTraceId ?: @"";
     reportData[@"netInfo"] = [CLSNetworkUtils buildEnhancedNetworkInfoWithInterfaceType:self.interfaceInfo[@"type"]
-                                                                           networkAppId:self.networkAppId
-                                                                                  appKey:self.appKey
-                                                                                    uin:self.uin
-                                                                               endpoint:self.endPoint
-                                                                           interfaceDNS:self.interfaceInfo[@"dns"]];
+                                                                networkAppId:self.networkAppId
+                                                                       appKey:self.appKey
+                                                                         uin:self.uin
+                                                                     endpoint:self.endPoint
+                                                                interfaceDNS:self.interfaceInfo[@"dns"]
+                                                               interfaceName:self.interfaceInfo[@"name"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
     reportData[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取
     

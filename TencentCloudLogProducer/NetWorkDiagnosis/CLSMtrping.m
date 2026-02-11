@@ -106,11 +106,7 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     NSDictionary *reportData = [self buildReportDataFromMtrResult:jsonString];
     
     // 9. 上报链路数据（语义化日志，避免冗余构建）
-    // ✅ 创建 extraProvider 并传递接口名称
-    CLSExtraProvider *extraProvider = [[CLSExtraProvider alloc] init];
-    [extraProvider setExtra:@"network.interface.name" value:interfaceName ?: @""];
-    
-    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] initWithExtraProvider:extraProvider]];
+    CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis" provider:[[CLSSpanProviderDelegate alloc] init]];
     [builder setURL:domainStr];
     [builder setpageName:self.request.pageName];
     // 设置自定义traceId
@@ -172,7 +168,8 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
                                                                        appKey:self.appKey
                                                                          uin:self.uin
                                                                      endpoint:self.endPoint
-                                                                interfaceDNS:self.interfaceInfo[@"dns"]];
+                                                                interfaceDNS:self.interfaceInfo[@"dns"]
+                                                               interfaceName:self.interfaceInfo[@"name"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
     reportData[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取
     NSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kMtrLogPrefix, reportData);

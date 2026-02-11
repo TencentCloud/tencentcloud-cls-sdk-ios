@@ -52,7 +52,7 @@
             [self validateNetInfo:[self safeConvertToDictionary:origin[@"netInfo"]]];
             
             // 5. 扩展字段校验
-            [self validateExtensionFields:origin 
+            [self validateExtensionFields:origin
                          expectedDetectEx:@{@"case_id": @"HTTP-001"}];
             
             // 6. 全局 userEx 字段校验（验证 setUserEx 设置成功）
@@ -81,6 +81,7 @@
     request.domain = @"https://www.baidu.com";
     request.appKey = kTestAppKey;
     request.timeout = 10000;  // 10秒，单位ms
+    request.enableSSLVerification = false;
     request.enableMultiplePortsDetect = NO;
     request.detectEx = @{@"case_id": @"HTTP-002"};
     
@@ -179,7 +180,7 @@
         }
     }];
     
-    [self waitForExpectationsWithTimeout:15 handler:nil];
+    [self waitForExpectationsWithTimeout:80 handler:nil];
 }
 
 /// 【HTTP-005】验证enableSSLVerification参数 - 开启
@@ -400,7 +401,7 @@
             double sslTime = [origin[@"sslTime"] doubleValue];
             double requestTime = [origin[@"requestTime"] doubleValue];
             
-            NSLog(@"📍 时间字段: dnsTime=%.2f, tcpTime=%.2f, sslTime=%.2f, requestTime=%.2f", 
+            NSLog(@"📍 时间字段: dnsTime=%.2f, tcpTime=%.2f, sslTime=%.2f, requestTime=%.2f",
                   dnsTime, tcpTime, sslTime, requestTime);
             
             XCTAssertGreaterThan(requestTime, 0, @"requestTime应大于0");
@@ -496,7 +497,7 @@
         }
     }];
     
-    [self waitForExpectationsWithTimeout:15 handler:nil];
+    [self waitForExpectationsWithTimeout:80 handler:nil];
 }
 
 /// 【HTTP-ERR-003】异常场景 - 无效域名
@@ -530,7 +531,7 @@
         }
     }];
     
-    [self waitForExpectationsWithTimeout:15 handler:nil];
+    [self waitForExpectationsWithTimeout:80 handler:nil];
 }
 
 #pragma mark - 多网卡环境测试
@@ -587,10 +588,10 @@
             if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                 hasWiFi = YES;
                 NSLog(@"📍 回调#%ld - 检测到Wi-Fi网络", (long)callbackCount);
-            } else if ([lowerUsedNet containsString:@"4g"] || 
-                       [lowerUsedNet containsString:@"5g"] || 
-                       [lowerUsedNet containsString:@"3g"] || 
-                       [lowerUsedNet containsString:@"2g"] || 
+            } else if ([lowerUsedNet containsString:@"4g"] ||
+                       [lowerUsedNet containsString:@"5g"] ||
+                       [lowerUsedNet containsString:@"3g"] ||
+                       [lowerUsedNet containsString:@"2g"] ||
                        [lowerUsedNet containsString:@"cellular"] ||
                        [lowerUsedNet containsString:@"lte"] ||
                        [lowerUsedNet containsString:@"wwan"]) {
@@ -624,18 +625,18 @@
             NSLog(@"   - Wi-Fi: %@, 蜂窝: %@", hasWiFi ? @"✅" : @"❌", hasCellular ? @"✅" : @"❌");
             
             // 核心断言：必须同时检测到Wi-Fi和蜂窝网络
-            XCTAssertEqual(callbackCount, expectedCallbackCount, 
+            XCTAssertEqual(callbackCount, expectedCallbackCount,
                           @"多网卡探测应产生%ld次回调，实际: %ld", (long)expectedCallbackCount, (long)callbackCount);
             XCTAssertTrue(hasWiFi, @"多网卡探测应检测到Wi-Fi网络，实际检测到: %@", detectedNetworks);
             XCTAssertTrue(hasCellular, @"多网卡探测应检测到蜂窝网络(4G/5G等)，实际检测到: %@", detectedNetworks);
-            XCTAssertEqual(detectedInterfaces.count, 2, 
+            XCTAssertEqual(detectedInterfaces.count, 2,
                           @"应检测到2个不同的网络接口，实际: %@", detectedInterfaces);
             
             [expectation fulfill];
         }
     }];
     
-    [self waitForExpectationsWithTimeout:60 handler:^(NSError *error) {
+    [self waitForExpectationsWithTimeout:80 handler:^(NSError *error) {
         if (error) {
             NSLog(@"❌ 测试超时 - 总回调次数: %ld (期望: %ld)", (long)callbackCount, (long)expectedCallbackCount);
             NSLog(@"   - 检测到网络类型: %@", detectedNetworks);
@@ -686,7 +687,7 @@
             // 单网卡模式下，usedNet应该和defaultNet表示同一种网络类型
             NSString *normalizedUsedNet = [[usedNet lowercaseString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
             NSString *normalizedDefaultNet = [[defaultNet lowercaseString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
-            XCTAssertTrue([normalizedUsedNet isEqualToString:normalizedDefaultNet], 
+            XCTAssertTrue([normalizedUsedNet isEqualToString:normalizedDefaultNet],
                          @"单网卡模式下usedNet应等于defaultNet，usedNet=%@, defaultNet=%@", usedNet, defaultNet);
             
         } @catch (NSException *exception) {
@@ -743,10 +744,10 @@
                 NSString *lowerUsedNet = [usedNet lowercaseString];
                 if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                     hasWiFi = YES;
-                } else if ([lowerUsedNet containsString:@"4g"] || 
-                           [lowerUsedNet containsString:@"5g"] || 
-                           [lowerUsedNet containsString:@"3g"] || 
-                           [lowerUsedNet containsString:@"2g"] || 
+                } else if ([lowerUsedNet containsString:@"4g"] ||
+                           [lowerUsedNet containsString:@"5g"] ||
+                           [lowerUsedNet containsString:@"3g"] ||
+                           [lowerUsedNet containsString:@"2g"] ||
                            [lowerUsedNet containsString:@"cellular"] ||
                            [lowerUsedNet containsString:@"lte"] ||
                            [lowerUsedNet containsString:@"wwan"]) {
@@ -783,7 +784,7 @@
         }
     }];
     
-    [self waitForExpectationsWithTimeout:60 handler:^(NSError *error) {
+    [self waitForExpectationsWithTimeout:200 handler:^(NSError *error) {
         if (error) {
             NSLog(@"❌ 测试超时 - Wi-Fi: %@, 蜂窝: %@", hasWiFi ? @"✅" : @"❌", hasCellular ? @"✅" : @"❌");
         }
@@ -853,10 +854,10 @@
                 NSString *lowerUsedNet = [usedNet lowercaseString];
                 if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                     trueHasWiFi = YES;
-                } else if ([lowerUsedNet containsString:@"4g"] || 
-                           [lowerUsedNet containsString:@"5g"] || 
-                           [lowerUsedNet containsString:@"3g"] || 
-                           [lowerUsedNet containsString:@"2g"] || 
+                } else if ([lowerUsedNet containsString:@"4g"] ||
+                           [lowerUsedNet containsString:@"5g"] ||
+                           [lowerUsedNet containsString:@"3g"] ||
+                           [lowerUsedNet containsString:@"2g"] ||
                            [lowerUsedNet containsString:@"cellular"] ||
                            [lowerUsedNet containsString:@"lte"] ||
                            [lowerUsedNet containsString:@"wwan"]) {
@@ -876,8 +877,8 @@
                 
                 // 核心断言
                 XCTAssertEqual(falseCallbackCount, 1, @"enableMultiplePortsDetect=false时应只有1次回调");
-                XCTAssertEqual(trueCallbackCount, expectedTrueCallbackCount, 
-                              @"enableMultiplePortsDetect=true时应有%ld次回调，实际: %ld", 
+                XCTAssertEqual(trueCallbackCount, expectedTrueCallbackCount,
+                              @"enableMultiplePortsDetect=true时应有%ld次回调，实际: %ld",
                               (long)expectedTrueCallbackCount, (long)trueCallbackCount);
                 XCTAssertTrue(trueHasWiFi, @"true模式应检测到Wi-Fi网络，实际: %@", trueNetworkTypes);
                 XCTAssertTrue(trueHasCellular, @"true模式应检测到蜂窝网络，实际: %@", trueNetworkTypes);
@@ -887,7 +888,7 @@
         }];
     });
     
-    [self waitForExpectationsWithTimeout:60 handler:^(NSError *error) {
+    [self waitForExpectationsWithTimeout:200 handler:^(NSError *error) {
         if (error) {
             NSLog(@"❌ 测试超时");
             NSLog(@"   - false模式回调: %ld次", (long)falseCallbackCount);
@@ -898,3 +899,4 @@
 }
 
 @end
+

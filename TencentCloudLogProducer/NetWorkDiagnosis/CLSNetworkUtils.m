@@ -17,6 +17,9 @@
 #import <arpa/inet.h>
 #import <ifaddrs.h>
 #include <net/if.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <errno.h>
 #include <AssertMacros.h>
 #import "CLSDeviceUtils.h"
 #if CLS_HAS_CORE_TELEPHONY
@@ -80,15 +83,20 @@
     };
 }
 
-+ (NSDictionary *)getNetworkEnvironmentInfo:(NSString *)usedNet networkAppId:(NSString *)networkAppId appKey:(NSString *)appKey uin:(NSString *)uin endpoint:(NSString *)endpoint{
++ (NSDictionary *)getNetworkEnvironmentInfo:(NSString *)usedNet networkAppId:(NSString *)networkAppId appKey:(NSString *)appKey uin:(NSString *)uin endpoint:(NSString *)endpoint interfaceName:(NSString *)interfaceName{
     // 调用独立封装的Token解析方法
     if(networkAppId == nil || networkAppId.length == 0 || appKey == nil || appKey.length == 0 || uin == nil || uin.length == 0 || endpoint == nil || endpoint.length == 0){
         return @{};
     }
 
+    // C Socket 实现只支持 HTTP，强制使用 HTTP 协议
     if (![endpoint.lowercaseString hasPrefix:@"http"]) {
-        endpoint = [NSString stringWithFormat:@"https://%@", endpoint];
-        NSLog(@"[CLS] 自动补充HTTPS协议头，修正后endpoint：%@", endpoint);
+        endpoint = [NSString stringWithFormat:@"http://%@", endpoint];
+        NSLog(@"[CLS] 自动补充HTTP协议头（C Socket 实现），修正后endpoint：%@", endpoint);
+    } else if ([endpoint.lowercaseString hasPrefix:@"https://"]) {
+        // 将 HTTPS 替换为 HTTP
+        endpoint = [endpoint stringByReplacingOccurrencesOfString:@"https://" withString:@"http://" options:NSCaseInsensitiveSearch range:NSMakeRange(0, 8)];
+        NSLog(@"[CLS] ⚠️ C Socket 不支持 HTTPS，已自动转换为 HTTP：%@", endpoint);
     }
     
     // 步骤2：编码URL参数（避免特殊字符导致URL非法）
@@ -111,91 +119,179 @@
     // 输出完整URL（无截断）
     NSLog(@"[CLS] 最终请求信息：endpoint=%@｜url=%@｜networkAppId=%@｜appKey=%@｜uin=%@", endpoint, url.absoluteString, networkAppId, appKey, uin);
 
-    // ========== 4. 构建请求（增强容错） ==========
-    NSMutableURLRequest *httpRequest = [NSMutableURLRequest requestWithURL:url];
-    httpRequest.HTTPMethod = @"GET";
-    httpRequest.timeoutInterval = 60.0; // 超时60秒
-    [httpRequest setValue:@"no-cache" forHTTPHeaderField:@"Cache-Control"];
-    // 新增：强制关闭持久连接（避免Connection reset by peer）
-    [httpRequest setValue:@"close" forHTTPHeaderField:@"Connection"];
-    // 新增：指定HTTP/1.1（避免协议兼容问题）
-    [httpRequest setValue:@"HTTP/1.1" forHTTPHeaderField:@"Protocol"];
+    // ========== 4. 使用 C Socket 发起 HTTP 请求（支持网卡绑定） ==========
+    return [self sendHTTPRequestWithSocket:url interfaceName:interfaceName usedNet:usedNet];
+}
 
-    // ========== 5. 同步发送请求（修复__block修饰符问题） ==========
-    // 关键：给需要在block内修改的变量添加__block修饰符
-    __block NSHTTPURLResponse *httpResponse = nil;
-    __block NSError *error = nil;
-    __block NSData *responseData = nil;
-    __block NSInteger statusCode = -1;
-    
-    // 兼容iOS 9+：改用NSURLSession + 信号量实现同步请求
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]
-                                                          delegate:nil
-                                                     delegateQueue:[NSOperationQueue new]];
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    
-    NSURLSessionDataTask *task = [session dataTaskWithRequest:httpRequest completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable err) {
-        // block内修改外部变量（已加__block，可正常赋值）
-        error = err;
-        responseData = data;
-        if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
-            httpResponse = (NSHTTPURLResponse *)response;
-            statusCode = httpResponse.statusCode;
-        }
-        dispatch_semaphore_signal(semaphore);
-    }];
-    [task resume];
-    // 等待请求完成（超时60秒）
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(60 * NSEC_PER_SEC)));
+#pragma mark - C Socket HTTP 请求实现（支持网卡绑定）
 
-    // ========== 6. 错误处理 ==========
-    if (error) {
-        // 输出完整错误信息（含错误码、URL、描述）
-        NSLog(@"[CLS] 同步请求错误：code=%ld｜domain=%@｜desc=%@｜URL=%@",
-              (long)error.code, error.domain, error.localizedDescription, url.absoluteString);
++ (NSDictionary *)sendHTTPRequestWithSocket:(NSURL *)url
+                              interfaceName:(NSString *)interfaceName
+                                    usedNet:(NSString *)usedNet {
+    NSLog(@"[CLS Socket] 开始发起 HTTP 请求（网卡：%@）", interfaceName ?: @"默认");
+    
+    // 1. 解析 URL
+    NSString *host = url.host;
+    NSString *path = url.path.length > 0 ? url.path : @"/";
+    NSString *query = url.query.length > 0 ? [NSString stringWithFormat:@"?%@", url.query] : @"";
+    uint16_t port = url.port ? [url.port unsignedShortValue] : 80;  // 默认 HTTP 端口
+    
+    NSLog(@"[CLS Socket] 请求地址：%@:%d%@%@", host, port, path, query);
+    
+    // 2. DNS 解析
+    struct hostent *hostInfo = gethostbyname([host UTF8String]);
+    if (!hostInfo || hostInfo->h_addr_list[0] == NULL) {
+        NSLog(@"[CLS Socket] ❌ DNS 解析失败：%@", host);
         return @{};
     }
-
-    NSLog(@"[CLS] getIpInfoNetwork 响应状态码：%ld", (long)statusCode);
-
-    if (statusCode == 200) {
-        // 解析返回数据
-        NSString *returnValue = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
-        NSLog(@"[CLS] getIpInfoNetwork 响应内容：%@", returnValue);
-        
-        NSError *jsonError = nil;
-        // 步骤1：解析顶层JSON
-        NSDictionary *rootDict = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:&jsonError];
-        if (jsonError) {
-            NSLog(@"[CLS] 顶层JSON解析错误：%@，响应内容：%@", jsonError.localizedDescription, returnValue);
+    
+    struct in_addr targetAddr;
+    memcpy(&targetAddr, hostInfo->h_addr_list[0], sizeof(struct in_addr));
+    NSString *targetIP = [NSString stringWithUTF8String:inet_ntoa(targetAddr)];
+    NSLog(@"[CLS Socket] ✅ DNS 解析：%@ -> %@", host, targetIP);
+    
+    // 3. 创建 socket
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock < 0) {
+        NSLog(@"[CLS Socket] ❌ 创建 socket 失败：%s", strerror(errno));
+        return @{};
+    }
+    NSLog(@"[CLS Socket] ✅ Socket 创建成功：fd=%d", sock);
+    
+    // 4. 绑定网卡（如果指定）
+    if (interfaceName && interfaceName.length > 0) {
+        unsigned int interfaceIndex = if_nametoindex([interfaceName UTF8String]);
+        if (interfaceIndex == 0) {
+            NSLog(@"[CLS Socket] ❌ 无效的网卡名称：%@", interfaceName);
+            close(sock);
             return @{};
         }
         
-        // 步骤2：提取GeoInfo节点（核心数据）
-        NSDictionary *geoInfoDict = rootDict[@"GeoInfo"] ?: @{};
-        if (geoInfoDict.count == 0) {
-            NSLog(@"[CLS] 响应中无GeoInfo字段，顶层数据：%@", rootDict);
+        if (setsockopt(sock, IPPROTO_IP, IP_BOUND_IF, &interfaceIndex, sizeof(interfaceIndex)) < 0) {
+            NSLog(@"[CLS Socket] ❌ 网卡绑定失败：%s", strerror(errno));
+            close(sock);
             return @{};
         }
-        
-        // 返回 GeoInfo 字段
-        return @{
-            @"usedNet": usedNet ?: @"unknown",
-            @"defaultNet" : [CLSDeviceUtils getNetworkTypeName] ?: @"unknown",
-            @"client_ip": geoInfoDict[@"remote_addr"] ?: @"未知",
-            @"country_id": geoInfoDict[@"country_code"] ?: @"未知",
-            @"isp_en": geoInfoDict[@"provider"] ?: @"未知",
-            @"province_en": geoInfoDict[@"province_name"] ?: @"未知",
-            @"city_en": geoInfoDict[@"city_name"] ?: @"未知",
-            @"country_en": geoInfoDict[@"country_name"] ?: @"未知",
-        };
+        NSLog(@"[CLS Socket] ✅ 网卡绑定成功：%@（索引：%u）", interfaceName, interfaceIndex);
     } else {
-
+        NSLog(@"[CLS Socket] 使用系统默认网卡");
     }
     
-    // ========== 7. 兜底返回默认网络信息 ==========
-    NSLog(@"[CLS] 同步请求失败，状态码：%ld｜响应头：%@", (long)statusCode, httpResponse.allHeaderFields);
-    return @{};
+    // 5. 设置超时（60秒）
+    struct timeval timeout;
+    timeout.tv_sec = 60;
+    timeout.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    
+    // 6. 连接服务器
+    struct sockaddr_in serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(port);
+    serverAddr.sin_addr = targetAddr;
+    
+    NSLog(@"[CLS Socket] 连接到 %@:%d ...", targetIP, port);
+    if (connect(sock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+        NSLog(@"[CLS Socket] ❌ 连接失败：%s", strerror(errno));
+        close(sock);
+        return @{};
+    }
+    NSLog(@"[CLS Socket] ✅ 连接成功");
+    
+    // 7. 构建并发送 HTTP 请求
+    NSString *httpRequest = [NSString stringWithFormat:
+        @"GET %@%@ HTTP/1.1\r\n"
+        @"Host: %@\r\n"
+        @"User-Agent: TencentCloudLog/1.0\r\n"
+        @"Accept: */*\r\n"
+        @"Cache-Control: no-cache\r\n"
+        @"Connection: close\r\n"
+        @"\r\n", path, query, host];
+    
+    const char *requestData = [httpRequest UTF8String];
+    ssize_t sent = send(sock, requestData, strlen(requestData), 0);
+    if (sent < 0) {
+        NSLog(@"[CLS Socket] ❌ 发送请求失败：%s", strerror(errno));
+        close(sock);
+        return @{};
+    }
+    NSLog(@"[CLS Socket] ✅ 已发送 %ld 字节请求", (long)sent);
+    
+    // 8. 接收响应
+    char buffer[8192];
+    NSMutableData *responseData = [NSMutableData data];
+    ssize_t received;
+    
+    while ((received = recv(sock, buffer, sizeof(buffer) - 1, 0)) > 0) {
+        [responseData appendBytes:buffer length:received];
+    }
+    close(sock);
+    
+    if (responseData.length == 0) {
+        NSLog(@"[CLS Socket] ❌ 未收到响应数据");
+        return @{};
+    }
+    NSLog(@"[CLS Socket] ✅ 接收到 %lu 字节响应", (unsigned long)responseData.length);
+    
+    // 9. 解析 HTTP 响应
+    NSString *response = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+    
+    // 提取状态码
+    NSRange statusLineRange = [response rangeOfString:@"\r\n"];
+    if (statusLineRange.location == NSNotFound) {
+        NSLog(@"[CLS Socket] ❌ 无法解析 HTTP 状态行");
+        return @{};
+    }
+    
+    NSString *statusLine = [response substringToIndex:statusLineRange.location];
+    NSArray *statusParts = [statusLine componentsSeparatedByString:@" "];
+    NSInteger statusCode = statusParts.count >= 2 ? [statusParts[1] integerValue] : 0;
+    NSLog(@"[CLS Socket] HTTP 状态码：%ld", (long)statusCode);
+    
+    if (statusCode != 200) {
+        NSLog(@"[CLS Socket] ❌ HTTP 状态码异常：%ld", (long)statusCode);
+        return @{};
+    }
+    
+    // 提取 JSON 响应体
+    NSRange bodyRange = [response rangeOfString:@"\r\n\r\n"];
+    if (bodyRange.location == NSNotFound) {
+        NSLog(@"[CLS Socket] ❌ 无法解析 HTTP 响应体");
+        return @{};
+    }
+    
+    NSString *jsonBody = [response substringFromIndex:bodyRange.location + bodyRange.length];
+    NSLog(@"[CLS Socket] 响应体：%@", jsonBody);
+    
+    // 10. 解析 JSON
+    NSData *jsonData = [jsonBody dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *jsonError = nil;
+    NSDictionary *rootDict = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+    
+    if (jsonError || !rootDict) {
+        NSLog(@"[CLS Socket] ❌ JSON 解析失败：%@", jsonError);
+        return @{};
+    }
+    
+    // 11. 提取 GeoInfo 数据
+    NSDictionary *geoInfoDict = rootDict[@"GeoInfo"];
+    if (!geoInfoDict || geoInfoDict.count == 0) {
+        NSLog(@"[CLS Socket] ❌ 响应中无 GeoInfo 字段");
+        return @{};
+    }
+    
+    NSLog(@"[CLS Socket] ✅ 成功获取网络信息");
+    return @{
+        @"usedNet": usedNet ?: @"unknown",
+        @"defaultNet": [CLSDeviceUtils getNetworkTypeName] ?: @"unknown",
+        @"client_ip": geoInfoDict[@"remote_addr"] ?: @"未知",
+        @"country_id": geoInfoDict[@"country_code"] ?: @"未知",
+        @"isp_en": geoInfoDict[@"provider"] ?: @"未知",
+        @"province_en": geoInfoDict[@"province_name"] ?: @"未知",
+        @"city_en": geoInfoDict[@"city_name"] ?: @"未知",
+        @"country_en": geoInfoDict[@"country_name"] ?: @"未知",
+    };
 }
 
 + (NSString *)getSDKBuildTime {
@@ -669,16 +765,18 @@ static BOOL isValidResponse(char *buffer, int len, int seq, int identifier) {
                                                     appKey:(NSString *)appKey
                                                       uin:(NSString *)uin
                                                   endpoint:(NSString *)endpoint
-                                             interfaceDNS:(NSString *)interfaceDNS {
+                                             interfaceDNS:(NSString *)interfaceDNS
+                                            interfaceName:(NSString *)interfaceName {
     // 1. 空值兜底（核心参数为空时返回空字典）
     if (!interfaceType) interfaceType = @"";
     
-    // 2. 调用工具类获取基础网络信息
+    // 2. 调用工具类获取基础网络信息（传递网卡名称）
     NSDictionary *baseNetworkInfo = [self getNetworkEnvironmentInfo:interfaceType
                                                                 networkAppId:networkAppId
                                                                        appKey:appKey
                                                                            uin:uin
-                                                                       endpoint:endpoint];
+                                                                       endpoint:endpoint
+                                                                 interfaceName:interfaceName];
     
     // 3. 构建增强网络信息（补充DNS）
     NSMutableDictionary *networkInfo = [NSMutableDictionary dictionaryWithDictionary:baseNetworkInfo ?: @{}];

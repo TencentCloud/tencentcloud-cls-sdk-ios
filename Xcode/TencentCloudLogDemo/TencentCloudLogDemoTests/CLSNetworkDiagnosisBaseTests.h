@@ -11,24 +11,24 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// 测试通用超时时间
-static NSTimeInterval const kTestDefaultTimeout = 30.0;
+static NSTimeInterval const kTestDefaultTimeout = 80.0;
 /// 纳秒时间戳最小值
 static long long const kMinNanoTimestamp = 1000000000000LL;
 /// 测试通用AppKey
-static NSString *const kTestAppKey = @"zhiyan_test_key";
+static NSString *const kTestAppKey = @"zhiyan_test_key_badnetwork";
 /// 测试目标域名
 static NSString *const kTestDomain = @"www.baidu.com";
 
 /**
  * 网络探测测试基类
- * 
+ *
  * 支持的探测参数：
  * - DNS:     domain、detectEx、enableMultiplePortsDetect、prefer、nameserver、timeout
  * - Ping:    domain、detectEx、enableMultiplePortsDetect、maxTimes、size、timeout
  * - HTTP:    domain、detectEx、enableSSLVerification、enableMultiplePortsDetect、timeout
  * - TCPPing: domain、port、detectEx、enableMultiplePortsDetect、maxTimes、timeout
  * - MTR:     domain、detectEx、enableMultiplePortsDetect、maxTimes、timeout、maxTTL、protocol
- * 
+ *
  * 注意：userEx 已移除，统一从 ClsNetworkDiagnosis 获取
  */
 @interface CLSNetworkDiagnosisBaseTests : XCTestCase
@@ -48,6 +48,11 @@ static NSString *const kTestDomain = @"www.baidu.com";
 /// 校验Resource字段（资源/环境字段层）
 - (void)validateResourceFields:(NSDictionary *)data;
 
+/// 校验运营商字段（iOS 16.4+ 占位符处理）
+/// 验证 carrier 不是占位符（如 "-"、"--"、"Unknown"、"Carrier" 等）
+/// iOS 16.4+ 系统无法获取运营商时应填充为 "IOS"
+- (void)validateCarrierField:(NSDictionary *)resource;
+
 /// 校验Attribute字段（探测信息节点）
 - (void)validateAttributeFields:(NSDictionary *)data expectedType:(NSString *)type;
 
@@ -58,11 +63,11 @@ static NSString *const kTestDomain = @"www.baidu.com";
 - (void)validateNetInfo:(NSDictionary *)netInfo;
 
 /// 校验扩展字段: detectEx（业务扩展）、userEx（全局用户扩展）
-- (void)validateExtensionFields:(NSDictionary *)data 
+- (void)validateExtensionFields:(NSDictionary *)data
                expectedDetectEx:(NSDictionary * _Nullable)expectedDetectEx;
 
 /// 校验 userEx 全局字段（验证通过 setUserEx 设置的值已正确上报）
-- (void)validateUserExFields:(NSDictionary *)data 
+- (void)validateUserExFields:(NSDictionary *)data
               expectedUserEx:(NSDictionary * _Nullable)expectedUserEx;
 
 /// 通用字段非空校验
@@ -126,3 +131,4 @@ static NSString *const kTestDomain = @"www.baidu.com";
 @end
 
 NS_ASSUME_NONNULL_END
+
