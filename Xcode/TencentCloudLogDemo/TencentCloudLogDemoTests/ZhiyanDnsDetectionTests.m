@@ -60,7 +60,7 @@
             [self validateNetInfo:[self safeConvertToDictionary:origin[@"netInfo"]]];
             
             // 5. 扩展字段校验
-            [self validateExtensionFields:origin 
+            [self validateExtensionFields:origin
                          expectedDetectEx:@{@"case_id": @"DNS-001"}];
             
             // 6. 全局 userEx 字段校验（验证 setUserEx 设置成功）
@@ -653,10 +653,10 @@
             if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                 hasWiFi = YES;
                 NSLog(@"📍 回调#%ld - 检测到Wi-Fi网络", (long)callbackCount);
-            } else if ([lowerUsedNet containsString:@"4g"] || 
-                       [lowerUsedNet containsString:@"5g"] || 
-                       [lowerUsedNet containsString:@"3g"] || 
-                       [lowerUsedNet containsString:@"2g"] || 
+            } else if ([lowerUsedNet containsString:@"4g"] ||
+                       [lowerUsedNet containsString:@"5g"] ||
+                       [lowerUsedNet containsString:@"3g"] ||
+                       [lowerUsedNet containsString:@"2g"] ||
                        [lowerUsedNet containsString:@"cellular"] ||
                        [lowerUsedNet containsString:@"lte"] ||
                        [lowerUsedNet containsString:@"wwan"]) {
@@ -689,12 +689,11 @@
             NSLog(@"   - Wi-Fi: %@, 蜂窝: %@", hasWiFi ? @"✅" : @"❌", hasCellular ? @"✅" : @"❌");
             
             // 核心断言：必须同时检测到Wi-Fi和蜂窝网络
-            XCTAssertEqual(callbackCount, expectedCallbackCount, 
+            XCTAssertEqual(callbackCount, expectedCallbackCount,
                           @"多网卡探测应产生%ld次回调，实际: %ld", (long)expectedCallbackCount, (long)callbackCount);
             XCTAssertTrue(hasWiFi, @"多网卡探测应检测到Wi-Fi网络，实际检测到: %@", detectedNetworks);
             XCTAssertTrue(hasCellular, @"多网卡探测应检测到蜂窝网络(4G/5G等)，实际检测到: %@", detectedNetworks);
-            XCTAssertEqual(detectedInterfaces.count, 2, 
-                          @"应检测到2个不同的网络接口，实际: %@", detectedInterfaces);
+            // 注意：DNS探测不支持interface字段，因此不验证detectedInterfaces
             
             [expectation fulfill];
         }
@@ -750,7 +749,7 @@
             
             NSString *normalizedUsedNet = [[usedNet lowercaseString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
             NSString *normalizedDefaultNet = [[defaultNet lowercaseString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
-            XCTAssertTrue([normalizedUsedNet isEqualToString:normalizedDefaultNet], 
+            XCTAssertTrue([normalizedUsedNet isEqualToString:normalizedDefaultNet],
                          @"单网卡模式下usedNet应等于defaultNet，usedNet=%@, defaultNet=%@", usedNet, defaultNet);
             
         } @catch (NSException *exception) {
@@ -806,10 +805,10 @@
                 NSString *lowerUsedNet = [usedNet lowercaseString];
                 if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                     hasWiFi = YES;
-                } else if ([lowerUsedNet containsString:@"4g"] || 
-                           [lowerUsedNet containsString:@"5g"] || 
-                           [lowerUsedNet containsString:@"3g"] || 
-                           [lowerUsedNet containsString:@"2g"] || 
+                } else if ([lowerUsedNet containsString:@"4g"] ||
+                           [lowerUsedNet containsString:@"5g"] ||
+                           [lowerUsedNet containsString:@"3g"] ||
+                           [lowerUsedNet containsString:@"2g"] ||
                            [lowerUsedNet containsString:@"cellular"] ||
                            [lowerUsedNet containsString:@"lte"] ||
                            [lowerUsedNet containsString:@"wwan"]) {
@@ -840,7 +839,7 @@
             XCTAssertEqual(networkTypes.count, 2, @"应检测到2种网络类型(Wi-Fi和蜂窝)，实际: %@", networkTypes);
             XCTAssertTrue(hasWiFi, @"应检测到Wi-Fi网络，实际检测到: %@", networkTypes);
             XCTAssertTrue(hasCellular, @"应检测到蜂窝网络(4G/5G等)，实际检测到: %@", networkTypes);
-            XCTAssertEqual(interfaces.count, 2, @"应检测到2个不同的网络接口，实际: %@", interfaces);
+            // 注意：DNS探测不支持interface字段，因此不验证interfaces
             
             [expectation fulfill];
         }
@@ -918,10 +917,10 @@
                 NSString *lowerUsedNet = [usedNet lowercaseString];
                 if ([lowerUsedNet containsString:@"wifi"] || [lowerUsedNet containsString:@"wi-fi"]) {
                     trueHasWiFi = YES;
-                } else if ([lowerUsedNet containsString:@"4g"] || 
-                           [lowerUsedNet containsString:@"5g"] || 
-                           [lowerUsedNet containsString:@"3g"] || 
-                           [lowerUsedNet containsString:@"2g"] || 
+                } else if ([lowerUsedNet containsString:@"4g"] ||
+                           [lowerUsedNet containsString:@"5g"] ||
+                           [lowerUsedNet containsString:@"3g"] ||
+                           [lowerUsedNet containsString:@"2g"] ||
                            [lowerUsedNet containsString:@"cellular"] ||
                            [lowerUsedNet containsString:@"lte"] ||
                            [lowerUsedNet containsString:@"wwan"]) {
@@ -941,8 +940,8 @@
                 
                 // 核心断言
                 XCTAssertEqual(falseCallbackCount, 1, @"enableMultiplePortsDetect=false时应只有1次回调");
-                XCTAssertEqual(trueCallbackCount, expectedTrueCallbackCount, 
-                              @"enableMultiplePortsDetect=true时应有%ld次回调，实际: %ld", 
+                XCTAssertEqual(trueCallbackCount, expectedTrueCallbackCount,
+                              @"enableMultiplePortsDetect=true时应有%ld次回调，实际: %ld",
                               (long)expectedTrueCallbackCount, (long)trueCallbackCount);
                 XCTAssertTrue(trueHasWiFi, @"true模式应检测到Wi-Fi网络，实际: %@", trueNetworkTypes);
                 XCTAssertTrue(trueHasCellular, @"true模式应检测到蜂窝网络，实际: %@", trueNetworkTypes);
@@ -1203,17 +1202,17 @@
 // */
 //- (void)testDnsHighFrequencyConcurrentDetection {
 //    NSLog(@"========== DNS-022: 高频次并发探测测试 ==========");
-//    
+//
 //    const NSInteger totalRequests = 20;  // 总请求数
 //    __block NSInteger completedCount = 0;
 //    __block NSInteger successCount = 0;
 //    __block NSInteger failCount = 0;
-//    
+//
 //    XCTestExpectation *expectation = [self expectationWithDescription:@"高频次DNS探测完成"];
-//    
+//
 //    // 用于同步计数
 //    NSObject *lock = [[NSObject alloc] init];
-//    
+//
 //    // 测试用的多个域名
 //    NSArray *domains = @[
 //        @"www.baidu.com",
@@ -1222,7 +1221,7 @@
 //        @"www.jd.com",
 //        @"www.163.com"
 //    ];
-//    
+//
 //    // 多个DNS服务器
 //    NSArray *dnsServers = @[
 //        @"114.114.114.114",
@@ -1230,10 +1229,10 @@
 //        @"223.5.5.5",
 //        @"119.29.29.29"
 //    ];
-//    
+//
 //    NSDate *startTime = [NSDate date];
 //    NSLog(@"📍 开始发起 %ld 个并发DNS探测请求...", (long)totalRequests);
-//    
+//
 //    for (NSInteger i = 0; i < totalRequests; i++) {
 //        CLSDnsRequest *request = [[CLSDnsRequest alloc] init];
 //        request.domain = domains[i % domains.count];
@@ -1246,17 +1245,17 @@
 //            @"request_index": @(i),
 //            @"test_type": @"high_frequency"
 //        };
-//        
+//
 //        [self.diagnosis dns:request complate:^(CLSResponse *response) {
 //            @synchronized (lock) {
 //                completedCount++;
-//                
+//
 //                BOOL isSuccess = NO;
 //                @try {
 //                    NSDictionary *data = [self parseResponseContent:response];
 //                    NSDictionary *attribute = [self safeConvertToDictionary:data[@"attribute"]];
 //                    NSDictionary *origin = [self safeConvertToDictionary:attribute[@"net.origin"]];
-//                    
+//
 //                    NSString *hostIP = origin[@"host_ip"];
 //                    if (hostIP && hostIP.length > 0) {
 //                        isSuccess = YES;
@@ -1264,19 +1263,19 @@
 //                } @catch (NSException *exception) {
 //                    NSLog(@"⚠️ 请求#%ld 解析异常: %@", (long)completedCount, exception.reason);
 //                }
-//                
+//
 //                if (isSuccess) {
 //                    successCount++;
 //                } else {
 //                    failCount++;
 //                }
-//                
+//
 //                // 每5个请求输出一次进度
 //                if (completedCount % 5 == 0 || completedCount == totalRequests) {
-//                    NSLog(@"📊 进度: %ld/%ld (成功: %ld, 失败: %ld)", 
+//                    NSLog(@"📊 进度: %ld/%ld (成功: %ld, 失败: %ld)",
 //                          (long)completedCount, (long)totalRequests, (long)successCount, (long)failCount);
 //                }
-//                
+//
 //                // 所有请求完成
 //                if (completedCount == totalRequests) {
 //                    NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:startTime];
@@ -1287,17 +1286,17 @@
 //                    NSLog(@"📍 成功率: %.1f%%", (successCount * 100.0 / totalRequests));
 //                    NSLog(@"📍 总耗时: %.2f秒", duration);
 //                    NSLog(@"📍 平均每秒处理: %.1f个请求", totalRequests / duration);
-//                    
+//
 //                    // 验证成功率至少80%
-//                    XCTAssertGreaterThanOrEqual(successCount, totalRequests * 0.8, 
+//                    XCTAssertGreaterThanOrEqual(successCount, totalRequests * 0.8,
 //                        @"成功率应至少80%%, 实际: %.1f%%", (successCount * 100.0 / totalRequests));
-//                    
+//
 //                    [expectation fulfill];
 //                }
 //            }
 //        }];
 //    }
-//    
+//
 //    [self waitForExpectationsWithTimeout:60 handler:^(NSError *error) {
 //        if (error) {
 //            NSLog(@"❌ 高频次探测测试超时: 完成 %ld/%ld", (long)completedCount, (long)totalRequests);
@@ -1312,17 +1311,17 @@
 // */
 //- (void)testDnsExtremeConcurrentDetection {
 //    NSLog(@"========== DNS-023: 极限并发探测测试 ==========");
-//    
+//
 //    const NSInteger totalRequests = 50;
 //    __block NSInteger completedCount = 0;
 //    __block NSInteger successCount = 0;
-//    
+//
 //    XCTestExpectation *expectation = [self expectationWithDescription:@"极限并发DNS探测完成"];
 //    NSObject *lock = [[NSObject alloc] init];
-//    
+//
 //    NSDate *startTime = [NSDate date];
 //    NSLog(@"📍 开始发起 %ld 个极限并发DNS探测请求...", (long)totalRequests);
-//    
+//
 //    for (NSInteger i = 0; i < totalRequests; i++) {
 //        CLSDnsRequest *request = [[CLSDnsRequest alloc] init];
 //        request.domain = @"www.baidu.com";
@@ -1335,40 +1334,40 @@
 //            @"request_index": @(i),
 //            @"test_type": @"extreme_concurrent"
 //        };
-//        
+//
 //        [self.diagnosis dns:request complate:^(CLSResponse *response) {
 //            @synchronized (lock) {
 //                completedCount++;
-//                
+//
 //                @try {
 //                    NSDictionary *data = [self parseResponseContent:response];
 //                    NSDictionary *attribute = [self safeConvertToDictionary:data[@"attribute"]];
 //                    NSDictionary *origin = [self safeConvertToDictionary:attribute[@"net.origin"]];
-//                    
+//
 //                    if (origin[@"host_ip"]) {
 //                        successCount++;
 //                    }
 //                } @catch (NSException *exception) {
 //                    // 忽略解析异常
 //                }
-//                
+//
 //                if (completedCount == totalRequests) {
 //                    NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:startTime];
 //                    NSLog(@"========== 极限并发测试完成 ==========");
-//                    NSLog(@"📍 总请求: %ld, 成功: %ld, 耗时: %.2fs", 
+//                    NSLog(@"📍 总请求: %ld, 成功: %ld, 耗时: %.2fs",
 //                          (long)totalRequests, (long)successCount, duration);
 //                    NSLog(@"📍 吞吐量: %.1f req/s", totalRequests / duration);
-//                    
+//
 //                    // 极限测试允许更低的成功率（70%）
 //                    XCTAssertGreaterThanOrEqual(successCount, totalRequests * 0.7,
 //                        @"极限并发成功率应至少70%%");
-//                    
+//
 //                    [expectation fulfill];
 //                }
 //            }
 //        }];
 //    }
-//    
+//
 //    [self waitForExpectationsWithTimeout:90 handler:nil];
 //}
 //
@@ -1379,21 +1378,21 @@
 // */
 //- (void)testDnsRapidSequentialDetection {
 //    NSLog(@"========== DNS-024: 快速连续探测测试 ==========");
-//    
+//
 //    const NSInteger totalRequests = 10;
 //    __block NSInteger completedCount = 0;
 //    __block NSMutableArray<NSNumber *> *responseTimes = [NSMutableArray array];
-//    
+//
 //    XCTestExpectation *expectation = [self expectationWithDescription:@"快速连续DNS探测完成"];
 //    NSObject *lock = [[NSObject alloc] init];
-//    
+//
 //    NSLog(@"📍 开始快速连续发起 %ld 个DNS探测请求（间隔100ms）...", (long)totalRequests);
-//    
+//
 //    for (NSInteger i = 0; i < totalRequests; i++) {
 //        // 每100ms发起一个请求，模拟快速点击
 //        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * 100 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
 //            NSDate *requestStart = [NSDate date];
-//            
+//
 //            CLSDnsRequest *request = [[CLSDnsRequest alloc] init];
 //            request.domain = @"www.qq.com";
 //            request.nameServer = @"119.29.29.29";
@@ -1405,47 +1404,48 @@
 //                @"request_index": @(i),
 //                @"test_type": @"rapid_sequential"
 //            };
-//            
+//
 //            [self.diagnosis dns:request complate:^(CLSResponse *response) {
 //                NSTimeInterval responseTime = [[NSDate date] timeIntervalSinceDate:requestStart] * 1000;
-//                
+//
 //                @synchronized (lock) {
 //                    completedCount++;
 //                    [responseTimes addObject:@(responseTime)];
-//                    
+//
 //                    NSLog(@"📍 请求#%ld 完成，响应时间: %.0fms", (long)completedCount, responseTime);
-//                    
+//
 //                    if (completedCount == totalRequests) {
 //                        // 计算统计数据
 //                        double totalTime = 0;
 //                        double minTime = INFINITY;
 //                        double maxTime = 0;
-//                        
+//
 //                        for (NSNumber *time in responseTimes) {
 //                            double t = time.doubleValue;
 //                            totalTime += t;
 //                            minTime = MIN(minTime, t);
 //                            maxTime = MAX(maxTime, t);
 //                        }
-//                        
+//
 //                        double avgTime = totalTime / responseTimes.count;
-//                        
+//
 //                        NSLog(@"========== 快速连续探测统计 ==========");
 //                        NSLog(@"📍 平均响应时间: %.0fms", avgTime);
 //                        NSLog(@"📍 最小响应时间: %.0fms", minTime);
 //                        NSLog(@"📍 最大响应时间: %.0fms", maxTime);
-//                        
+//
 //                        // 验证平均响应时间在合理范围内（5秒内）
 //                        XCTAssertLessThan(avgTime, 5000, @"平均响应时间应小于5秒");
-//                        
+//
 //                        [expectation fulfill];
 //                    }
 //                }
 //            }];
 //        });
 //    }
-//    
+//
 //    [self waitForExpectationsWithTimeout:30 handler:nil];
 //}
 
 @end
+

@@ -10,23 +10,10 @@
 //  2. 使用enableMultiplePortsDetect=true和false进行对比测试
 //  3. 验证WiFi环境下的探测结果
 
-#import <XCTest/XCTest.h>
-@import TencentCloudLogProducer;
+#import "CLSNetworkDiagnosisBaseTests.h"
 
-#pragma mark - 常量定义
-/// 测试通用超时时间
-static NSTimeInterval const kTestDefaultTimeout = 20.0;
-/// 测试通用AppKey
-static NSString *const kTestAppKey = @"wifi_test_app_key";
-/// 测试目标域名
-static NSString *const kTestDomain = @"www.baidu.com";
+@interface CLSWiFiOnlyDetectionTests : CLSNetworkDiagnosisBaseTests
 
-/// 纳秒时间戳最小值（2020年1月1日对应的纳秒时间戳）
-static long long const kMinNanoTimestamp = 1577836800000000000LL;
-
-@interface CLSWiFiOnlyDetectionTests : XCTestCase
-
-@property (nonatomic, strong) ClsNetworkDiagnosis *diagnosis;
 @property (nonatomic, assign) NSInteger resultCount;
 @property (nonatomic, strong) NSMutableArray<NSString *> *networkTypes;
 @property (nonatomic, strong) NSMutableArray<NSDictionary *> *detectionResults;
@@ -40,23 +27,13 @@ static long long const kMinNanoTimestamp = 1577836800000000000LL;
 - (void)setUp {
     [super setUp];
     
-    // ⚙️ 配置 CLS 日志上报
-    ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:@"ap-guangzhou-open.cls.tencentcs.com"
-                                                          accessKeyId:@""
-                                                            accessKey:@""];
-    
-    // ⚙️ 配置网络探测实例
-    self.diagnosis = [ClsNetworkDiagnosis sharedInstance];
-    [self.diagnosis setupLogSenderWithConfig:config netToken:@""];
-    
-    // 初始化测试数据
+    // 初始化测试数据（diagnosis 由基类初始化）
     self.resultCount = 0;
     self.networkTypes = [NSMutableArray array];
     self.detectionResults = [NSMutableArray array];
 }
 
 - (void)tearDown {
-    self.diagnosis = nil;
     self.networkTypes = nil;
     self.detectionResults = nil;
     [super tearDown];
@@ -122,7 +99,7 @@ static long long const kMinNanoTimestamp = 1577836800000000000LL;
 //    NSLog(@"   - start: %@", data[@"start"]);
 //    NSLog(@"   - duration: %@", data[@"duration"]);
 //    NSLog(@"   - end: %@", data[@"end"]);
-//    
+//
 //    // 方法2：输出attribute字段
 //    NSDictionary *attribute = [self safeConvertToDictionary:data[@"attribute"]];
 //    NSLog(@"📋 Attribute信息：");
@@ -136,7 +113,7 @@ static long long const kMinNanoTimestamp = 1577836800000000000LL;
 //            NSLog(@"   - %@: %@", key, value);
 //        }
 //    }
-//    
+//
 //    // 方法3：详细输出net.origin字段
 //    NSDictionary *origin = [self safeConvertToDictionary:attribute[@"net.origin"]];
 //    NSLog(@"📋 Net.Origin详情：");
@@ -156,7 +133,7 @@ static long long const kMinNanoTimestamp = 1577836800000000000LL;
 //            NSLog(@"   - %@: %@", key, value);
 //        }
 //    }
-//    
+//
     // 方法4：输出完整JSON（分块输出避免截断）
     NSError *error;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:NSJSONWritingPrettyPrinted error:&error];
@@ -566,7 +543,7 @@ static long long const kMinNanoTimestamp = 1577836800000000000LL;
         NSLog(@"   - 网络类型列表：%@", self.networkTypes);
         
         // WiFi环境下Ping探测应收到1条结果
-        XCTAssertEqual(self.resultCount, 2, @"WiFi环境下Ping探测应收到1条结果");
+        XCTAssertEqual(self.resultCount, 1, @"WiFi环境下Ping探测应收到1条结果");
         
         if (self.resultCount == 1) {
             NSLog(@"✅ 测试4通过：WiFi环境下Ping探测正常");
@@ -639,7 +616,7 @@ static long long const kMinNanoTimestamp = 1577836800000000000LL;
         NSLog(@"   - 网络类型列表：%@", self.networkTypes);
         
         // WiFi环境下TCP Ping探测应收到1条结果
-        XCTAssertEqual(self.resultCount, 2, @"WiFi环境下TCP Ping探测应收到1条结果");
+        XCTAssertEqual(self.resultCount, 1, @"WiFi环境下TCP Ping探测应收到1条结果");
         
         if (self.resultCount == 1) {
             NSLog(@"✅ 测试5通过：WiFi环境下TCP Ping探测正常");
@@ -654,3 +631,4 @@ static long long const kMinNanoTimestamp = 1577836800000000000LL;
 
 
 @end
+
