@@ -131,7 +131,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/Core', '~> 3.0.0'
+  pod 'TencentCloudLogProducer/Core', '~> 3.1.0'
 end
 ```
 
@@ -145,7 +145,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 3.0.0'
+  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 3.1.0'
 end
 ```
 
