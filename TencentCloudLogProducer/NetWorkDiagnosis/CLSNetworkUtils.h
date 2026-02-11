@@ -15,8 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (NSDictionary *)parseNetToken:(NSString *)netToken;
 
-// 获取网络环境信息
-+ (NSDictionary *)getNetworkEnvironmentInfo:(NSString *)usedNet networkAppId:(NSString *)networkAppId appKey:(NSString *)appKey uin:(NSString *)uin endpoint:(NSString *)endpoint;
+// 获取网络环境信息（支持指定网卡发起请求）
++ (NSDictionary *)getNetworkEnvironmentInfo:(NSString *)usedNet networkAppId:(NSString *)networkAppId appKey:(NSString *)appKey uin:(NSString *)uin endpoint:(NSString *)endpoint interfaceName:(NSString * _Nullable)interfaceName;
 
 // 获取网卡绑定的ip
 + (NSString *)getIPAddressForInterface:(NSString *)interfaceName;
@@ -41,7 +41,8 @@ NS_ASSUME_NONNULL_BEGIN
                                                     appKey:(NSString *)appKey
                                                       uin:(NSString *)uin
                                                   endpoint:(NSString *)endpoint
-                                               interfaceDNS:(NSString *)interfaceDNS;
+                                            interfaceDNS:(NSString *)interfaceDNS
+                                           interfaceName:(NSString * _Nullable)interfaceName;
 
 @end
 

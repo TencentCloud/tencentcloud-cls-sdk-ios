@@ -25,8 +25,6 @@
 #pragma mark - CLSSpanProviderDelegate
 @interface CLSSpanProviderDelegate ()
 @property(nonatomic, strong) id<CLSSpanProviderProtocol> spanProvider;
-@property(nonatomic, strong) CLSExtraProvider *extraProvider;
-- (void) provideExtra: (NSMutableArray<CLSAttribute *> *)attributes;
 - (CLSResource *) createDefaultResource;
 @end
 
@@ -34,17 +32,6 @@
 
 - (instancetype)init {
     self = [super init];
-    if (self) {
-        _extraProvider = [[CLSExtraProvider alloc] init];
-    }
-    return self;
-}
-
-- (instancetype)initWithExtraProvider:(CLSExtraProvider *)extraProvider {
-    self = [super init];
-    if (self) {
-        _extraProvider = extraProvider ?: [[CLSExtraProvider alloc] init];
-    }
     return self;
 }
 
@@ -117,26 +104,10 @@
     [resource add:@"app.versionCode" value:(!buildCode ? @"-" : buildCode)];
     [resource add:@"app.name" value:(!appName ? @"-" : appName)];
     
-    // ========== 网络类型检测（支持接口名称传递） ==========
-    NSString *networkType = nil;
-    NSString *networkSubType = nil;
-    
-    // 1. 尝试从 extras 中获取接口名称（探测场景）
-    NSDictionary *extras = [_extraProvider getExtras];
-    NSString *interfaceName = extras[@"network.interface.name"];
-    
-    if (interfaceName && interfaceName.length > 0) {
-        // 探测场景：使用指定的网络接口
-        NSLog(@"🔍 [CLSCocoa] Using interface-based detection: %@", interfaceName);
-        networkType = [CLSDeviceUtils getNetworkTypeNameForInterface:interfaceName];
-        networkSubType = [CLSDeviceUtils getNetworkSubTypeNameForInterface:interfaceName];
-    } else {
-        // 常规场景：使用系统全局检测
-        NSLog(@"🌐 [CLSCocoa] Using system-based detection");
-        networkType = [CLSDeviceUtils getNetworkTypeName];
-        networkSubType = [CLSDeviceUtils getNetworkSubTypeName];
-    }
-    
+    // ========== 网络类型检测（使用系统全局检测） ==========
+    NSLog(@"🌐 [CLSCocoa] Using system-based detection");
+    NSString *networkType = [CLSDeviceUtils getNetworkTypeName];
+    NSString *networkSubType = [CLSDeviceUtils getNetworkSubTypeName];
     NSString *carrier = [CLSDeviceUtils getCarrier];
     // 非真实运营商名或占位符时使用平台标识
     NSString *trimmed = [carrier stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
@@ -150,7 +121,6 @@
         carrier = @"IOS";
     }
     
-    NSLog(@"🌐 [CLSCocoa] interfaceName = [%@]", interfaceName ?: @"(nil)");
     NSLog(@"🌐 [CLSCocoa] networkType = [%@], length=%lu", networkType, (unsigned long)networkType.length);
     NSLog(@"🌐 [CLSCocoa] networkSubType = [%@], length=%lu", networkSubType, (unsigned long)networkSubType.length);
     NSLog(@"📱 [CLSCocoa] carrier = [%@], length=%lu, isNil=%d", carrier, (unsigned long)carrier.length, carrier == nil);
@@ -177,36 +147,12 @@
                                            nil
     ];
     
-    [self provideExtra:attributes];
-    
     NSArray<CLSAttribute *> *userAttributes = [_spanProvider provideAttribute];
     if (userAttributes) {
         [attributes addObjectsFromArray:userAttributes];
     }
     
     return attributes;
-}
-
-- (void) provideExtra: (NSMutableArray<CLSAttribute *> *)attributes {
-    NSDictionary<NSString *, NSString *> *extras = [_extraProvider getExtras];
-    if (!extras) {
-        return;
-    }
-    
-    for (NSString *k in extras) {
-        NSString *key = [NSString stringWithFormat:@"extras.%@", k];
-        if ([[extras valueForKey:k] isKindOfClass:[NSDictionary<NSString *, NSString *> class]]) {
-            [attributes addObject:[CLSAttribute of:key
-                                             value:[NSString stringWithDictionary:(NSDictionary *)[extras valueForKey:k]]
-                                  ]
-            ];
-        } else {
-            [attributes addObject:[CLSAttribute of:key
-                                             value:[extras valueForKey:k]
-                                  ]
-            ];
-        }
-    }
 }
 
 - (void) provideUserInfo: (NSMutableArray<CLSAttribute *> *) attributes userinfo: (CLSUserInfo *) info {
@@ -237,41 +183,6 @@
         }
     }
     
-}
-@end
-
-#pragma mark - CLSExtraProvider
-@interface CLSExtraProvider()
-@property(nonatomic, strong, readonly) NSMutableDictionary *dict;
-@end
-
-@implementation CLSExtraProvider : NSObject
-
-- (instancetype)init {
-    if (self = [super init]) {
-        _dict = [NSMutableDictionary dictionary];
-    }
-    return self;
-}
-
-- (void) setExtra: (NSString *)key value: (NSString *)value {
-    [_dict setObject:[value copy] forKey:[key copy]];
-}
-- (void) setExtra: (NSString *)key dictValue: (NSDictionary<NSString *, NSString *> *)value {
-    if (![value isKindOfClass:[NSDictionary<NSString *, NSString *> class]]) {
-        return;
-    }
-
-    [_dict setObject:[value copy] forKey:[key copy]];
-}
-- (void) removeExtra: (NSString *)key {
-    [_dict removeObjectForKey:key];
-}
-- (void) clearExtras {
-    [_dict removeAllObjects];
-}
-- (NSDictionary<NSString *, NSString *> *) getExtras {
-    return [_dict copy];
 }
 @end
 
