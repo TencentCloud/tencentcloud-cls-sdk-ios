@@ -18,17 +18,6 @@
 #import <Security/SecProtocolOptions.h>
 #endif
 
-/// 释放 Network.framework 的 C 对象（path/endpoint 等），通过 dlsym 调用避免 ARC 将 nw_release 解析为 objc release
-static void cls_nw_object_release(void *obj) {
-    if (!obj) return;
-    static void (*release_fn)(void *) = NULL;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        release_fn = (void (*)(void *))dlsym(RTLD_DEFAULT, "nw_release");
-    });
-    if (release_fn) release_fn(obj);
-}
-
 /// 根据 nw_connection_state_failed 的 nw_error 及是否为 HTTPS，生成可读的 NSError（便于上报和日志分析）
 static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
     NSString *msg = nil;
@@ -65,6 +54,16 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
 @property (nonatomic, copy) NSString *resolvedRemoteAddress;
 /// Network.framework 路径下已发送字节数（用于 buildFinalReportDict 的 sendBytes）
 @property (nonatomic, assign) NSUInteger sentBytes;
+
+/// getaddrinfo 解析并记录真实 dnsStart/dnsEnd、回填 resolvedRemoteAddress（带 5 秒超时）
+/// @param outStorage 非空时输出首个解析结果（端口已按 port 修正），供 nw_endpoint_create_address 使用
+/// @return 解析成功返回 YES；失败或超时返回 NO，且 dnsStartTime/dnsEndTime 会被复位为 0
+/// @warning 内部使用信号量阻塞等待，必须在并发队列上调用，不可在串行队列或主线程调用
+- (BOOL)resolveDNSForHost:(NSString *)host
+               portString:(NSString *)portString
+                     port:(uint16_t)port
+                    queue:(dispatch_queue_t)queue
+               outAddress:(struct sockaddr_storage *)outStorage;
 @end
 
 @implementation CLSMultiInterfaceHttping
@@ -181,6 +180,86 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
     [task resume];
 }
 
+#pragma mark - DNS 解析（真实 dnsStart/dnsEnd 与 remoteAddr 来源）
+- (BOOL)resolveDNSForHost:(NSString *)host
+               portString:(NSString *)portString
+                     port:(uint16_t)port
+                    queue:(dispatch_queue_t)queue
+               outAddress:(struct sockaddr_storage *)outStorage {
+    if (host.length == 0 || portString.length == 0) {
+        return NO;
+    }
+
+    const int64_t dnsTimeoutNs = (int64_t)(5 * NSEC_PER_SEC);
+    dispatch_semaphore_t dnsSem = dispatch_semaphore_create(0);
+    // dnsLock 同时保护 res/gaiRet/abandoned：超时后主流程会放弃结果，由解析线程负责 freeaddrinfo，避免泄漏与数据竞争
+    NSLock *dnsLock = [[NSLock alloc] init];
+    __block struct addrinfo *res = NULL;
+    __block int gaiRet = EAI_AGAIN;
+    __block BOOL abandoned = NO;
+
+    self.dnsStartTime = CFAbsoluteTimeGetCurrent();
+    dispatch_async(queue, ^{
+        struct addrinfo hints = {0};
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        struct addrinfo *localRes = NULL;
+        // 在 block 内部取 UTF8String：host/portString 被 block 强持有，避免 C 字符串随 autorelease 释放而悬垂
+        int ret = getaddrinfo(host.UTF8String, portString.UTF8String, &hints, &localRes);
+        [dnsLock lock];
+        if (abandoned) {
+            if (localRes) freeaddrinfo(localRes);
+        } else {
+            gaiRet = ret;
+            res = localRes;
+        }
+        [dnsLock unlock];
+        dispatch_semaphore_signal(dnsSem);
+    });
+
+    if (dispatch_semaphore_wait(dnsSem, dispatch_time(DISPATCH_TIME_NOW, dnsTimeoutNs)) != 0) {
+        [dnsLock lock];
+        abandoned = YES;
+        [dnsLock unlock];
+    }
+    self.dnsEndTime = CFAbsoluteTimeGetCurrent();
+
+    BOOL resolved = NO;
+    [dnsLock lock];
+    struct addrinfo *result = abandoned ? NULL : res;
+    if (gaiRet == 0 && result && result->ai_addr) {
+        if (outStorage) {
+            size_t addrlen = (result->ai_addr->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
+            memcpy(outStorage, result->ai_addr, (result->ai_addrlen < addrlen ? result->ai_addrlen : addrlen));
+            if (result->ai_addr->sa_family == AF_INET) {
+                ((struct sockaddr_in *)outStorage)->sin_port = htons(port);
+            } else if (result->ai_addr->sa_family == AF_INET6) {
+                ((struct sockaddr_in6 *)outStorage)->sin6_port = htons(port);
+            }
+        }
+        char ipStr[INET6_ADDRSTRLEN];
+        const void *ipPtr = (result->ai_addr->sa_family == AF_INET)
+            ? (const void *)&((struct sockaddr_in *)result->ai_addr)->sin_addr
+            : (const void *)&((struct sockaddr_in6 *)result->ai_addr)->sin6_addr;
+        if (inet_ntop(result->ai_addr->sa_family, ipPtr, ipStr, sizeof(ipStr))) {
+            self.resolvedRemoteAddress = [NSString stringWithUTF8String:ipStr];
+        }
+        resolved = YES;
+    }
+    if (result) {
+        freeaddrinfo(result);
+        res = NULL;
+    }
+    [dnsLock unlock];
+
+    if (!resolved) {
+        // 解析失败/超时：清空时间戳，buildFinalReportDict 会退回默认值而不是上报错误的 dnsTime
+        self.dnsStartTime = 0;
+        self.dnsEndTime = 0;
+    }
+    return resolved;
+}
+
 #if __has_include(<Network/Network.h>) && TARGET_OS_IPHONE
 #pragma mark - Network.framework 多网卡强制探测（requiredInterfaceType）
 - (void)startHttpingWithNetworkFrameworkCompletion:(void (^)(NSDictionary *finalReportDict, NSError *error))completion
@@ -216,9 +295,8 @@ API_AVAILABLE(ios(12.0)) {
     }
 #endif
 
-    const char *hostC = host.UTF8String;
-    const char *portC = [[@(port) stringValue] UTF8String];
-    if (!hostC || !portC) {
+    NSString *portString = [@(port) stringValue];
+    if (host.length == 0 || portString.length == 0) {
         NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid host or port"}];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
@@ -226,59 +304,26 @@ API_AVAILABLE(ios(12.0)) {
         return;
     }
 
+    // DNS 解析内部使用 dispatch_semaphore_wait 阻塞等待，必须放在并发队列上，不能与连接队列共用（否则自死锁）
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    // nw_connection 要求回调队列为串行队列；用并发队列会让 state/send/receive/超时回调并发执行，导致 finish 去重失效
+    dispatch_queue_t connQueue = dispatch_queue_create("com.cls.httping.conn", DISPATCH_QUEUE_SERIAL);
     __block NSString *hostCopy = [host copy];
     __block NSMutableString *requestURICopy = [requestURI mutableCopy];
 
     dispatch_async(queue, ^{
         // 1. 先做 DNS 解析并记录真实 dnsStart/dnsEnd（getaddrinfo），带 5 秒超时
-        const int64_t dnsTimeoutNs = (int64_t)(5 * NSEC_PER_SEC);
-        dispatch_semaphore_t dnsSem = dispatch_semaphore_create(0);
-        __block struct addrinfo *res = NULL;
-        __block int gaiRet = EAI_AGAIN;
-
-        self.dnsStartTime = CFAbsoluteTimeGetCurrent();
-        dispatch_async(queue, ^{
-            struct addrinfo hints = {0};
-            hints.ai_family = AF_UNSPEC;
-            hints.ai_socktype = SOCK_STREAM;
-            gaiRet = getaddrinfo(hostC, portC, &hints, &res);
-            dispatch_semaphore_signal(dnsSem);
-        });
-        if (dispatch_semaphore_wait(dnsSem, dispatch_time(DISPATCH_TIME_NOW, dnsTimeoutNs)) != 0) {
-            gaiRet = EAI_AGAIN;
-        }
-        self.dnsEndTime = CFAbsoluteTimeGetCurrent();
-        if (gaiRet != 0 || !res) {
-            if (res) freeaddrinfo(res);
-            res = NULL;
-            self.dnsStartTime = 0;
-            self.dnsEndTime = 0;
-        }
+        struct sockaddr_storage storage = {0};
+        BOOL dnsResolved = [self resolveDNSForHost:hostCopy portString:portString port:port queue:queue outAddress:&storage];
 
         nw_endpoint_t endpoint = NULL;
-        if (res && res->ai_addr) {
-            struct sockaddr_storage storage = {0};
-            size_t addrlen = (res->ai_addr->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
-            memcpy(&storage, res->ai_addr, (res->ai_addrlen < addrlen ? res->ai_addrlen : addrlen));
-            if (res->ai_addr->sa_family == AF_INET) {
-                ((struct sockaddr_in *)&storage)->sin_port = htons(port);
-            } else if (res->ai_addr->sa_family == AF_INET6) {
-                ((struct sockaddr_in6 *)&storage)->sin6_port = htons(port);
-            }
+        if (dnsResolved) {
             // HTTPS 且启用系统 TLS 校验时必须用 host endpoint，否则 TLS 层无 hostname 校验证书会失败或挂起直至超时（enableSSLVerification=YES 超时的原因）
-            endpoint = isHTTPS ? nw_endpoint_create_host(hostC, portC) : nw_endpoint_create_address((struct sockaddr *)&storage);
-            char ipStr[INET6_ADDRSTRLEN];
-            const void *ipPtr = (res->ai_addr->sa_family == AF_INET)
-                ? (const void *)&((struct sockaddr_in *)res->ai_addr)->sin_addr
-                : (const void *)&((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
-            if (inet_ntop(res->ai_addr->sa_family, ipPtr, ipStr, sizeof(ipStr))) {
-                self.resolvedRemoteAddress = [NSString stringWithUTF8String:ipStr];
-            }
-            freeaddrinfo(res);
+            endpoint = isHTTPS ? nw_endpoint_create_host(hostCopy.UTF8String, portString.UTF8String)
+                               : nw_endpoint_create_address((struct sockaddr *)&storage);
         }
         if (!endpoint) {
-            endpoint = nw_endpoint_create_host(hostC, portC);
+            endpoint = nw_endpoint_create_host(hostCopy.UTF8String, portString.UTF8String);
         }
 
         // 使用显式 block 创建 parameters，避免在部分系统/模拟器上传 NULL 导致 nw_parameters_create_secure_tcp 返回 NULL（HTTP 探测 HTTPS 时报 "Failed to create parameters"）
@@ -344,7 +389,7 @@ API_AVAILABLE(ios(12.0)) {
                 connToCancel = c_conn;
                 c_conn = NULL;
                 // 避免在 connection 回调栈内同步 cancel 导致崩溃（Enqueued from com.apple.network.connections）
-                dispatch_async(queue, ^{
+                dispatch_async(connQueue, ^{
                     if (connToCancel) nw_connection_cancel(connToCancel);
                 });
             } else {
@@ -352,7 +397,13 @@ API_AVAILABLE(ios(12.0)) {
             }
         }
         __strong __typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
+        if (!strongSelf) {
+            // 探测实例已释放时仍需回调，否则多网卡模式下 dispatch_semaphore_wait(DISPATCH_TIME_FOREVER) 会永久阻塞
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (completion) completion(@{}, error);
+            });
+            return;
+        }
         strongSelf.taskStartTime = taskStart;
         strongSelf.receivedBytes = receivedBytes;
         strongSelf.networkResultStatusCode = statusCode;
@@ -362,7 +413,7 @@ API_AVAILABLE(ios(12.0)) {
         });
     };
 
-        nw_connection_set_queue(c_conn, queue);
+        nw_connection_set_queue(c_conn, connQueue);
         nw_connection_set_state_changed_handler(c_conn, ^(nw_connection_state_t state, nw_error_t error) {
             __strong __typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
@@ -398,15 +449,15 @@ API_AVAILABLE(ios(12.0)) {
                                     strongSelf.resolvedRemoteAddress = [NSString stringWithUTF8String:ipStr];
                                 }
                             }
-                            cls_nw_object_release((__bridge void *)remote_ep);
                         }
-                        cls_nw_object_release((__bridge void *)path);
+                        // path / remote_ep 由 ARC 管理（NW_RETURNS_RETAINED），不可再手动 release，否则过度释放导致
+                        // Network.framework 内部访问已回收对象而崩溃（com.apple.network.connections）
                     }
                 }
                 NSString *req = [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\nHost: %@\r\nUser-Agent: CLSHttping/2.0.0\r\nConnection: close\r\n\r\n", requestURICopy, hostCopy];
                 NSData *reqData = [req dataUsingEncoding:NSUTF8StringEncoding];
                 strongSelf.sentBytes = reqData.length;
-                dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, queue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, connQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 nw_connection_send(c_conn, sendData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t sendError) {
                     if (sendError) {
                         finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
@@ -424,7 +475,8 @@ API_AVAILABLE(ios(12.0)) {
                             }
                             size_t size = 0;
                             const void *buf = NULL;
-                            dispatch_data_t mapped = dispatch_data_create_map(content, &buf, &size);
+                            // objc_precise_lifetime：确保 mapped 在 buf 使用完毕前不被 ARC 提前释放（否则 buf 悬垂）
+                            __attribute__((objc_precise_lifetime)) dispatch_data_t mapped = dispatch_data_create_map(content, &buf, &size);
                             if (buf && size > 0) {
                                 receivedBytes += size;
                                 if (statusCode == -2) {
@@ -459,7 +511,7 @@ API_AVAILABLE(ios(12.0)) {
 
     // timeout 从毫秒转换为纳秒
     int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), queue, ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), connQueue, ^{
         if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}], NO);
     });
     }); // end dispatch_async(queue)
@@ -469,9 +521,8 @@ API_AVAILABLE(ios(12.0)) {
 // HTTPS 且 enableSSLVerification==NO 时使用 C API 创建带"接受任意证书"的 TLS 参数，与 NSURLSession 路径行为一致
 - (void)startHttpingWithNetworkFrameworkNoSSLWithHost:(NSString *)host path:(NSString *)path port:(uint16_t)port completion:(void (^)(NSDictionary *finalReportDict, NSError *error))completion
 API_AVAILABLE(ios(12.0)) {
-    const char *hostC = host.UTF8String;
-    const char *portC = [[@(port) stringValue] UTF8String];
-    if (!hostC || !portC) {
+    NSString *portString = [@(port) stringValue];
+    if (host.length == 0 || portString.length == 0) {
         NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid host or port"}];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completion) completion([self buildFinalReportDictWithTask:nil error:err], err);
@@ -479,7 +530,15 @@ API_AVAILABLE(ios(12.0)) {
         return;
     }
 
+    // DNS 解析会阻塞最长 5 秒，且证书校验回调也在此队列，必须使用并发队列（单网卡模式下本方法由调用线程直接进入，不能阻塞）
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    // nw_connection 要求回调队列为串行队列；用并发队列会让 state/send/receive/超时回调并发执行，导致 finish 去重失效
+    dispatch_queue_t connQueue = dispatch_queue_create("com.cls.httping.conn.nossl", DISPATCH_QUEUE_SERIAL);
+
+    dispatch_async(queue, ^{
+    // 与主路径保持一致：先测真实 DNS 耗时并回填 remoteAddr，避免 dnsTime 恒为 0、host_ip 依赖 nw_path 回填
+    [self resolveDNSForHost:host portString:portString port:port queue:queue outAddress:NULL];
+
     __block nw_parameters_t params = NULL;
     nw_parameters_configure_protocol_block_t configure_tls = ^(nw_protocol_options_t tls_options) {
         sec_protocol_options_t sec_opts = nw_tls_copy_sec_protocol_options(tls_options);
@@ -507,7 +566,8 @@ API_AVAILABLE(ios(12.0)) {
         nw_parameters_prohibit_interface_type(params, nw_interface_type_wifi);
     }
 
-    nw_endpoint_t endpoint = nw_endpoint_create_host(hostC, portC);
+    // 关闭证书校验时仍用 host endpoint：TLS 层需要 hostname 才能正确完成握手与 SNI
+    nw_endpoint_t endpoint = nw_endpoint_create_host(host.UTF8String, portString.UTF8String);
     if (!endpoint) {
         params = NULL;
         NSError *err = [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid endpoint"}];
@@ -543,7 +603,7 @@ API_AVAILABLE(ios(12.0)) {
                 connToCancel = c_conn;
                 c_conn = NULL;
                 // 避免在 connection 回调栈内同步 cancel 导致崩溃（Enqueued from com.apple.network.connections）
-                dispatch_async(queue, ^{
+                dispatch_async(connQueue, ^{
                     if (connToCancel) nw_connection_cancel(connToCancel);
                 });
             } else {
@@ -551,7 +611,13 @@ API_AVAILABLE(ios(12.0)) {
             }
         }
         __strong __typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
+        if (!strongSelf) {
+            // 探测实例已释放时仍需回调，否则多网卡模式下 dispatch_semaphore_wait(DISPATCH_TIME_FOREVER) 会永久阻塞
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (completion) completion(@{}, error);
+            });
+            return;
+        }
         strongSelf.taskStartTime = taskStart;
         strongSelf.receivedBytes = receivedBytes;
         strongSelf.networkResultStatusCode = statusCode;
@@ -561,7 +627,7 @@ API_AVAILABLE(ios(12.0)) {
         });
     };
 
-    nw_connection_set_queue(c_conn, queue);
+    nw_connection_set_queue(c_conn, connQueue);
     nw_connection_set_state_changed_handler(c_conn, ^(nw_connection_state_t state, nw_error_t error) {
         __strong __typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
@@ -585,15 +651,14 @@ API_AVAILABLE(ios(12.0)) {
                                     strongSelf.resolvedRemoteAddress = [NSString stringWithUTF8String:ipStr];
                                 }
                             }
-                            cls_nw_object_release((__bridge void *)remote_ep);
                         }
-                        cls_nw_object_release((__bridge void *)path_copy);
+                        // path_copy / remote_ep 由 ARC 管理（NW_RETURNS_RETAINED），不可再手动 release
                     }
                 }
                 NSString *req = [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\nHost: %@\r\nUser-Agent: CLSHttping/2.0.0\r\nConnection: close\r\n\r\n", path, host];
                 NSData *reqData = [req dataUsingEncoding:NSUTF8StringEncoding];
                 strongSelf.sentBytes = reqData.length;
-                dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, queue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, connQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 nw_connection_send(c_conn, sendData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t sendError) {
                     if (sendError) {
                         finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
@@ -611,7 +676,8 @@ API_AVAILABLE(ios(12.0)) {
                             }
                             size_t size = 0;
                             const void *buf = NULL;
-                            dispatch_data_t mapped = dispatch_data_create_map(content, &buf, &size);
+                            // objc_precise_lifetime：确保 mapped 在 buf 使用完毕前不被 ARC 提前释放（否则 buf 悬垂）
+                            __attribute__((objc_precise_lifetime)) dispatch_data_t mapped = dispatch_data_create_map(content, &buf, &size);
                             if (buf && size > 0) {
                                 receivedBytes += size;
                                 if (statusCode == -2) {
@@ -646,9 +712,10 @@ API_AVAILABLE(ios(12.0)) {
 
     // timeout 从毫秒转换为纳秒（NoSSL 路径）
     int64_t timeoutInNanoseconds = (int64_t)(self.request.timeout * NSEC_PER_MSEC);
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), queue, ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeoutInNanoseconds), connQueue, ^{
         if (!completed) finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Request timeout"}], NO);
     });
+    }); // end dispatch_async(queue)
 }
 #endif
 #endif
