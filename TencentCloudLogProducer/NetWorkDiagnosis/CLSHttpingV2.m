@@ -192,7 +192,8 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
 
     const int64_t dnsTimeoutNs = (int64_t)(5 * NSEC_PER_SEC);
     dispatch_semaphore_t dnsSem = dispatch_semaphore_create(0);
-    // dnsLock 同时保护 res/gaiRet/abandoned：超时后主流程会放弃结果，由解析线程负责 freeaddrinfo，避免泄漏与数据竞争
+    // dnsLock 保护 res/gaiRet/abandoned 三者的交接：
+    // getaddrinfo 结果的所有权同一时刻只属于一方，abandoned 标记主流程是否已离开，避免双重释放与泄漏
     NSLock *dnsLock = [[NSLock alloc] init];
     __block struct addrinfo *res = NULL;
     __block int gaiRet = EAI_AGAIN;
@@ -208,8 +209,10 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
         int ret = getaddrinfo(host.UTF8String, portString.UTF8String, &hints, &localRes);
         [dnsLock lock];
         if (abandoned) {
+            // 主流程已超时离开，结果无人接收，由本线程释放
             if (localRes) freeaddrinfo(localRes);
         } else {
+            // 移交给主流程，由其负责释放
             gaiRet = ret;
             res = localRes;
         }
@@ -217,17 +220,20 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
         dispatch_semaphore_signal(dnsSem);
     });
 
-    if (dispatch_semaphore_wait(dnsSem, dispatch_time(DISPATCH_TIME_NOW, dnsTimeoutNs)) != 0) {
-        [dnsLock lock];
-        abandoned = YES;
-        [dnsLock unlock];
-    }
+    dispatch_semaphore_wait(dnsSem, dispatch_time(DISPATCH_TIME_NOW, dnsTimeoutNs));
     self.dnsEndTime = CFAbsoluteTimeGetCurrent();
 
-    BOOL resolved = NO;
+    // 无条件接管已移交的结果并置位 abandoned：
+    // 即使 wait 超时返回，解析线程也可能在超时判定的瞬间刚完成移交，此时 res 已有值，必须由本流程释放，否则泄漏
     [dnsLock lock];
-    struct addrinfo *result = abandoned ? NULL : res;
-    if (gaiRet == 0 && result && result->ai_addr) {
+    struct addrinfo *result = res;
+    int localGaiRet = gaiRet;
+    res = NULL;
+    abandoned = YES;  // 尚未完成的解析线程后续将自行释放
+    [dnsLock unlock];
+
+    BOOL resolved = NO;
+    if (localGaiRet == 0 && result && result->ai_addr) {
         if (outStorage) {
             size_t addrlen = (result->ai_addr->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
             memcpy(outStorage, result->ai_addr, (result->ai_addrlen < addrlen ? result->ai_addrlen : addrlen));
@@ -248,9 +254,7 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
     }
     if (result) {
         freeaddrinfo(result);
-        res = NULL;
     }
-    [dnsLock unlock];
 
     if (!resolved) {
         // 解析失败/超时：清空时间戳，buildFinalReportDict 会退回默认值而不是上报错误的 dnsTime
@@ -379,22 +383,22 @@ API_AVAILABLE(ios(12.0)) {
     __block CFAbsoluteTime taskStart = CFAbsoluteTimeGetCurrent();
     __weak __typeof(self) weakSelf = self;
 
-    // connectionAlreadyDead=YES 时不再调用 nw_connection_cancel，避免在 state_failed/state_cancelled 时对已由系统回收的连接再 cancel 导致异常退出（Enqueued from com.apple.root.default-qos）
+    // 无论连接处于何种状态都必须 cancel：这是释放 socket 与 nw_connection 资源的唯一途径，
+    // 且对已 failed/cancelled 的连接是幂等 no-op。
+    // 原先依据 connectionAlreadyDead 跳过 cancel 是为规避崩溃，但真实崩因是 nw_path 被过度释放（已修复）；
+    // 跳过 cancel 反而使每次探测泄漏一个连接与文件描述符。参数保留仅作语义标注。
     void (^finish)(NSError *, BOOL) = ^(NSError *error, BOOL connectionAlreadyDead) {
+        (void)connectionAlreadyDead;
         if (completed) return;
         completed = YES;
-        nw_connection_t connToCancel = NULL;
-        if (c_conn) {
-            if (!connectionAlreadyDead) {
-                connToCancel = c_conn;
-                c_conn = NULL;
-                // 避免在 connection 回调栈内同步 cancel 导致崩溃（Enqueued from com.apple.network.connections）
-                dispatch_async(connQueue, ^{
-                    if (connToCancel) nw_connection_cancel(connToCancel);
-                });
-            } else {
-                c_conn = NULL;
-            }
+        // 置空以打破 connection -> state handler -> __block 存储 -> connection 的循环引用
+        nw_connection_t connToCancel = c_conn;
+        c_conn = NULL;
+        if (connToCancel) {
+            // 异步到串行连接队列，避免在 connection 回调栈内同步 cancel
+            dispatch_async(connQueue, ^{
+                nw_connection_cancel(connToCancel);
+            });
         }
         __strong __typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
@@ -594,21 +598,19 @@ API_AVAILABLE(ios(12.0)) {
     __block CFAbsoluteTime taskStart = CFAbsoluteTimeGetCurrent();
     __weak __typeof(self) weakSelf = self;
 
+    // 与主路径一致：始终 cancel 以释放 socket 与 nw_connection 资源，对已 failed/cancelled 的连接为幂等 no-op
     void (^finish)(NSError *, BOOL) = ^(NSError *error, BOOL connectionAlreadyDead) {
+        (void)connectionAlreadyDead;
         if (completed) return;
         completed = YES;
-        nw_connection_t connToCancel = NULL;
-        if (c_conn) {
-            if (!connectionAlreadyDead) {
-                connToCancel = c_conn;
-                c_conn = NULL;
-                // 避免在 connection 回调栈内同步 cancel 导致崩溃（Enqueued from com.apple.network.connections）
-                dispatch_async(connQueue, ^{
-                    if (connToCancel) nw_connection_cancel(connToCancel);
-                });
-            } else {
-                c_conn = NULL;
-            }
+        // 置空以打破 connection -> state handler -> __block 存储 -> connection 的循环引用
+        nw_connection_t connToCancel = c_conn;
+        c_conn = NULL;
+        if (connToCancel) {
+            // 异步到串行连接队列，避免在 connection 回调栈内同步 cancel
+            dispatch_async(connQueue, ^{
+                nw_connection_cancel(connToCancel);
+            });
         }
         __strong __typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
