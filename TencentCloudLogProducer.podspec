@@ -43,8 +43,10 @@ Pod::Spec.new do |s|
       b.source_files = 'TencentCloudLogProducer/NetWorkDiagnosis/**/*.{m,h}'
       b.public_header_files = 'TencentCloudLogProducer/NetWorkDiagnosis/*.h'
       
-      # 1. 网络诊断专属框架（Core未包含）：Network.framework 多网卡探测，CoreTelephony 运营商信息
-      b.frameworks = 'CoreTelephony', 'Network'
+      # 1. 网络诊断专属框架（Core未包含）：Network.framework 多网卡探测，CoreTelephony 运营商信息，
+      #    Security 提供 sec_protocol_options_set_verify_block（CLSHttpingV2 关闭证书校验路径）。
+      #    Security 必须显式声明：仅依赖 clang modules 的隐式 autolink，在宿主工程关闭 modules 时会链接失败。
+      b.frameworks = 'CoreTelephony', 'Network', 'Security'
       # 2. 网络诊断专属系统库（Core未包含）
       b.libraries = 'resolv' # DNS解析依赖
       # 3. 宏定义（不影响Core，仅网络诊断使用）
