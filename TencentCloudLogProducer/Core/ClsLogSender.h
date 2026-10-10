@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 
 
+FOUNDATION_EXPORT NSString * _Nonnull const kCLSErrorInvalidUin;
+
 
 @interface ClsLogSenderConfig : NSObject <NSCopying>
 
@@ -9,6 +11,9 @@
 @property (nonatomic, copy, nonnull) NSString *accessKeyId;    // 访问密钥ID
 @property (nonatomic, copy, nonnull) NSString *accessKey;      // 访问密钥
 @property (nonatomic, copy, nullable) NSString *token;         // 临时令牌（可选）
+
+@property (nonatomic, copy, nullable) NSString *uin;
+
 @property (nonatomic, assign) uint64_t maxMemorySize;
 @property (nonatomic, assign) uint64_t sendLogInterval;
 
@@ -24,6 +29,10 @@
 @interface LogSender : NSObject
 
 + (instancetype)sharedSender;
+
++ (BOOL)isWeakAuthConfig:(nonnull ClsLogSenderConfig *)config;
+
++ (BOOL)isUinValid:(nullable NSString *)uin;
 
 /**
  设置服务端配置（新增主题ID参数）

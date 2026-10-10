@@ -1,7 +1,9 @@
-// ClsLogStorage.h（接口不变，内部实现调整）
+// ClsLogStorage.h
 #import <Foundation/Foundation.h>
 #import "ClsLogModel.h"
 #import "ClsLogs.pbobjc.h"
+
+NS_ASSUME_NONNULL_BEGIN
 
 @interface ClsLogStorage : NSObject
 
@@ -15,7 +17,10 @@
 
 - (NSArray<NSDictionary *> *)queryPendingLogs:(NSUInteger)limit;
 
-- (void)deleteSentLogsWithIds:(NSArray<NSNumber *> *)logIds;
+- (BOOL)deleteSentLogsWithIds:(NSArray<NSNumber *> *)logIds;
+
+@property (atomic, assign, readonly) BOOL isDbWritable;
 
 @end
 
+NS_ASSUME_NONNULL_END
