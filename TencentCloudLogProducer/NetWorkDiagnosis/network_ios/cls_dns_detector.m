@@ -2,19 +2,23 @@
 //  cls_dns_detector.m
 //  network_ios
 //
-//  DNS 探测器 - 使用 Network.framework 发送 UDP DNS 查询
+//  DNS 探测器 - 使用 BSD socket 发送 UDP/TCP DNS 查询
 //
 
 #import "cls_dns_detector.h"
 #import <Foundation/Foundation.h>
-#import <Network/Network.h>
 #import <arpa/inet.h>
 #import <ctype.h>
+#import <errno.h>
+#import <fcntl.h>
+#import <netinet/in.h>
+#import <netinet/tcp.h>
 #import <os/lock.h>
 #import <stdatomic.h>
 #import <stdlib.h>
 #import <string.h>
-#import <dlfcn.h>
+#import <poll.h>
+#import <sys/socket.h>
 #import <sys/time.h>
 #import <unistd.h>
 #import <dispatch/dispatch.h>
@@ -533,6 +537,8 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
         // 初始化记录结构（确保所有字段为 NULL 或有效值）
         DnsAnswerRecord record = {0};
         record.ttl = ttl;
+        char value_buf[2048];
+        memset(value_buf, 0, sizeof(value_buf));
         
         // 设置 name（使用栈上的局部变量，dns_answer_record_array_add 会复制到堆上）
         // 注意：如果 name 为空，设置为 NULL 而不是空字符串，避免混淆
@@ -540,34 +546,32 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
         
         // 根据记录类型解析值
         if (type == 1 && rdlength == 4) { // A
-            char ip[INET_ADDRSTRLEN] = {0};
-            if (inet_ntop(AF_INET, &buffer[offset], ip, sizeof(ip))) {
+            if (inet_ntop(AF_INET, &buffer[offset], value_buf, INET_ADDRSTRLEN)) {
                 record.type = "A";
-                record.value = ip;  // 栈变量，会被复制
+                record.value = value_buf;
             }
         } else if (type == 28 && rdlength == 16) { // AAAA
-            char ip6[INET6_ADDRSTRLEN] = {0};
-            if (inet_ntop(AF_INET6, &buffer[offset], ip6, sizeof(ip6))) {
+            if (inet_ntop(AF_INET6, &buffer[offset], value_buf, INET6_ADDRSTRLEN)) {
                 record.type = "AAAA";
-                record.value = ip6;  // 栈变量，会被复制
+                record.value = value_buf;
             }
         } else if (type == 5) { // CNAME
-            char cname[1024] = {0};
             size_t cname_offset = offset;
-            if (parse_dns_name(buffer, buf_len, &cname_offset, cname, sizeof(cname), 0) == 0) {
+            if (parse_dns_name(buffer, buf_len, &cname_offset, value_buf, 1024, 0) == 0) {
                 record.type = "CNAME";
-                record.value = cname;  // 栈变量，会被复制
+                record.value = value_buf;
             }
         } else if (type == 16) { // TXT
             if (rdlength > 0) {
                 // TXT记录可以包含多个字符串，每个字符串前面有一个长度字节
-                char txt[512] = {0};  // 缓冲区大小与存储结构体一致
+                char *txt = value_buf;
+                const size_t txt_cap = 512;
                 size_t txt_pos = 0;
                 size_t txt_offset = offset;
                 size_t remaining = rdlength;
                 
                 // 解析所有字符串片段
-                while (remaining > 0 && txt_pos < sizeof(txt) - 1) {
+                while (remaining > 0 && txt_pos < txt_cap - 1) {
                     if (txt_offset >= buf_len) break;
                     uint8_t txt_len = buffer[txt_offset];
                     if (txt_len == 0) break;  // 长度为0表示结束
@@ -578,7 +582,7 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
                     remaining--;
                     
                     if (txt_offset + txt_len > buf_len) break;
-                    if (txt_pos + txt_len + 1 >= sizeof(txt)) break;  // 防止溢出
+                    if (txt_pos + txt_len + 1 >= txt_cap) break;  // 防止溢出
                     
                     // 如果不是第一个字符串，添加空格分隔
                     if (txt_pos > 0 && txt[txt_pos - 1] != ' ') {
@@ -586,7 +590,7 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
                     }
                     
                     // 复制字符串内容
-                    size_t copy_len = ((size_t)txt_len < sizeof(txt) - txt_pos - 1) ? (size_t)txt_len : (sizeof(txt) - txt_pos - 1);
+                    size_t copy_len = ((size_t)txt_len < txt_cap - txt_pos - 1) ? (size_t)txt_len : (txt_cap - txt_pos - 1);
                     memcpy(&txt[txt_pos], &buffer[txt_offset], copy_len);
                     txt_pos += copy_len;
                     txt_offset += txt_len;
@@ -596,7 +600,7 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
                 if (txt_pos > 0) {
                     txt[txt_pos] = '\0';  // 确保以 null 结尾
                     record.type = "TXT";
-                    record.value = txt;  // 栈变量，会被复制
+                    record.value = value_buf;
                 }
             }
         } else if (type == 15) { // MX (Mail Exchange)
@@ -605,18 +609,16 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
                 char mx_name[1024] = {0};
                 size_t mx_offset = offset + 2;
                 if (parse_dns_name(buffer, buf_len, &mx_offset, mx_name, sizeof(mx_name), 0) == 0) {
-                    char mx_value[1024] = {0};
-                    snprintf(mx_value, sizeof(mx_value), "%u %s", preference, mx_name);
+                    snprintf(value_buf, 1024, "%u %s", preference, mx_name);
                     record.type = "MX";
-                    record.value = mx_value;
+                    record.value = value_buf;
                 }
             }
         } else if (type == 2) { // NS (Name Server)
-            char ns_name[1024] = {0};
             size_t ns_offset = offset;
-            if (parse_dns_name(buffer, buf_len, &ns_offset, ns_name, sizeof(ns_name), 0) == 0) {
+            if (parse_dns_name(buffer, buf_len, &ns_offset, value_buf, 1024, 0) == 0) {
                 record.type = "NS";
-                record.value = ns_name;
+                record.value = value_buf;
             }
         } else if (type == 6) { // SOA (Start of Authority)
             char soa_mname[1024] = {0};
@@ -630,11 +632,10 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
                         uint32_t retry = ntohl(*(const uint32_t *)(&buffer[soa_offset])); soa_offset += 4;
                         uint32_t expire = ntohl(*(const uint32_t *)(&buffer[soa_offset])); soa_offset += 4;
                         uint32_t minimum = ntohl(*(const uint32_t *)(&buffer[soa_offset]));
-                        char soa_value[2048] = {0};
-                        snprintf(soa_value, sizeof(soa_value), "%s %s %u %u %u %u %u",
+                        snprintf(value_buf, 2048, "%s %s %u %u %u %u %u",
                                 soa_mname, soa_rname, serial, refresh, retry, expire, minimum);
                         record.type = "SOA";
-                        record.value = soa_value;
+                        record.value = value_buf;
                     }
                 }
             }
@@ -647,10 +648,9 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
                 char srv_target[1024] = {0};
                 size_t srv_offset = srv_data_offset;
                 if (parse_dns_name(buffer, buf_len, &srv_offset, srv_target, sizeof(srv_target), 0) == 0) {
-                    char srv_value[2048] = {0};
-                    snprintf(srv_value, sizeof(srv_value), "%u %u %u %s", priority, weight, port, srv_target);
+                    snprintf(value_buf, 2048, "%u %u %u %s", priority, weight, port, srv_target);
                     record.type = "SRV";
-                    record.value = srv_value;
+                    record.value = value_buf;
                 }
             }
         } else if (type == 257) { // CAA (Certification Authority Authorization)
@@ -667,10 +667,9 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
                         char value[1024] = {0};
                         memcpy(value, &buffer[offset + 2 + tag_len], value_len);
                         value[value_len] = '\0';
-                        char caa_value[1536] = {0};
-                        snprintf(caa_value, sizeof(caa_value), "%u %s \"%s\"", flags, tag, value);
+                        snprintf(value_buf, 1536, "%u %s \"%s\"", flags, tag, value);
                         record.type = "CAA";
-                        record.value = caa_value;
+                        record.value = value_buf;
                     }
                 }
             }
@@ -726,19 +725,19 @@ static int dns_detector_parse_answers(const uint8_t *buffer, size_t buf_len, con
         DnsAnswerRecord record = {0};
         record.ttl = ttl;
         record.name = (name[0] != '\0') ? name : NULL;
+        char value_buf[INET6_ADDRSTRLEN];
+        memset(value_buf, 0, sizeof(value_buf));
         
         // 解析 ADDITIONAL 中常见的 A/AAAA 记录（用于 NS 记录的 glue）
         if (type == 1 && rdlength == 4) { // A
-            char ip[INET_ADDRSTRLEN] = {0};
-            if (inet_ntop(AF_INET, &buffer[offset], ip, sizeof(ip))) {
+            if (inet_ntop(AF_INET, &buffer[offset], value_buf, INET_ADDRSTRLEN)) {
                 record.type = "A";
-                record.value = ip;
+                record.value = value_buf;
             }
         } else if (type == 28 && rdlength == 16) { // AAAA
-            char ip6[INET6_ADDRSTRLEN] = {0};
-            if (inet_ntop(AF_INET6, &buffer[offset], ip6, sizeof(ip6))) {
+            if (inet_ntop(AF_INET6, &buffer[offset], value_buf, INET6_ADDRSTRLEN)) {
                 record.type = "AAAA";
-                record.value = ip6;
+                record.value = value_buf;
             }
         }
         
@@ -911,324 +910,272 @@ static uint64_t now_ms(void) {
     return (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
 }
 
-/**
- * 使用 Network.framework 通过 TCP 发送 DNS 查询（用于处理 TC 截断响应）
- * @param payload 查询数据
- * @param payload_len 数据长度
- * @param server DNS 服务器地址
- * @param timeout_ms 超时时间（毫秒）
- * @param interface_index 网卡索引
- * @param recv_buffer 接收缓冲区
- * @param recv_len 输出参数，接收长度
- * @param query_time_ms 输出参数，查询耗时
- * @return 错误码
- */
+#define DNS_CANCEL_POLL_MS 100
+
+static int build_dns_server_sockaddr(const char *server,
+                                     struct sockaddr_storage *out,
+                                     socklen_t *out_len,
+                                     int *out_is_ipv6) {
+    if (!server || !out || !out_len || !out_is_ipv6) return -1;
+    memset(out, 0, sizeof(*out));
+    struct in_addr v4;
+    if (inet_pton(AF_INET, server, &v4) == 1) {
+        struct sockaddr_in *sin = (struct sockaddr_in *)out;
+        sin->sin_family = AF_INET;
+        sin->sin_port = htons(53);
+        sin->sin_addr = v4;
+        *out_len = sizeof(struct sockaddr_in);
+        *out_is_ipv6 = 0;
+        return 0;
+    }
+    struct in6_addr v6;
+    if (inet_pton(AF_INET6, server, &v6) == 1) {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)out;
+        sin6->sin6_family = AF_INET6;
+        sin6->sin6_port = htons(53);
+        sin6->sin6_addr = v6;
+        *out_len = sizeof(struct sockaddr_in6);
+        *out_is_ipv6 = 1;
+        return 0;
+    }
+    return -1;
+}
+
+static int create_dns_socket(int is_ipv6, unsigned int interface_index, int sock_type) {
+    int domain = is_ipv6 ? AF_INET6 : AF_INET;
+    int sock = socket(domain, sock_type, 0);
+    if (sock < 0) return -1;
+    int nosigpipe = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe)) != 0) {
+        int saved = errno;
+        close(sock);
+        errno = saved;
+        return -1;
+    }
+    if (interface_index > 0) {
+        int level = is_ipv6 ? IPPROTO_IPV6 : IPPROTO_IP;
+        int opt = is_ipv6 ? IPV6_BOUND_IF : IP_BOUND_IF;
+        unsigned int idx = interface_index;
+        if (setsockopt(sock, level, opt, &idx, sizeof(idx)) != 0) {
+            int saved = errno;
+            close(sock);
+            errno = saved;
+            return -1;
+        }
+    }
+    int flags = fcntl(sock, F_GETFL, 0);
+    if (flags < 0 || fcntl(sock, F_SETFL, flags | O_NONBLOCK) < 0) {
+        int saved = errno;
+        close(sock);
+        errno = saved;
+        return -1;
+    }
+    return sock;
+}
+
+static int wait_fd_with_cancel(int sock,
+                              int total_timeout_ms,
+                              int wait_write,
+                              atomic_bool *should_cancel) {
+    if (sock < 0) return -1;
+    if (total_timeout_ms < 0) total_timeout_ms = 0;
+    uint64_t deadline = now_ms() + (uint64_t)total_timeout_ms;
+    while (1) {
+        if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
+            return -2;
+        }
+        uint64_t now = now_ms();
+        if (now >= deadline) return 0;
+        uint64_t remaining = deadline - now;
+        int step_ms = (remaining > (uint64_t)DNS_CANCEL_POLL_MS) ? DNS_CANCEL_POLL_MS : (int)remaining;
+        struct pollfd pfd;
+        pfd.fd = sock;
+        pfd.events = (short)(wait_write ? POLLOUT : POLLIN);
+        pfd.revents = 0;
+        int r = poll(&pfd, 1, step_ms);
+        if (r > 0) return 1;
+        if (r < 0) {
+            if (errno == EINTR) continue;
+            return -1;
+        }
+    }
+}
+
+static int connect_with_cancel(int sock,
+                               const struct sockaddr *addr,
+                               socklen_t addr_len,
+                               int total_timeout_ms,
+                               atomic_bool *should_cancel) {
+    int r = connect(sock, addr, addr_len);
+    if (r == 0) return 0;
+    if (errno != EINPROGRESS) return -1;
+    int sr = wait_fd_with_cancel(sock, total_timeout_ms, 1, should_cancel);
+    if (sr == -2) return -2;
+    if (sr <= 0) return -1;
+    int so_err = 0;
+    socklen_t so_len = sizeof(so_err);
+    if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_err, &so_len) != 0) return -1;
+    if (so_err != 0) {
+        errno = so_err;
+        return -1;
+    }
+    return 0;
+}
+
 static int send_dns_with_network_tcp(const uint8_t *payload,
-                                    size_t payload_len,
-                                    const char *server,
-                                    int timeout_ms,
-                                    unsigned int interface_index,
-                                    uint8_t *recv_buffer,
-                                    size_t *recv_len,
-                                    int *query_time_ms) {
+                                     size_t payload_len,
+                                     const char *server,
+                                     int timeout_ms,
+                                     unsigned int interface_index,
+                                     uint8_t *recv_buffer,
+                                     size_t *recv_len,
+                                     int *query_time_ms,
+                                     atomic_bool *should_cancel) {
     if (!payload || !server || !recv_buffer || !recv_len || !query_time_ms) {
         return cls_dns_detector_error_invalid_param;
     }
-    
     *recv_len = 0;
     *query_time_ms = 0;
-    
-    __block int ret = cls_dns_detector_error_send_failed;
-    __block dispatch_data_t response = NULL;
-    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-    if (!sema) {
-        return cls_dns_detector_error_send_failed;
-    }
-    
-    // 状态变量多线程访问，使用 unfair lock 保护
-    __block os_unfair_lock state_lock = OS_UNFAIR_LOCK_INIT;
-    __block BOOL is_completed = NO;
-    __block BOOL has_sent = NO;
-    __block BOOL has_received = NO;
-    __block BOOL conn_cancelled = NO; // 确保仅取消一次，避免重复日志
-    
-    // Network.framework 资源
-    __block nw_endpoint_t endpoint = NULL;
-    __block nw_parameters_t params = NULL;
-    __block nw_protocol_stack_t protocol_stack = NULL;
-    __block nw_protocol_options_t tcp_options = NULL;
-    __block nw_connection_t conn = NULL;
-    
-    // 统一清理函数
-    void (^cleanup_resources)(void) = ^{
-        os_unfair_lock_lock(&state_lock);
-        if (conn && !conn_cancelled) { 
-            nw_connection_cancel(conn); 
-            conn_cancelled = YES;
-        }
-        if (conn) {
-            conn = NULL; 
-        }
-        os_unfair_lock_unlock(&state_lock);
-        tcp_options = NULL;
-        protocol_stack = NULL;
-        params = NULL;
-        endpoint = NULL;
-        response = NULL;
-    };
-    
-    endpoint = nw_endpoint_create_host(server, "53");
-    if (!endpoint) { cleanup_resources(); return cls_dns_detector_error_send_failed; }
-    
-    params = nw_parameters_create();
-    if (!params) { cleanup_resources(); return cls_dns_detector_error_send_failed; }
-    
-    protocol_stack = nw_parameters_copy_default_protocol_stack(params);
-    if (protocol_stack) {
-        tcp_options = nw_tcp_create_options();
-        if (tcp_options) {
-            nw_protocol_stack_set_transport_protocol(protocol_stack, tcp_options);
-        }
-    }
-    
-    // 设置网卡绑定
-    nw_interface_t required_interface = NULL;
-    if (interface_index > 0) {
-        if (@available(iOS 13.0, *)) {
-            static nw_interface_t (*p_nw_interface_create_with_index)(uint32_t) = NULL;
-            static void (*p_nw_parameters_set_required_interface)(nw_parameters_t, nw_interface_t) = NULL;
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^{
-                p_nw_interface_create_with_index = (nw_interface_t (*)(uint32_t))dlsym(RTLD_DEFAULT, "nw_interface_create_with_index");
-                p_nw_parameters_set_required_interface = (void (*)(nw_parameters_t, nw_interface_t))dlsym(RTLD_DEFAULT, "nw_parameters_set_required_interface");
-            });
-            if (p_nw_interface_create_with_index && p_nw_parameters_set_required_interface) {
-                required_interface = p_nw_interface_create_with_index(interface_index);
-                if (required_interface) {
-                    p_nw_parameters_set_required_interface(params, required_interface);
-                }
-            }
-        }
-    }
-    
-    if (interface_index > 0 && required_interface == NULL) {
-        BOOL interface_found = NO;
-        struct ifaddrs *ifaddrs_list = NULL;
-        if (getifaddrs(&ifaddrs_list) == 0) {
-            for (struct ifaddrs *ifa = ifaddrs_list; ifa != NULL; ifa = ifa->ifa_next) {
-                if (ifa->ifa_name && if_nametoindex(ifa->ifa_name) == interface_index) {
-                    interface_found = YES;
-                    BOOL is_wifi = NO;
-                    BOOL is_cellular = NO;
-                    if (ifa->ifa_flags & IFF_UP) {
-                        const char *if_name = ifa->ifa_name;
-                        if (ifa->ifa_addr) {
-                            if (ifa->ifa_addr->sa_family == AF_INET || ifa->ifa_addr->sa_family == AF_INET6) {
-                                // 根据接口名称模式判断（iOS接口命名规则）
-                                if (strncmp(if_name, "en", 2) == 0) {
-                                    // en0通常是WiFi，检查接口是否不是loopback且是UP状态
-                                    if (!(ifa->ifa_flags & IFF_LOOPBACK) && (ifa->ifa_flags & IFF_UP)) {
-                                        is_wifi = YES;
-                                    }
-                                } else if (strncmp(if_name, "pdp_ip", 6) == 0) {
-                                    // pdp_ip* 是蜂窝网络接口
-                                    is_cellular = YES;
-                                } else if (strncmp(if_name, "ipsec", 5) == 0 || 
-                                          strncmp(if_name, "utun", 4) == 0) {
-                                    // ipsec* 和 utun* 通常是VPN接口，归类为蜂窝网络类型
-                                    is_cellular = YES;
-                                }
-                            }
-                        }
-                    }
-                    if (is_wifi) {
-                        nw_parameters_set_required_interface_type(params, nw_interface_type_wifi);
-                    } else if (is_cellular) {
-                        nw_parameters_set_required_interface_type(params, nw_interface_type_cellular);
-                    }
-                    break;
-                }
-            }
-            freeifaddrs(ifaddrs_list);
-            if (!interface_found) {
-                cleanup_resources();
-                return cls_dns_detector_error_invalid_param;
-            }
-        } else {
-            cleanup_resources();
-            return cls_dns_detector_error_invalid_param;
-        }
+
+    struct sockaddr_storage addr;
+    socklen_t addr_len = 0;
+    int is_ipv6 = 0;
+    if (build_dns_server_sockaddr(server, &addr, &addr_len, &is_ipv6) != 0) {
+        return cls_dns_detector_error_invalid_param;
     }
 
-    // 已设置 required_interface 后释放本地引用（parameters 会持有）
-    if (required_interface) {
-        required_interface = NULL;
-    }
-    
-    conn = nw_connection_create(endpoint, params);
-    if (!conn) { cleanup_resources(); return cls_dns_detector_error_send_failed; }
-    
-    nw_connection_set_queue(conn, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+    int ret = cls_dns_detector_error_send_failed;
+    int sock = -1;
+    uint8_t *buf = NULL;
     uint64_t start = now_ms();
-    
-    // 安全完成操作
-    void (^complete_operation)(int) = ^(int error_code) {
-        os_unfair_lock_lock(&state_lock);
-        if (is_completed) { os_unfair_lock_unlock(&state_lock); return; }
-        is_completed = YES;
-        ret = error_code;
-        os_unfair_lock_unlock(&state_lock);
-        dispatch_semaphore_signal(sema);
-    };
-    
-    // TCP 连接状态处理
-    nw_connection_set_state_changed_handler(conn, ^(nw_connection_state_t state, nw_error_t  _Nullable error) {
-        os_unfair_lock_lock(&state_lock);
-        BOOL completed = is_completed;
-        os_unfair_lock_unlock(&state_lock);
-        if (completed) return;
-        
-        if (state == nw_connection_state_ready) {
-            // TCP 连接就绪，发送 DNS 查询（TCP 格式：2字节长度 + 查询数据）
-            if (!has_sent) {
-                os_unfair_lock_lock(&state_lock);
-                has_sent = YES;
-                os_unfair_lock_unlock(&state_lock);
-                
-                // TCP DNS 格式：前2字节是长度（网络字节序）
-                uint16_t tcp_length = htons((uint16_t)payload_len);
-                uint8_t *tcp_payload = malloc(payload_len + 2);
-                if (!tcp_payload) {
-                    complete_operation(cls_dns_detector_error_send_failed);
-                    return;
-                }
-                memcpy(tcp_payload, &tcp_length, 2);
-                memcpy(tcp_payload + 2, payload, payload_len);
-                
-                // 注意：dispatch_data_create 设置了 DISPATCH_DATA_DESTRUCTOR_FREE，
-                // 会自动释放 tcp_payload，不需要手动 free
-                dispatch_data_t content = dispatch_data_create(tcp_payload, payload_len + 2, NULL, DISPATCH_DATA_DESTRUCTOR_FREE);
-                if (!content) {
-                    // 如果创建失败，需要手动释放内存
-                    free(tcp_payload);
-                    complete_operation(cls_dns_detector_error_send_failed);
-                    return;
-                }
-                nw_connection_send(conn, content, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t  _Nullable send_error) {
-                    // tcp_payload 由 dispatch_data 自动释放，不需要手动 free
-                    os_unfair_lock_lock(&state_lock);
-                    BOOL completed_inner = is_completed;
-                    os_unfair_lock_unlock(&state_lock);
-                    if (completed_inner) return;
-                    
-                    if (send_error) {
-                        complete_operation(cls_dns_detector_error_send_failed);
-                    } else {
-                        // 接收响应
-                        nw_connection_receive_message(conn, ^(dispatch_data_t  _Nullable content, nw_content_context_t  _Nullable context, bool is_complete, nw_error_t  _Nullable recv_error) {
-                            os_unfair_lock_lock(&state_lock);
-                            BOOL completed_recv = is_completed;
-                            if (has_received || completed_recv) {
-                                os_unfair_lock_unlock(&state_lock);
-                                return;
-                            }
-                            has_received = YES;
-                            os_unfair_lock_unlock(&state_lock);
-                            
-                            if (recv_error) {
-                                complete_operation(cls_dns_detector_error_timeout);
-                            } else if (content) {
-                                const void *data_ptr = NULL;
-                                size_t size = 0;
-                                dispatch_data_t contiguous = dispatch_data_create_map(content, &data_ptr, &size);
-                                if (contiguous && data_ptr && size > 2) {
-                                    // TCP DNS 格式：前2字节是长度
-                                    uint16_t tcp_len = ntohs(*(const uint16_t *)data_ptr);
-                                    // 增强验证：
-                                    // 1. tcp_len必须大于0且至少为DNS头部大小
-                                    // 2. tcp_len不能超过实际接收的数据长度（size - 2）
-                                    // 3. tcp_len不能超过接收缓冲区大小
-                                    // 4. 验证tcp_len与实际数据长度一致（TCP DNS要求长度字段必须准确）
-                                    if (tcp_len > 0 && 
-                                        tcp_len >= DNS_HEADER_SIZE && 
-                                        tcp_len <= size - 2 && 
-                                        tcp_len <= DNS_BUFFER_SIZE &&
-                                        (size_t)(tcp_len + 2) <= size) { // 确保长度字段与实际数据一致
-                                        // 验证实际接收的数据长度是否与tcp_len匹配
-                                        if ((size_t)(tcp_len + 2) == size || size >= (size_t)(tcp_len + 2)) {
-                                            memcpy(recv_buffer, (const uint8_t *)data_ptr + 2, tcp_len);
-                                            *recv_len = tcp_len;
-                                            ret = cls_dns_detector_error_success;
-                                            *query_time_ms = (int)(now_ms() - start);
-                                            // ARC模式下，dispatch_data_t会自动管理，不需要手动释放
-                                            complete_operation(cls_dns_detector_error_success);
-                                        } else {
-                                            // 数据长度不匹配
-                                            complete_operation(cls_dns_detector_error_parse_failed);
-                                        }
-                                    } else {
-                                        // 长度验证失败
-                                        complete_operation(cls_dns_detector_error_parse_failed);
-                                    }
-                                } else {
-                                    // ARC模式下，dispatch_data_t会自动管理，不需要手动释放
-                                    complete_operation(cls_dns_detector_error_parse_failed);
-                                }
-                            } else {
-                                complete_operation(cls_dns_detector_error_timeout);
-                            }
-                        });
-                    }
-                });
-            }
-        } else if (state == nw_connection_state_failed || state == nw_connection_state_cancelled) {
-            if (!has_sent) {
-                complete_operation(cls_dns_detector_error_send_failed);
-            } else if (!has_received) {
-                complete_operation(cls_dns_detector_error_timeout);
-            }
-        }
-    });
-    
-    nw_connection_start(conn);
-    
-    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, timeout_ms * NSEC_PER_MSEC);
-    if (dispatch_semaphore_wait(sema, timeout) != 0) {
-        os_unfair_lock_lock(&state_lock);
-        if (!is_completed) {
-            is_completed = YES;
-            ret = cls_dns_detector_error_timeout;
-            // 确保取消连接
-            if (conn && !conn_cancelled) {
-                nw_connection_cancel(conn);
-                conn_cancelled = YES;
-            }
-        }
-        os_unfair_lock_unlock(&state_lock);
+    uint64_t deadline = start + (uint64_t)timeout_ms;
+
+    sock = create_dns_socket(is_ipv6, interface_index, SOCK_STREAM);
+    if (sock < 0) {
+        ret = (errno == ENOENT) ? cls_dns_detector_error_invalid_param
+                                : cls_dns_detector_error_send_failed;
+        goto cleanup;
     }
-    
-    cleanup_resources();
-    
+
+    if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
+        ret = cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+
+    int cr = connect_with_cancel(sock, (const struct sockaddr *)&addr, addr_len,
+                                 timeout_ms, should_cancel);
+    if (cr == -2) {
+        ret = cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+    if (cr != 0) {
+        uint64_t spent = now_ms() - start;
+        ret = (spent >= (uint64_t)timeout_ms) ? cls_dns_detector_error_timeout
+                                              : cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+
+    size_t tcp_total = payload_len + 2;
+    buf = (uint8_t *)malloc(tcp_total);
+    if (!buf) {
+        ret = cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+    uint16_t tcp_length = htons((uint16_t)payload_len);
+    memcpy(buf, &tcp_length, 2);
+    memcpy(buf + 2, payload, payload_len);
+
+    size_t sent_total = 0;
+    while (sent_total < tcp_total) {
+        if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
+            ret = cls_dns_detector_error_send_failed;
+            goto cleanup;
+        }
+        uint64_t now = now_ms();
+        if (now >= deadline) { ret = cls_dns_detector_error_timeout; goto cleanup; }
+        int remain = (int)(deadline - now);
+        int sr = wait_fd_with_cancel(sock, remain, 1, should_cancel);
+        if (sr == -2) { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+        if (sr == 0)  { ret = cls_dns_detector_error_timeout;     goto cleanup; }
+        if (sr < 0)   { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+        ssize_t s = send(sock, buf + sent_total, tcp_total - sent_total, 0);
+        if (s < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) continue;
+            ret = cls_dns_detector_error_send_failed;
+            goto cleanup;
+        }
+        sent_total += (size_t)s;
+    }
+    free(buf);
+    buf = NULL;
+
+    uint8_t len_hdr[2] = {0, 0};
+    size_t hdr_got = 0;
+    while (hdr_got < 2) {
+        if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
+            ret = cls_dns_detector_error_send_failed;
+            goto cleanup;
+        }
+        uint64_t now = now_ms();
+        if (now >= deadline) { ret = cls_dns_detector_error_timeout; goto cleanup; }
+        int remain = (int)(deadline - now);
+        int sr = wait_fd_with_cancel(sock, remain, 0, should_cancel);
+        if (sr == -2) { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+        if (sr == 0)  { ret = cls_dns_detector_error_timeout;     goto cleanup; }
+        if (sr < 0)   { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+        ssize_t r = recv(sock, len_hdr + hdr_got, 2 - hdr_got, 0);
+        if (r == 0) { ret = cls_dns_detector_error_timeout; goto cleanup; }
+        if (r < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) continue;
+            ret = cls_dns_detector_error_send_failed;
+            goto cleanup;
+        }
+        hdr_got += (size_t)r;
+    }
+
+    uint16_t tcp_len = ntohs(*(uint16_t *)len_hdr);
+    if (tcp_len == 0 || tcp_len < DNS_HEADER_SIZE || tcp_len > DNS_BUFFER_SIZE) {
+        ret = cls_dns_detector_error_parse_failed;
+        goto cleanup;
+    }
+
+    size_t body_got = 0;
+    while (body_got < tcp_len) {
+        if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
+            ret = cls_dns_detector_error_send_failed;
+            goto cleanup;
+        }
+        uint64_t now = now_ms();
+        if (now >= deadline) { ret = cls_dns_detector_error_timeout; goto cleanup; }
+        int remain = (int)(deadline - now);
+        int sr = wait_fd_with_cancel(sock, remain, 0, should_cancel);
+        if (sr == -2) { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+        if (sr == 0)  { ret = cls_dns_detector_error_timeout;     goto cleanup; }
+        if (sr < 0)   { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+        ssize_t r = recv(sock, recv_buffer + body_got, (size_t)tcp_len - body_got, 0);
+        if (r == 0) { ret = cls_dns_detector_error_timeout; goto cleanup; }
+        if (r < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) continue;
+            ret = cls_dns_detector_error_send_failed;
+            goto cleanup;
+        }
+        body_got += (size_t)r;
+    }
+
+    *recv_len = tcp_len;
+    *query_time_ms = (int)(now_ms() - start);
+    ret = cls_dns_detector_error_success;
+
+cleanup:
+    if (buf) free(buf);
+    if (sock >= 0) close(sock);
     if (ret != cls_dns_detector_error_success) {
         *recv_len = 0;
         *query_time_ms = 0;
     }
-    
     return ret;
 }
 
-/**
- * 使用 Network.framework 发送 DNS 查询
- * @param payload 查询数据
- * @param payload_len 数据长度
- * @param server DNS 服务器地址
- * @param timeout_ms 超时时间（毫秒）
- * @param interface_index 网卡索引（支持绑定指定接口）
- * @param recv_buffer 接收缓冲区
- * @param recv_len 输出参数，接收长度
- * @param query_time_ms 输出参数，查询耗时
- * @return 错误码
- */
 static int send_dns_with_network(const uint8_t *payload,
                                  size_t payload_len,
                                  const char *server,
@@ -1236,296 +1183,82 @@ static int send_dns_with_network(const uint8_t *payload,
                                  unsigned int interface_index,
                                  uint8_t *recv_buffer,
                                  size_t *recv_len,
-                                 int *query_time_ms) {
+                                 int *query_time_ms,
+                                 atomic_bool *should_cancel) {
     if (!payload || !server || !recv_buffer || !recv_len || !query_time_ms) {
         return cls_dns_detector_error_invalid_param;
     }
-    
     *recv_len = 0;
     *query_time_ms = 0;
-    
-    __block int ret = cls_dns_detector_error_send_failed;
-    __block dispatch_data_t response = NULL;
-    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-    if (!sema) {
-        return cls_dns_detector_error_send_failed;
-    }
-    
-    // 状态变量多线程访问，使用 unfair lock 保护
-    __block os_unfair_lock state_lock = OS_UNFAIR_LOCK_INIT;
-    __block BOOL is_completed = NO;
-    __block BOOL has_sent = NO;
-    __block BOOL has_received = NO;
-    __block BOOL conn_cancelled = NO; // 确保仅取消一次，避免重复日志
-    
-    // Network.framework 资源（在 block 内修改，需要 __block）
-    __block nw_endpoint_t endpoint = NULL;
-    __block nw_parameters_t params = NULL;
-    __block nw_protocol_stack_t protocol_stack = NULL;
-    __block nw_protocol_options_t udp_options = NULL;
-    __block nw_connection_t conn = NULL;
-    
-    // 统一清理函数，确保取消连接并断开强引用（ARC 自动管理 Network 对象内存）
-    void (^cleanup_resources)(void) = ^{
-        os_unfair_lock_lock(&state_lock);
-        if (conn && !conn_cancelled) { 
-            nw_connection_cancel(conn); 
-            conn_cancelled = YES;
-        }
-        if (conn) {
-            conn = NULL; 
-        }
-        os_unfair_lock_unlock(&state_lock);
-        udp_options = NULL;
-        protocol_stack = NULL;
-        params = NULL;
-        endpoint = NULL;
-        response = NULL;
-    };
-    
-    endpoint = nw_endpoint_create_host(server, "53");
-    if (!endpoint) { cleanup_resources(); return cls_dns_detector_error_send_failed; }
-    
-    params = nw_parameters_create();
-    if (!params) { cleanup_resources(); return cls_dns_detector_error_send_failed; }
-    
-    protocol_stack = nw_parameters_copy_default_protocol_stack(params);
-    if (protocol_stack) {
-        udp_options = nw_udp_create_options();
-        if (udp_options) {
-            nw_protocol_stack_set_transport_protocol(protocol_stack, udp_options);
-        }
-    }
-    
-    // 设置网卡绑定（如果指定了 interface_index）
-    // 优先尝试通过 dlsym 动态获取 nw_interface_create_with_index（部分系统版本提供）
-    // 若不可用，则回退到按接口类型的方式
-    nw_interface_t required_interface = NULL;
-    if (interface_index > 0) {
-        if (@available(iOS 13.0, *)) {
-            static nw_interface_t (*p_nw_interface_create_with_index)(uint32_t) = NULL;
-            static void (*p_nw_parameters_set_required_interface)(nw_parameters_t, nw_interface_t) = NULL;
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^{
-                p_nw_interface_create_with_index = (nw_interface_t (*)(uint32_t))dlsym(RTLD_DEFAULT, "nw_interface_create_with_index");
-                p_nw_parameters_set_required_interface = (void (*)(nw_parameters_t, nw_interface_t))dlsym(RTLD_DEFAULT, "nw_parameters_set_required_interface");
-            });
-            if (p_nw_interface_create_with_index && p_nw_parameters_set_required_interface) {
-                required_interface = p_nw_interface_create_with_index(interface_index);
-                if (required_interface) {
-                    p_nw_parameters_set_required_interface(params, required_interface);
-                }
-            }
-        }
-    }
-    
-    // 如果 required_interface 不可用，则回退到按接口类型的方式
-    if (interface_index > 0 && required_interface == NULL) {
-        BOOL interface_found = NO;
-        struct ifaddrs *ifaddrs_list = NULL;
-        if (getifaddrs(&ifaddrs_list) == 0) {
-            for (struct ifaddrs *ifa = ifaddrs_list; ifa != NULL; ifa = ifa->ifa_next) {
-                if (ifa->ifa_name && if_nametoindex(ifa->ifa_name) == interface_index) {
-                    interface_found = YES;
-                    // 找到匹配的接口，根据接口的实际地址类型判断
-                    // 检查接口是否有 IPv4 或 IPv6 地址，以及接口标志
-                    BOOL is_wifi = NO;
-                    BOOL is_cellular = NO;
-                    
-                    // 检查接口标志
-                    if (ifa->ifa_flags & IFF_UP) {
-                        // 通过接口名称和地址类型判断
-                        const char *if_name = ifa->ifa_name;
-                        
-                        // 检查是否有 IPv4 或 IPv6 地址
-                        if (ifa->ifa_addr) {
-                            if (ifa->ifa_addr->sa_family == AF_INET || ifa->ifa_addr->sa_family == AF_INET6) {
-                                // 根据接口名称模式判断（iOS接口命名规则）
-                                // en0, en1 等通常是 WiFi/以太网
-                                if (strncmp(if_name, "en", 2) == 0) {
-                                    // en0通常是WiFi，en1可能是其他以太网接口
-                                    // 但需要进一步验证，不能仅凭名称判断
-                                    // 检查接口是否不是loopback且是UP状态
-                                    if (!(ifa->ifa_flags & IFF_LOOPBACK) && (ifa->ifa_flags & IFF_UP)) {
-                                        is_wifi = YES;
-                                    }
-                                } else if (strncmp(if_name, "pdp_ip", 6) == 0) {
-                                    // pdp_ip* 是蜂窝网络接口
-                                    is_cellular = YES;
-                                } else if (strncmp(if_name, "ipsec", 5) == 0 || 
-                                          strncmp(if_name, "utun", 4) == 0) {
-                                    // ipsec* 和 utun* 通常是VPN接口，归类为蜂窝网络类型
-                                    // 注意：这些接口可能不是真正的蜂窝网络，但Network.framework会处理
-                                    is_cellular = YES;
-                                }
-                                // 移除了基于interface_index范围的简单判断，因为不够准确
-                            }
-                        }
-                    }
-                    
-                    // 设置接口类型
-                    if (is_wifi) {
-                        nw_parameters_set_required_interface_type(params, nw_interface_type_wifi);
-                    } else if (is_cellular) {
-                        nw_parameters_set_required_interface_type(params, nw_interface_type_cellular);
-                    }
-                    break;
-                }
-            }
-            freeifaddrs(ifaddrs_list);
-            if (!interface_found) {
-                cleanup_resources();
-                return cls_dns_detector_error_invalid_param;
-            }
-        } else {
-            cleanup_resources();
-            return cls_dns_detector_error_invalid_param;
-        }
+
+    struct sockaddr_storage addr;
+    socklen_t addr_len = 0;
+    int is_ipv6 = 0;
+    if (build_dns_server_sockaddr(server, &addr, &addr_len, &is_ipv6) != 0) {
+        return cls_dns_detector_error_invalid_param;
     }
 
-    // 已设置 required_interface 后释放本地引用（parameters 会持有）
-    if (required_interface) {
-        required_interface = NULL;
-    }
-    
-    conn = nw_connection_create(endpoint, params);
-    if (!conn) { cleanup_resources(); return cls_dns_detector_error_send_failed; }
-    
-    nw_connection_set_queue(conn, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+    int ret = cls_dns_detector_error_send_failed;
+    int sock = -1;
     uint64_t start = now_ms();
-    
-    // 安全完成操作
-    void (^complete_operation)(int) = ^(int error_code) {
-        os_unfair_lock_lock(&state_lock);
-        if (is_completed) { os_unfair_lock_unlock(&state_lock); return; }
-        is_completed = YES;
-        ret = error_code;
-        os_unfair_lock_unlock(&state_lock);
-        dispatch_semaphore_signal(sema);
-    };
-    
-    // UDP 发送函数
-    void (^send_dns_query)(void) = ^{
-        os_unfair_lock_lock(&state_lock);
-        if (has_sent || is_completed) { os_unfair_lock_unlock(&state_lock); return; }
-        has_sent = YES;
-        os_unfair_lock_unlock(&state_lock);
-        
-        dispatch_data_t content = dispatch_data_create(payload, payload_len, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-        nw_connection_send(conn, content, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t  _Nullable send_error) {
-            os_unfair_lock_lock(&state_lock);
-            BOOL completed = is_completed;
-            os_unfair_lock_unlock(&state_lock);
-            if (completed) return;
-            
-            if (send_error) {
-                complete_operation(cls_dns_detector_error_send_failed);
-            } else {
-                nw_connection_receive_message(conn, ^(dispatch_data_t  _Nullable content, nw_content_context_t  _Nullable context, bool is_complete, nw_error_t  _Nullable recv_error) {
-                    os_unfair_lock_lock(&state_lock);
-                    BOOL completed_inner = is_completed;
-                    if (has_received || completed_inner) {
-                        os_unfair_lock_unlock(&state_lock);
-                        return;
-                    }
-                    has_received = YES;
-                    os_unfair_lock_unlock(&state_lock);
-                    
-                    if (recv_error) {
-                        complete_operation(cls_dns_detector_error_timeout);
-                    } else if (content) {
-                        const void *data_ptr = NULL;
-                        size_t size = 0;
-                        dispatch_data_t contiguous = dispatch_data_create_map(content, &data_ptr, &size);
-                        if (contiguous && data_ptr && size > 0) {
-                            // 如果响应超过缓冲区，视为解析失败，避免无声截断
-                            if (size > DNS_BUFFER_SIZE) {
-                                complete_operation(cls_dns_detector_error_parse_failed);
-                            } else {
-                                memcpy(recv_buffer, data_ptr, size);
-                                *recv_len = size;
-                                ret = cls_dns_detector_error_success;
-                                *query_time_ms = (int)(now_ms() - start);
-                                response = NULL;
-                                // ARC模式下，dispatch_data_t会自动管理，不需要手动释放
-                                complete_operation(cls_dns_detector_error_success);
-                            }
-                        } else {
-                            // ARC模式下，dispatch_data_t会自动管理，不需要手动释放
-                            complete_operation(cls_dns_detector_error_parse_failed);
-                        }
-                    } else {
-                        complete_operation(cls_dns_detector_error_timeout);
-                    }
-                });
-            }
-        });
-    };
-    
-    // UDP 连接状态处理
-    nw_connection_set_state_changed_handler(conn, ^(nw_connection_state_t state, nw_error_t  _Nullable error) {
-        os_unfair_lock_lock(&state_lock);
-        BOOL completed = is_completed;
-        BOOL sent = has_sent;
-        BOOL received = has_received;
-        os_unfair_lock_unlock(&state_lock);
-        if (completed) return;
-        
-        if (state == nw_connection_state_ready) {
-            // 只在ready状态且未发送时发送，避免重复发送
-            if (!sent) send_dns_query();
-        } else if (state == nw_connection_state_waiting) {
-            // 移除waiting状态的发送逻辑，避免重复发送
-            // waiting状态通常表示连接正在建立，应该等待ready状态
-        } else if (state == nw_connection_state_failed || state == nw_connection_state_cancelled) {
-            if (!sent) {
-                complete_operation(cls_dns_detector_error_send_failed);
-            } else if (!received) {
-                complete_operation(cls_dns_detector_error_timeout);
-            }
-        }
-        // 移除invalid状态的发送逻辑，避免重复发送
-    });
-    
-    nw_connection_start(conn);
-    
-    // UDP 无连接，启动后尝试快速发送（仅在ready状态时）
-    // 注意：由于UDP是无连接的，可能不会进入ready状态，所以保留这个延迟发送
-    // 但增加更严格的检查避免重复发送
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.005 * NSEC_PER_SEC)), 
-                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        os_unfair_lock_lock(&state_lock);
-        BOOL done = is_completed;
-        BOOL already_sent = has_sent;
-        os_unfair_lock_unlock(&state_lock);
-        if (!already_sent && !done) {
-            send_dns_query();
-        }
-    });
-    
-    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, timeout_ms * NSEC_PER_MSEC);
-    if (dispatch_semaphore_wait(sema, timeout) != 0) {
-        os_unfair_lock_lock(&state_lock);
-        if (!is_completed) {
-            is_completed = YES;
-            ret = cls_dns_detector_error_timeout;
-            // 确保取消连接
-            if (conn && !conn_cancelled) {
-                nw_connection_cancel(conn);
-                conn_cancelled = YES;
-            }
-        }
-        os_unfair_lock_unlock(&state_lock);
+    uint64_t deadline = start + (uint64_t)timeout_ms;
+
+    sock = create_dns_socket(is_ipv6, interface_index, SOCK_DGRAM);
+    if (sock < 0) {
+        ret = (errno == ENOENT) ? cls_dns_detector_error_invalid_param
+                                : cls_dns_detector_error_send_failed;
+        goto cleanup;
     }
-    
-    // 取消并释放资源
-    cleanup_resources();
-    
+
+    if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
+        ret = cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+
+    if (connect(sock, (const struct sockaddr *)&addr, addr_len) != 0) {
+        ret = cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+
+    ssize_t sent = send(sock, payload, payload_len, 0);
+    if (sent < 0 || (size_t)sent != payload_len) {
+        ret = cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+
+    uint64_t now = now_ms();
+    int remain = (now >= deadline) ? 0 : (int)(deadline - now);
+    int sr = wait_fd_with_cancel(sock, remain, 0, should_cancel);
+    if (sr == -2) { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+    if (sr == 0)  { ret = cls_dns_detector_error_timeout;     goto cleanup; }
+    if (sr < 0)   { ret = cls_dns_detector_error_send_failed; goto cleanup; }
+
+    if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
+        ret = cls_dns_detector_error_send_failed;
+        goto cleanup;
+    }
+
+    uint8_t tmp[DNS_BUFFER_SIZE + 1];
+    ssize_t rr = recv(sock, tmp, sizeof(tmp), 0);
+    if (rr <= 0) {
+        ret = cls_dns_detector_error_timeout;
+        goto cleanup;
+    }
+    if ((size_t)rr > DNS_BUFFER_SIZE) {
+        ret = cls_dns_detector_error_parse_failed;
+        goto cleanup;
+    }
+    memcpy(recv_buffer, tmp, (size_t)rr);
+    *recv_len = (size_t)rr;
+    *query_time_ms = (int)(now_ms() - start);
+    ret = cls_dns_detector_error_success;
+
+cleanup:
+    if (sock >= 0) close(sock);
     if (ret != cls_dns_detector_error_success) {
         *recv_len = 0;
         *query_time_ms = 0;
     }
-    
     return ret;
 }
 
@@ -1605,8 +1338,8 @@ static int is_server_type_matched(int prefer, int server_type) {
 }
 
 // IPv6 可用性缓存（使用静态变量和锁确保线程安全，支持刷新）
-static int g_ipv6_available_cached = -1;  // -1 表示未初始化
-static uint64_t g_ipv6_check_timestamp = 0;  // 上次检查的时间戳（毫秒）
+static _Atomic int g_ipv6_available_cached = -1;  // -1 表示未初始化
+static _Atomic uint64_t g_ipv6_check_timestamp = 0;  // 上次检查的时间戳（毫秒）
 static os_unfair_lock g_ipv6_check_lock = OS_UNFAIR_LOCK_INIT;
 #define IPv6_CACHE_TTL_MS 30000  // 缓存有效期30秒
 
@@ -1620,8 +1353,8 @@ static int is_ipv6_available(void) {
     uint64_t now = now_ms();
     
     // 双重检查锁定模式：先快速检查缓存（无锁）
-    int cached_value = g_ipv6_available_cached;
-    uint64_t cached_timestamp = g_ipv6_check_timestamp;
+    uint64_t cached_timestamp = atomic_load_explicit(&g_ipv6_check_timestamp, memory_order_acquire);
+    int cached_value = atomic_load_explicit(&g_ipv6_available_cached, memory_order_acquire);
     
     // 如果缓存有效，直接返回
     if (cached_value != -1 && (now - cached_timestamp) <= IPv6_CACHE_TTL_MS) {
@@ -1632,15 +1365,17 @@ static int is_ipv6_available(void) {
     os_unfair_lock_lock(&g_ipv6_check_lock);
     
     // 再次检查（双重检查），可能在等待锁的过程中其他线程已经更新了缓存
-    if (g_ipv6_available_cached != -1 && 
-        (now - g_ipv6_check_timestamp) <= IPv6_CACHE_TTL_MS) {
-        int result = g_ipv6_available_cached;
+    int locked_value = atomic_load_explicit(&g_ipv6_available_cached, memory_order_relaxed);
+    uint64_t locked_timestamp = atomic_load_explicit(&g_ipv6_check_timestamp, memory_order_relaxed);
+    if (locked_value != -1 && 
+        (now - locked_timestamp) <= IPv6_CACHE_TTL_MS) {
+        int result = locked_value;
         os_unfair_lock_unlock(&g_ipv6_check_lock);
         return result;
     }
     
     // 需要重新检查，更新时间戳防止其他线程重复检查
-    g_ipv6_check_timestamp = now;
+    atomic_store_explicit(&g_ipv6_check_timestamp, now, memory_order_release);
     os_unfair_lock_unlock(&g_ipv6_check_lock);
     
     // 执行实际的检查（在锁外，避免长时间持锁）
@@ -1680,8 +1415,8 @@ static int is_ipv6_available(void) {
     
     // 更新缓存（加锁）
     os_unfair_lock_lock(&g_ipv6_check_lock);
-    g_ipv6_available_cached = has_global_ipv6;
-    g_ipv6_check_timestamp = now;
+    atomic_store_explicit(&g_ipv6_available_cached, has_global_ipv6, memory_order_release);
+    atomic_store_explicit(&g_ipv6_check_timestamp, now, memory_order_release);
     os_unfair_lock_unlock(&g_ipv6_check_lock);
     
     return has_global_ipv6;
@@ -1869,7 +1604,7 @@ static int perform_single_dns_query(const uint8_t *send_buffer,
     // 先尝试快速查询
     int quick_result = send_dns_with_network(send_buffer, send_len, server, quick_timeout_ms,
                                              interface_index, result->recv_buffer, &result->recv_len,
-                                             &result->query_time_ms);
+                                             &result->query_time_ms, should_cancel);
     
     // 检查是否在查询过程中被取消
     if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
@@ -1895,7 +1630,7 @@ static int perform_single_dns_query(const uint8_t *send_buffer,
         
         quick_result = send_dns_with_network(send_buffer, send_len, server, full_timeout_ms,
                                             interface_index, result->recv_buffer, &result->recv_len,
-                                            &result->query_time_ms);
+                                            &result->query_time_ms, should_cancel);
         
         // 最终检查是否被取消
         if (should_cancel && atomic_load_explicit(should_cancel, memory_order_relaxed)) {
@@ -2090,16 +1825,10 @@ static int perform_concurrent_dns_queries(const uint8_t *send_buffer,
             send_result = cls_dns_detector_error_send_failed;
         }
         
-        // 等待所有任务完成后再释放内存（使用较短的超时，避免无限等待）
-        dispatch_time_t short_timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC));
-        dispatch_group_wait(group, short_timeout);
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
         
     } else {
-        // 等待所有查询完成，选择最快的成功响应
-        // 简化超时计算：使用固定等待时间，避免复杂的剩余时间计算
-        // 由于已经等待了timeout_ms，这里只等待一个较短的时间让其他查询完成
-        dispatch_time_t remaining_timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC));
-        dispatch_group_wait(group, remaining_timeout);
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
         
         // 在锁保护下查找最快的结果，确保数据一致性
         dispatch_semaphore_wait(success_lock, DISPATCH_TIME_FOREVER);
@@ -2130,10 +1859,7 @@ static int perform_concurrent_dns_queries(const uint8_t *send_buffer,
         }
         dispatch_semaphore_signal(success_lock);
         
-        // 确保所有任务都已完成后再释放内存
-        // 使用较短的超时时间，避免无限等待
-        dispatch_time_t final_wait = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC));
-        dispatch_group_wait(group, final_wait);
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
     }
     
     // 注意：在ARC环境下，dispatch对象会自动管理，不需要手动release
@@ -2191,7 +1917,7 @@ int cls_dns_detector_perform(const char *domain,
         recv_len = 0;
         query_time_ms = 0;
         send_result = send_dns_with_network(send_buffer, (size_t)send_len, server, timeout_ms, 0,
-                                           recv_buffer, &recv_len, &query_time_ms);
+                                           recv_buffer, &recv_len, &query_time_ms, NULL);
         if (send_result == cls_dns_detector_error_success && recv_len > 0) {
             break;
         }
@@ -2219,7 +1945,7 @@ int cls_dns_detector_perform(const char *domain,
         size_t tcp_recv_len = 0;
         int tcp_query_time_ms = 0;
         int tcp_result = send_dns_with_network_tcp(send_buffer, (size_t)send_len, server, timeout_ms,
-                                                   0, recv_buffer, &tcp_recv_len, &tcp_query_time_ms);
+                                                   0, recv_buffer, &tcp_recv_len, &tcp_query_time_ms, NULL);
         if (tcp_result == cls_dns_detector_error_success && tcp_recv_len > 0) {
             recv_len = tcp_recv_len;
             query_time_ms = tcp_query_time_ms;
@@ -2434,7 +2160,7 @@ static cls_dns_detector_error_code perform_dns_with_prefer(const char *domain,
         size_t tcp_recv_len = 0;
         int tcp_query_time_ms = 0;
         int tcp_result = send_dns_with_network_tcp(send_buffer, (size_t)send_len, server, timeout_ms,
-                                                   interface_index, recv_buffer, &tcp_recv_len, &tcp_query_time_ms);
+                                                   interface_index, recv_buffer, &tcp_recv_len, &tcp_query_time_ms, NULL);
         if (tcp_result == cls_dns_detector_error_success && tcp_recv_len > 0) {
             recv_len = tcp_recv_len;
             query_time_ms = tcp_query_time_ms;
