@@ -16,6 +16,7 @@
 - [环境要求](#-环境要求)
 - [安装指南](#-安装指南)
 - [快速开始](#-快速开始)
+- [弱鉴权（免密 Uin）上报](#-弱鉴权免密-uin-上报)
 - [日志上报](#-日志上报)
   - [基础配置](#基础配置)
   - [初始化 SDK](#初始化-sdk)
@@ -68,6 +69,26 @@
 ---
 
 ## 🎉 最新更新
+
+### v3.2.0 (发布)
+
+#### 🆕 新增功能
+
+**1. 弱鉴权（免密 Uin）日志上报**
+
+- ✅ 新增 `ClsLogSenderConfig.uin` 字段，支持仅凭账号 `Uin` 向 CLS 上报日志（无需 AK/SK）
+- ✅ 仅覆盖 `/structuredlog` 日志写入链路；日志消费与云 API 管控**仍需 AK/SK**
+- ✅ 判定规则：`AccessKeyId.length == 0 || AccessKey.length == 0` 为弱鉴权候选；`uin` 必须为纯数字字符串
+- ✅ 与 AK/SK 二选一；**AK/SK 齐全时 `uin` 被静默忽略（AK/SK 优先）**
+- ✅ 弱鉴权下 `-updateToken:` 自动降级为 no-op（避免误切换到强鉴权）
+
+**2. 版本号对齐与 User-Agent 升级**
+
+- ✅ `User-Agent` 升到 `tencent-log-sdk-ios v3.2.0`，服务端据此识别客户端能力（弱鉴权）
+- ✅ podspec / README / User-Agent 三处版本号同步
+
+> ⚠️ **使用前置条件**：目标主题必须在 CLS 控制台开启【匿名上传 → API/SDK 上传日志】，否则 401。
+> ⚠️ **安全提示**：弱鉴权等同匿名写入，仅保证传输防篡改，不校验身份真实性。生产环境建议使用 AK/SK + STS。
 
 ### v3.0.0 (发布)
 
@@ -131,7 +152,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/Core', '~> 3.1.0'
+  pod 'TencentCloudLogProducer/Core', '~> 3.2.0'
 end
 ```
 
@@ -145,7 +166,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 3.1.0'
+  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 3.2.0'
 end
 ```
 
@@ -364,6 +385,108 @@ class ViewController: UIViewController {
 
 ---
 
+## 🔑 弱鉴权（免密 Uin）上报
+
+> **⚠️ 前置条件（务必先确认）**：目标主题必须在 CLS 控制台开启 **【匿名上传 → API/SDK 上传日志】**，否则所有弱鉴权请求都会返回 401。
+
+### 适用范围
+
+| 场景 | 支持弱鉴权 |
+|------|:---:|
+| 日志上传 `/structuredlog` | ✅ |
+| 日志消费（Consumer / PullLogs） | ❌（仍需 AK/SK） |
+| 云 API 管控（CreateTopic 等） | ❌（仍需 AK/SK） |
+
+### 🛡️ 安全提示
+
+弱鉴权**等同匿名写入**，**安全等级和匿名上传完全相同**：
+
+- ⚠️ 任何知道 `uin + topic_id` 的人都能向该主题写入日志
+- ⚠️ 请求可被伪造 / 可被重放
+- ⚠️ 仅保证传输防篡改（HTTPS），**不校验身份真实性**
+- ✅ **生产环境强烈建议使用 AK/SK + STS 临时密钥**
+
+### 判定规则（AK/SK 优先）
+
+| AK/SK | uin | 实际行为 |
+|---|---|---|
+| 齐全 | 未填 | 强鉴权（原路径） |
+| 齐全 | 已填 | **强鉴权**，uin 被静默忽略（AK/SK 优先） |
+| 任一为空 | 合法纯数字 | **弱鉴权** |
+| 任一为空 | 未填 | 构造期日志 `[ERROR] missing credentials...`，不启动发送 |
+| 任一为空 | 非纯数字 | 构造期日志 `[ERROR] InvalidUin...`，不启动发送 |
+
+> 💡 **为什么 AK/SK 优先？** 用户已经配置了完整密钥，就不该被静默降级到"等同匿名写入"。同时也避免打断已有未开匿名上传的 topic 的正常上报。
+
+### 配置示例（Objective-C）
+
+```objectivec
+#import <TencentCloudLogProducer/ClsLogSender.h>
+#import <TencentCloudLogProducer/ClsLogStorage.h>
+
+// 弱鉴权配置：只填 endpoint + uin，不填 AK/SK
+ClsLogSenderConfig *config = [[ClsLogSenderConfig alloc] init];
+config.endpoint = @"ap-guangzhou.cls.tencentcs.com";
+config.uin      = @"1000011275789";  // 账号 Uin，纯数字字符串
+
+LogSender *sender = [LogSender sharedSender];
+[sender setConfig:config];
+[sender start];
+
+// 写入日志（API 与强鉴权完全一致）
+Log_Content *c = [Log_Content message];
+c.key = @"message"; c.value = @"anonymous upload sample";
+Log *item = [Log message];
+[item.contentsArray addObject:c];
+item.time = (long long)[[NSDate date] timeIntervalSince1970];
+[[ClsLogStorage sharedInstance] writeLog:item
+                                 topicId:@"YOUR_TOPIC_ID"
+                              completion:nil];
+```
+
+### 配置示例（Swift）
+
+```swift
+import TencentCloudLogProducer
+
+let config = ClsLogSenderConfig()
+config.endpoint = "ap-guangzhou.cls.tencentcs.com"
+config.uin      = "1000011275789"   // 账号 Uin，纯数字字符串
+// 不填 accessKeyId / accessKey / token
+
+let sender = LogSender.shared()
+sender?.setConfig(config)
+sender?.start()
+```
+
+### 常见问题
+
+**Q1: 401 Unauthorized**
+
+- 检查目标 topic 是否已开启【匿名上传 → API/SDK 上传日志】
+- 检查 `uin` 是否与 topic 归属账号一致（服务端会校验归属）
+- 检查 `uin` 是否纯数字字符串，不要带前导空格、负号或字母
+
+**Q2: 已经配置了 uin，但请求仍发送 Authorization 头**
+
+说明你同时填了 AK/SK。SDK 按"AK/SK 优先"规则走强鉴权，uin 被静默忽略。查看日志会看到 `[weak-auth] AK/SK present, 'uin' is ignored`。
+
+**Q3: 调用 `-updateToken:` 后是否会切换到强鉴权？**
+
+不会。弱鉴权下 `updateToken:` 是 no-op，日志会打 `[weak-auth] updateToken ignored under weak auth mode`。如需切换，请重新 `-setConfig:` 一个带 AK/SK 的 config。
+
+**Q4: 请求头差异速查**
+
+| Header | 强鉴权 | 弱鉴权 |
+|---|:---:|:---:|
+| `Host` / `Content-Type` / `User-Agent` / `x-cls-trace-id` / `x-cls-add-source` / `x-cls-compress-type` | ✅ 一致 | ✅ 一致 |
+| `Authorization` | ✅ 签名 | ❌ 不发送 |
+| `X-Cls-Token` | 可选 | ❌ 不发送 |
+| `x-cls-auth-mode` | ❌ 不发送 | ✅ `weak` |
+| `X-CLS-Uin` | ❌ 不发送 | ✅ 账号 Uin |
+
+---
+
 ## 📊 日志上报
 
 ### 基础配置
@@ -373,9 +496,10 @@ class ViewController: UIViewController {
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `endpoint` | NSString | ✅ | - | CLS 接入点，如 `ap-guangzhou.cls.tencentcs.com` |
-| `accessKeyId` | NSString | ✅ | - | 腾讯云访问密钥 ID（永久密钥或临时密钥） |
-| `accessKey` | NSString | ✅ | - | 腾讯云访问密钥 Key |
+| `accessKeyId` | NSString | ⚠️ | - | 腾讯云访问密钥 ID（永久密钥或临时密钥）；弱鉴权场景可留空 |
+| `accessKey` | NSString | ⚠️ | - | 腾讯云访问密钥 Key；弱鉴权场景可留空 |
 | `token` | NSString | ❌ | nil | STS 临时令牌（使用临时密钥时必填） |
+| `uin` | NSString | ❌ | nil | 账号 Uin（**纯数字字符串**），弱鉴权专用；与 AK/SK 二选一，AK/SK 齐全时**静默忽略**（v3.2.0 新增） |
 | `sendLogInterval` | uint64_t | ❌ | 5 | 日志发送间隔（秒），范围 1-60 |
 | `maxMemorySize` | uint64_t | ❌ | 33554432 | 本地数据库最大容量（字节），默认 32MB |
 
@@ -1527,6 +1651,26 @@ pingRequest.domain = @"api.example.com";
 ---
 
 ## 📝 更新日志
+
+### v3.2.0
+
+#### 🆕 新增功能
+- ✅ **弱鉴权（免密 Uin）日志上报**：新增 `ClsLogSenderConfig.uin` 字段，支持仅凭账号 Uin 向开启匿名上传的 topic 写入日志
+- ✅ 新增类方法 `+[LogSender isWeakAuthConfig:]` / `+[LogSender isUinValid:]`，供外部按需查询鉴权模式
+- ✅ 新增错误码常量 `kCLSErrorInvalidUin`
+- ✅ Demo 新增"弱鉴权（免密 Uin）上报"示例页
+- ✅ 新增 11 个单测（覆盖 §7.2 决策表 + 请求头差异 + updateToken 弱鉴权 no-op + copyWithZone + 401 响应）
+
+#### 🚀 优化
+- 🚀 `User-Agent` 升到 `tencent-log-sdk-ios v3.2.0`，服务端据此识别客户端能力（弱鉴权）
+- 🚀 请求组装分流：签名计算从"函数开头无条件执行"收敛到"强鉴权分支内"，避免弱鉴权下算出无意义签名
+- 🚀 `-updateToken:` 增加弱鉴权判定（判定在赋值之前），弱鉴权下自动降级为 no-op
+- 🚀 `workLoop` 配置校验替换为完整决策表，弱鉴权与强鉴权两条路径互不干扰
+
+#### 🔒 兼容性
+- ✅ 不填 `uin` 的既有用户升级后行为**完全一致**，无需任何代码改动
+- ✅ 默认配置构造函数 `+configWithEndpoint:accessKeyId:accessKey:` 签名保持不变
+- ✅ `copyWithZone:` 自动透传 `uin`
 
 ### v3.0.0
 

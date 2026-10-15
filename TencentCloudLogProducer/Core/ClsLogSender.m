@@ -4,6 +4,8 @@
 #import "ClsLogs.pbobjc.h"
 #import "ClsLogModel.h"
 
+NSString * const kCLSErrorInvalidUin = @"InvalidUin";
+
 @interface LogSender ()
 @property (nonatomic, assign) BOOL isRunning;
 @property (nonatomic, strong) NSThread *workThread;
@@ -14,8 +16,24 @@
 
 @implementation LogSender
 
++ (BOOL)isWeakAuthConfig:(ClsLogSenderConfig *)config {
+    if (!config) return NO;
+    return (config.accessKeyId.length == 0) || (config.accessKey.length == 0);
+}
+
++ (BOOL)isUinValid:(NSString *)uin {
+    if (uin.length == 0) return NO;
+    NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+    return [uin rangeOfCharacterFromSet:nonDigits].location == NSNotFound;
+}
+
 - (void)updateToken:(nullable NSString *)token {
     @synchronized (self) {
+        if ([LogSender isWeakAuthConfig:_config]) {
+            CLSLog(@"[weak-auth] updateToken ignored under weak auth mode; uin=%@",
+                   _config.uin ?: @"");
+            return;
+        }
         // 直接修改内部 config 的 token（注意 copy 避免外部指针影响）
         _config.token = [token copy];
     }
@@ -44,6 +62,24 @@
     @synchronized (self) {
         _config = [config copy];
         [[ClsLogStorage sharedInstance] setMaxDatabaseSize:_config.maxMemorySize];
+
+        BOOL isWeak = [LogSender isWeakAuthConfig:_config];
+        BOOL hasUin = (_config.uin.length > 0);
+        if (!isWeak) {
+            if (hasUin) {
+                CLSLog(@"[weak-auth] AK/SK present, 'uin' is ignored");
+            }
+        } else {
+            if (!hasUin) {
+                CLSLog(@"[ERROR] missing credentials: configure AccessKeyId/AccessKey, "
+                       @"or configure 'uin' for weak-auth mode");
+            } else if (![LogSender isUinValid:_config.uin]) {
+                CLSLog(@"[ERROR] %@: 'uin' must be a non-empty numeric string, got: '%@'",
+                       kCLSErrorInvalidUin, _config.uin);
+            } else {
+                CLSLog(@"[weak-auth] weak-auth mode enabled, uin=%@", _config.uin);
+            }
+        }
     }
 }
 
@@ -74,8 +110,13 @@
 - (void)workLoop {
     while (_isRunning) {
         @synchronized (self) {
-            if (!_config.endpoint || !_config.accessKeyId || !_config.accessKey) {
-                CLSLog(@"LogSender: config lack param");
+            BOOL endpointOk = (_config.endpoint.length > 0);
+            BOOL strongAuthOk = (_config.accessKeyId.length > 0) && (_config.accessKey.length > 0);
+            BOOL weakAuthOk = [LogSender isWeakAuthConfig:_config]
+                              && [LogSender isUinValid:_config.uin];
+            if (!endpointOk || (!strongAuthOk && !weakAuthOk)) {
+                CLSLog(@"LogSender: config invalid (endpoint=%@, strongAuth=%d, weakAuth=%d), skip",
+                       _config.endpoint ?: @"", strongAuthOk, weakAuthOk);
             } else {
                 // 定时触发后，循环发送日志，直到没有待发送数据
                 while (YES) {
@@ -158,7 +199,7 @@
         if (singleLogSize > kSingleLogMaxSize) {
             CLSLog(@"log ID %@ exceed 512KB（%.2f KB），discard",
                   logId, singleLogSize / 1024.0);
-            [[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[logId]];
+            (void)[[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[logId]];
             continue;
         }
         
@@ -231,23 +272,25 @@
     // 构建请求头和参数
     NSMutableDictionary *headers = [self buildHeadersWithCompressType:option.compressType];
     NSDictionary *params = @{@"topic_id": topicID}; // 参数中使用当前分组的 topic_id
-    
-    // 生成签名
-    NSString *signature = [CLSNetworkTool generateSignatureWithSecretId:_config.accessKeyId
-                                                            secretKey:_config.accessKey
-                                                               method:@"POST"
-                                                                 path:@"/structuredlog"
-                                                                params:params
-                                                               headers:headers
-                                                                expire:300];
-    // Token 头部（与 C 语言一致）
-    if (_config.token) {
-        headers[@"X-Cls-Token"] = _config.token; // 对应 C: put("X-Cls-Token", token)
+
+    if ([LogSender isWeakAuthConfig:_config]) {
+        headers[@"x-cls-auth-mode"] = @"weak";
+        headers[@"X-CLS-Uin"] = _config.uin ?: @"";
+    } else {
+        NSString *signature = [CLSNetworkTool generateSignatureWithSecretId:_config.accessKeyId
+                                                                  secretKey:_config.accessKey
+                                                                     method:@"POST"
+                                                                       path:@"/structuredlog"
+                                                                     params:params
+                                                                    headers:headers
+                                                                     expire:300];
+        // Token 头部（与 C 语言一致）
+        if (_config.token.length > 0) {
+            headers[@"X-Cls-Token"] = _config.token; // 对应 C: put("X-Cls-Token", token)
+        }
+        [headers setObject:signature forKey:@"Authorization"];
     }
-    
-    [headers setObject:signature forKey:@"Authorization"];
-    
-    
+
     // 关键：使用同步请求，阻塞当前线程直到结果返回
     NSString *url = [self buildRequestUrlWithParams:params];
     CLSSendResult *result = [CLSNetworkTool sendPostRequestSyncWithUrl:url
@@ -255,17 +298,21 @@
                                                                  body:compressedData
                                                                option:option];
     
-    [self handleSendResult:result logIds:logIds];
-    return (result.statusCode == 200);
+    return [self handleSendResult:result logIds:logIds];
 }
 
-- (void)handleSendResult:(CLSSendResult *)result logIds:(NSArray<NSNumber *> *)logIds {
-    if (logIds.count == 0) return;
-    // 成功时直接删除
+- (BOOL)handleSendResult:(CLSSendResult *)result logIds:(NSArray<NSNumber *> *)logIds {
+    if (logIds.count == 0) return NO;
     if (result.statusCode == 200) {
-        [[ClsLogStorage sharedInstance] deleteSentLogsWithIds:logIds];
-        CLSLog(@"Send successfully, RequestID: %@, Number of messages: %lu", result.requestID, (unsigned long)logIds.count);
-        return;
+        BOOL deleted = [[ClsLogStorage sharedInstance] deleteSentLogsWithIds:logIds];
+        if (!deleted) {
+            CLSLog(@"[CLS] DELETE failed after HTTP 200, stop current round to prevent duplicate storm, RequestID: %@",
+                   result.requestID);
+            return NO;
+        }
+        CLSLog(@"Send successfully, RequestID: %@, Number of messages: %lu",
+               result.requestID, (unsigned long)logIds.count);
+        return YES;
     }
     
     NSInteger statusCode = result.statusCode;
@@ -288,12 +335,14 @@
               result.message);
     } else {
         // 无需保留的错误（如 400 客户端参数错误、404 地址不存在等，重试无意义）
-        [[ClsLogStorage sharedInstance] deleteSentLogsWithIds:logIds];
+        (void)[[ClsLogStorage sharedInstance] deleteSentLogsWithIds:logIds];
         CLSLog(@"Sending failed (status code: %ld), delete log entry %lu, error: %@",
               (long)statusCode,
               (unsigned long)logIds.count,
               result.message);
     }
+    // 保持与原实现一致：非 200 均视为本批次失败，让上层中断当前轮次
+    return NO;
 }
 
 - (LogGroupList *)buildLogGroupListFromLogItems:(NSArray<NSDictionary *> *)logs {
@@ -323,7 +372,7 @@
     // 与 C 语言对照：必须包含以下头部，且 key 大小写需匹配（最终会转为小写）
     headers[@"Host"] = _config.endpoint; // 对应 C: put(&httpHeader, "Host", endpoint)
     headers[@"Content-Type"] = @"application/x-protobuf"; // 对应 C: put("Content-Type", ...)
-    headers[@"User-Agent"] = @"tencent-log-sdk-ios v2.0.0"; // 完全一致
+    headers[@"User-Agent"] = @"tencent-log-sdk-ios v3.2.0";
     headers[@"x-cls-trace-id"] = [[NSUUID UUID] UUIDString]; // 对应 C: x-cls-trace-id
     headers[@"x-cls-add-source"] = @"1";
     
@@ -400,6 +449,7 @@ static const uint64_t kDefaultMemorySize = 32 * 1024 * 1024;
         copyConfig.accessKeyId = [self.accessKeyId copy];
         copyConfig.accessKey = [self.accessKey copy];
         copyConfig.token = [self.token copy]; // 复制token（默认nil也会正确复制）
+        copyConfig.uin = [self.uin copy];
         copyConfig.maxMemorySize = self.maxMemorySize; // 复制最大size默认值
         copyConfig.sendLogInterval = self.sendLogInterval;
     }

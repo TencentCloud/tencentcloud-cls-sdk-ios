@@ -6,9 +6,15 @@ static NSString *const kDBName = @"cls_log_cache.db";
 static NSString *const kLogTable = @"cls_log_table";
 static NSUInteger kEvictBatchSize = 100;
 
+static const NSInteger  kDeleteMaxRetries = 3;
+static const useconds_t kDeleteBackoffUs[kDeleteMaxRetries] = {
+    50 * 1000, 150 * 1000, 400 * 1000
+};
+
 @interface ClsLogStorage ()
 @property (nonatomic, strong) FMDatabaseQueue *dbQueue;
 @property (nonatomic, assign) uint64_t maxDatabaseSize;
+@property (atomic, assign, readwrite) BOOL isDbWritable;
 @end
 
 @implementation ClsLogStorage
@@ -30,6 +36,7 @@ static NSUInteger kEvictBatchSize = 100;
         _dbQueue = [FMDatabaseQueue databaseQueueWithPath:dbPath];
         CLSLog(@"database path：%@", dbPath);
         _maxDatabaseSize = 32 * 1024 * 1024; // 默认32MB，与Android一致
+        _isDbWritable = YES;
     }
     return self;
 }
@@ -201,8 +208,12 @@ static NSUInteger kEvictBatchSize = 100;
     return [fileAttrs[NSFileSize] unsignedLongLongValue];
 }
 
-#pragma mark - 查询待发送日志（无修改）
+#pragma mark - 查询待发送日志
 - (NSArray<NSDictionary *> *)queryPendingLogs:(NSUInteger)limit {
+    if (!self.isDbWritable) {
+        CLSLog(@"[CLS] queryPendingLogs skipped: DB tripped");
+        return @[];
+    }
     __block NSMutableArray *result = [NSMutableArray array];
     
     [_dbQueue inDatabase:^(FMDatabase *db) {
@@ -219,7 +230,7 @@ static NSUInteger kEvictBatchSize = 100;
         }
         
         while ([rs next]) {
-            NSNumber *logId = @([rs intForColumn:@"_id"]);
+            NSNumber *logId = @([rs longLongIntForColumn:@"_id"]);
             NSString *base64Data = [rs stringForColumn:@"log_item_data"];
             NSString *topicId = [rs stringForColumn:@"topic_id"];
             
@@ -249,21 +260,56 @@ static NSUInteger kEvictBatchSize = 100;
     return result;
 }
 
-#pragma mark - 删除已发送日志（无修改）
-- (void)deleteSentLogsWithIds:(NSArray<NSNumber *> *)logIds {
-    if (logIds.count == 0) return;
+#pragma mark - 删除已发送日志
+- (BOOL)deleteSentLogsWithIds:(NSArray<NSNumber *> *)logIds {
+    if (logIds.count == 0) return YES;
+    if (!self.isDbWritable) {
+        CLSLog(@"[CLS] deleteSentLogsWithIds skipped: DB tripped");
+        return NO;
+    }
     
-    [_dbQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
-        NSString *idsStr = [logIds componentsJoinedByString:@","];
-        NSString *sql = [NSString stringWithFormat:
-                        @"DELETE FROM %@ WHERE _id IN (%@)",
-                        kLogTable, idsStr];
+    for (NSInteger attempt = 0; attempt <= kDeleteMaxRetries; attempt++) {
+        __block BOOL ok = NO;
+        __block int lastCode = 0;
+        __block NSString *lastMsg = nil;
         
-        if (![db executeUpdate:sql]) {
-            CLSLog(@"delete log failed: %@", db.lastError);
-            *rollback = YES;
+        [_dbQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
+            NSString *idsStr = [logIds componentsJoinedByString:@","];
+            NSString *sql = [NSString stringWithFormat:
+                            @"DELETE FROM %@ WHERE _id IN (%@)", kLogTable, idsStr];
+            
+            if (![db executeUpdate:sql]) {
+                lastCode = db.lastErrorCode;
+                lastMsg = db.lastErrorMessage;
+                *rollback = YES;
+                return;
+            }
+            if ((NSUInteger)db.changes < logIds.count) {
+                CLSLog(@"[CLS][diag] delete affected=%d expected=%lu (likely eviction race)",
+                       db.changes, (unsigned long)logIds.count);
+            }
+            ok = YES;
+        }];
+        
+        if (ok) {
+            if (attempt > 0) {
+                CLSLog(@"[CLS] delete succeeded after %ld retries", (long)attempt);
+            }
+            return YES;
         }
-    }];
+        
+        CLSLog(@"[CLS] delete attempt %ld failed: code=%d msg=%@",
+               (long)attempt, lastCode, lastMsg ?: @"");
+        
+        if (attempt < kDeleteMaxRetries) {
+            usleep(kDeleteBackoffUs[attempt]);
+        }
+    }
+    
+    CLSLog(@"[CLS] delete failed permanently after %ld retries, tripping switch",
+           (long)kDeleteMaxRetries);
+    self.isDbWritable = NO;
+    return NO;
 }
 
 @end
