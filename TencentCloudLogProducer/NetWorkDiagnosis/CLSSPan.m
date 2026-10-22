@@ -166,18 +166,22 @@ typedef void (^_internal_Scope)(void);
 }
 
 - (BOOL) end {
+    _internal_Scope scopeToRun = nil;
     [_lock lock];
     if (_isEnd) {
+        [_lock unlock];
         return NO;
     }
     _isEnd = YES;
     _end = [[NSDate date] timeIntervalSince1970] * 1000000000;
-    
+
     _duration = _end - _start;
-    if (nil != _scope) {
-        _scope();
-    }
+    scopeToRun = _scope;
     [_lock unlock];
+
+    if (nil != scopeToRun) {
+        scopeToRun();
+    }
     return YES;
 }
 

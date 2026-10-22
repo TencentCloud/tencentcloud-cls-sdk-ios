@@ -10,6 +10,7 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
 @property (nonatomic, assign) BOOL isRunning;
 @property (nonatomic, strong) NSThread *workThread;
 @property (nonatomic, strong) NSCondition *condition;
+@property (nonatomic, strong) NSLock *sendLock;
 @property (nonatomic, assign) NSUInteger batchSize;
 @property (nonatomic, strong, nonnull) ClsLogSenderConfig *config;
 @end
@@ -25,6 +26,10 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
     if (uin.length == 0) return NO;
     NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
     return [uin rangeOfCharacterFromSet:nonDigits].location == NSNotFound;
+}
+
++ (void)setLogEnabled:(BOOL)enabled {
+    CLSSetLogEnabled(enabled);
 }
 
 - (void)updateToken:(nullable NSString *)token {
@@ -51,11 +56,25 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
 - (instancetype)init {
     if (self = [super init]) {
         _condition = [[NSCondition alloc] init];
+        _sendLock = [[NSLock alloc] init];
         _isRunning = NO;
         _batchSize = 100;
         _config = [ClsLogSenderConfig configWithEndpoint:@"" accessKeyId:@"" accessKey:@""];
     }
     return self;
+}
+
+- (ClsLogSenderConfig *)configSnapshot {
+    @synchronized (self) {
+        return [_config copy];
+    }
+}
+
+- (BOOL)isConfigValid:(ClsLogSenderConfig *)cfg {
+    if (cfg.endpoint.length == 0) return NO;
+    BOOL strongAuthOk = (cfg.accessKeyId.length > 0) && (cfg.accessKey.length > 0);
+    BOOL weakAuthOk = [LogSender isWeakAuthConfig:cfg] && [LogSender isUinValid:cfg.uin];
+    return strongAuthOk || weakAuthOk;
 }
 
 - (void)setConfig:(ClsLogSenderConfig *)config {
@@ -94,148 +113,123 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
 }
 
 - (void)stop {
+    NSThread *thread = nil;
     @synchronized (self) {
         if (!_isRunning) return;
         _isRunning = NO;
-        [_condition signal];
-        [_workThread cancel];
+        thread = _workThread;
         _workThread = nil;
     }
+    [thread cancel];
+    [_condition lock];
+    [_condition signal];
+    [_condition unlock];
 }
 
 - (void)triggerSend {
+    [_condition lock];
     [_condition signal];
+    [_condition unlock];
 }
 
 - (void)workLoop {
-    while (_isRunning) {
-        @synchronized (self) {
-            BOOL endpointOk = (_config.endpoint.length > 0);
-            BOOL strongAuthOk = (_config.accessKeyId.length > 0) && (_config.accessKey.length > 0);
-            BOOL weakAuthOk = [LogSender isWeakAuthConfig:_config]
-                              && [LogSender isUinValid:_config.uin];
-            if (!endpointOk || (!strongAuthOk && !weakAuthOk)) {
-                CLSLog(@"LogSender: config invalid (endpoint=%@, strongAuth=%d, weakAuth=%d), skip",
-                       _config.endpoint ?: @"", strongAuthOk, weakAuthOk);
-            } else {
-                // 定时触发后，循环发送日志，直到没有待发送数据
-                while (YES) {
-                    if (![CLSNetworkTool isNetworkAvailable]) {
-                        CLSLog(@"无可用网络，取消发送");
-                        break;
-                    }
-                    // 1. 每次查询最多 100 条待发送日志
-                    NSArray *pendingLogs = [[ClsLogStorage sharedInstance] queryPendingLogs:100];
-                    CLSLog(@"query send log count：%lu", (unsigned long)pendingLogs.count);
-                    
-                    // 2. 若没有待发送日志，退出内层循环
-                    if (pendingLogs.count == 0) {
-                        break;
-                    }
-                    
-                    // 3. 同步发送当前批次日志
-                    NSTimeInterval sendStartTime = [[NSDate date] timeIntervalSince1970];
-                    BOOL isBatchSuccess = [self sendBatchLogs:pendingLogs];
-                    NSTimeInterval sendEndTime = [[NSDate date] timeIntervalSince1970];
-                    
-                    if (!isBatchSuccess) {
-                        // 只要失败肯定是有异常的，不需要重试
-                        CLSLog(@"send %lu logs FAILED, cost %.2f s → stop current round",
-                              (unsigned long)pendingLogs.count,
-                              sendEndTime - sendStartTime);
-                        break;
-                    } else {
-                        CLSLog(@"send %lu logs success, cost %.2f s",
-                              (unsigned long)pendingLogs.count,
-                              sendEndTime - sendStartTime);
-                    }
-                }
+    NSThread *me = [NSThread currentThread];
+    while (!me.isCancelled) {
+        @autoreleasepool {
+            [_sendLock lock];
+            [self sendAllPendingOnThread:me];
+            [_sendLock unlock];
+
+            uint64_t interval = [self configSnapshot].sendLogInterval;
+            [_condition lock];
+            if (!me.isCancelled) {
+                [_condition waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:interval]];
             }
+            [_condition unlock];
         }
-        
-        // 4. 等待固定间隔后，再进行下一次定时检查（无论上次发送耗时多久）
-        [_condition lock];
-        [_condition waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:_config.sendLogInterval]];
-        [_condition unlock];
-        
-        // 5. 检查线程是否被取消，若取消则退出外层循环
-        if ([NSThread currentThread].isCancelled) {
-            _isRunning = NO;
-            break;
+    }
+    // #9 修复 R-1：不再在此写 `_isRunning = NO`。
+    // `_isRunning` 仅由 `start/stop` 在配置锁内修改；
+    // 若 workLoop 退出时又写一次，会与"stop → 紧接着 start"竞态，
+    // 导致 oldThread 退出覆盖了 start 刚置的 YES，start 判断失效后再调用会创建第二个 worker。
+}
+
+- (void)sendAllPendingOnThread:(NSThread *)me {
+    while (!me.isCancelled) {
+        @autoreleasepool {
+            ClsLogSenderConfig *cfg = [self configSnapshot];
+            if (![self isConfigValid:cfg]) {
+                CLSLog(@"LogSender: config invalid, skip");
+                return;
+            }
+            if (![CLSNetworkTool isNetworkAvailable]) {
+                CLSLog(@"无可用网络，取消发送");
+                return;
+            }
+            NSArray *pendingLogs = [[ClsLogStorage sharedInstance] queryPendingLogs:100];
+            if (pendingLogs.count == 0) return;
+            if (![self sendBatchLogs:pendingLogs config:cfg]) return;
         }
     }
 }
 
-- (BOOL)sendBatchLogs:(NSArray<NSDictionary *> *)logs {
+- (BOOL)sendBatchLogs:(NSArray<NSDictionary *> *)logs config:(ClsLogSenderConfig *)cfg {
     if (logs.count == 0) {
         return NO;
     }
-    
-    // 常量定义
-    const uint64_t kSingleLogMaxSize = 512 * 1024;  // 单行日志上限
+
     const uint64_t kBatchMaxSize = 5 * 1024 * 1024; // 聚合包上限
-    
+
     NSMutableDictionary<NSString *, NSMutableArray<NSDictionary *> *> *topicGroups = [NSMutableDictionary dictionary];
     NSMutableDictionary<NSString *, NSNumber *> *topicBatchSizes = [NSMutableDictionary dictionary];
-    
+
     for (NSDictionary *log in logs) {
         Log *pbLog = log[@"log_item"];
         NSNumber *logId = log[@"id"];
         NSString *topicID = log[@"topic_id"];
-        
+
         if (!topicID) {
             CLSLog(@"log ID %@ lack topic_id，continue", logId);
             continue;
         }
-        
-        // 计算单条日志大小
+
         uint64_t singleLogSize = [CLSNetworkTool sizeOfLogItem:pbLog];
         if (singleLogSize == 0) {
             CLSLog(@"log ID %@ calc size failed", logId);
             continue;
         }
-        
-        // 过滤大日志
-        if (singleLogSize > kSingleLogMaxSize) {
+
+        // #14 兜底：writeLog 已拦截超限日志，这里仅为升级前已入库的历史超大日志
+        if (singleLogSize > kCLSMaxSingleLogBytes) {
             CLSLog(@"log ID %@ exceed 512KB（%.2f KB），discard",
                   logId, singleLogSize / 1024.0);
             (void)[[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[logId]];
             continue;
         }
-        
-        // 初始化分组和大小（使用 NSNumber 包装 uint64_t）
+
         if (!topicGroups[topicID]) {
             topicGroups[topicID] = [NSMutableArray array];
-            topicBatchSizes[topicID] = @(0ULL); // 用 @(0ULL) 包装 uint64_t 0
+            topicBatchSizes[topicID] = @(0ULL);
         }
-        
-        // 读取当前累计大小（从 NSNumber 中提取 uint64_t）
+
         uint64_t currentBatchSize = [topicBatchSizes[topicID] unsignedLongLongValue];
         uint64_t predictedSize = currentBatchSize + singleLogSize;
-        
-        // 检查是否超过上限
+
         if (predictedSize > kBatchMaxSize) {
-            CLSLog(@"topic %@ The aggregated package is about to exceed 5MB (currently %.2f MB), send %lu log entries immediately",
-                  topicID, currentBatchSize / 1024.0 / 1024.0,
-                  (unsigned long)topicGroups[topicID].count);
-            
-            if (![self sendLogsGroup:topicGroups[topicID] forTopic:topicID]) {
-                return NO; // 分组失败，批次整体失败
+            if (![self sendLogsGroup:topicGroups[topicID] forTopic:topicID config:cfg]) {
+                return NO;
             }
-            
-            // 重置分组和大小（用 @(singleLogSize) 包装）
             topicGroups[topicID] = [NSMutableArray arrayWithObject:log];
             topicBatchSizes[topicID] = @(singleLogSize);
         } else {
             [topicGroups[topicID] addObject:log];
-            topicBatchSizes[topicID] = @(predictedSize); // 包装为 NSNumber
+            topicBatchSizes[topicID] = @(predictedSize);
         }
     }
-    
-    // 2. 发送剩余日志
+
     __block BOOL allGroupsSuccess = YES;
     [topicGroups enumerateKeysAndObjectsUsingBlock:^(NSString *topicID, NSMutableArray *groupLogs, BOOL *stop) {
-        if (![self sendLogsGroup:groupLogs forTopic:topicID]) {
+        if (![self sendLogsGroup:groupLogs forTopic:topicID config:cfg]) {
             allGroupsSuccess = NO;
             *stop = YES;
         }
@@ -243,24 +237,24 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
     return allGroupsSuccess;
 }
 
-// 单独发送一个 topic 分组的日志
 - (BOOL) sendLogsGroup:(NSArray<NSDictionary *> *)groupLogs forTopic:(NSString *)topicID {
-    // 获取当前分组的日志ID（用于更新状态）
+    return [self sendLogsGroup:groupLogs forTopic:topicID config:[self configSnapshot]];
+}
+
+- (BOOL) sendLogsGroup:(NSArray<NSDictionary *> *)groupLogs forTopic:(NSString *)topicID config:(ClsLogSenderConfig *)cfg {
     NSArray<NSNumber *> *logIds = [groupLogs valueForKey:@"id"];
     if (logIds.count == 0) {
         CLSLog(@"topic %@ No valid log ID, skip sending.", topicID);
         return NO;
     }
 
-    // 构建当前分组的 LogGroupList
     LogGroupList *logGroupList = [self buildLogGroupListFromLogItems:groupLogs];
     NSData *pbData = [logGroupList data];
     if (!pbData.length) {
-        CLSLog(@"LogGroup serialization for topic %@ failed, and the recovery status is now pending transmission.", topicID);
+        CLSLog(@"LogGroup serialization for topic %@ failed", topicID);
         return NO;
     }
-    
-    // LZ4压缩
+
     ClsPostOption *option = [[ClsPostOption alloc] init];
     NSData *compressedData = [CLSNetworkTool lz4CompressData:pbData];
     if (!compressedData && option.compressType == 1) {
@@ -268,36 +262,33 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
         option.compressType = 0;
         compressedData = pbData;
     }
-    
-    // 构建请求头和参数
-    NSMutableDictionary *headers = [self buildHeadersWithCompressType:option.compressType];
-    NSDictionary *params = @{@"topic_id": topicID}; // 参数中使用当前分组的 topic_id
 
-    if ([LogSender isWeakAuthConfig:_config]) {
+    NSMutableDictionary *headers = [self buildHeadersWithCompressType:option.compressType config:cfg];
+    NSDictionary *params = @{@"topic_id": topicID};
+
+    if ([LogSender isWeakAuthConfig:cfg]) {
         headers[@"x-cls-auth-mode"] = @"weak";
-        headers[@"X-CLS-Uin"] = _config.uin ?: @"";
+        headers[@"X-CLS-Uin"] = cfg.uin ?: @"";
     } else {
-        NSString *signature = [CLSNetworkTool generateSignatureWithSecretId:_config.accessKeyId
-                                                                  secretKey:_config.accessKey
+        NSString *signature = [CLSNetworkTool generateSignatureWithSecretId:cfg.accessKeyId
+                                                                  secretKey:cfg.accessKey
                                                                      method:@"POST"
                                                                        path:@"/structuredlog"
                                                                      params:params
                                                                     headers:headers
                                                                      expire:300];
-        // Token 头部（与 C 语言一致）
-        if (_config.token.length > 0) {
-            headers[@"X-Cls-Token"] = _config.token; // 对应 C: put("X-Cls-Token", token)
+        if (cfg.token.length > 0) {
+            headers[@"X-Cls-Token"] = cfg.token;
         }
         [headers setObject:signature forKey:@"Authorization"];
     }
 
-    // 关键：使用同步请求，阻塞当前线程直到结果返回
-    NSString *url = [self buildRequestUrlWithParams:params];
+    NSString *url = [self buildRequestUrlWithParams:params config:cfg];
     CLSSendResult *result = [CLSNetworkTool sendPostRequestSyncWithUrl:url
                                                                headers:headers
                                                                  body:compressedData
                                                                option:option];
-    
+
     return [self handleSendResult:result logIds:logIds];
 }
 
@@ -314,34 +305,29 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
                result.requestID, (unsigned long)logIds.count);
         return YES;
     }
-    
+
     NSInteger statusCode = result.statusCode;
-    
-    // 需要保留日志的条件：
-    // 1. 所有客户端网络错误（statusCode < 0，无需区分具体错误码）
-    // 2. 服务端特定错误码（5xx、429、408、403，原逻辑保留）
-    
-    BOOL shouldKeepLogs = (statusCode < 0)
-                        || (statusCode >= 500 && statusCode < 600)
-                        || statusCode == 429
-                        || statusCode == 408
-                        || statusCode == 403;
-    
+
+    // #22 修复：非 NSURLErrorDomain 的正数网络错误码（如 CFNetwork 自定义错误）也应视为"保留"
+    BOOL isNetworkError = (statusCode < 0);
+    // 服务端临时性错误
+    BOOL isTransientServerError = (statusCode >= 500 && statusCode < 600)
+                                || statusCode == 429
+                                || statusCode == 408
+                                || statusCode == 403;
+    // 异常：非 HTTP 2xx/3xx/4xx 的奇怪值（例如 CFNetwork 的正数自定义码），一律保留
+    BOOL isOutsideHttpRange = (statusCode > 0 && (statusCode < 100 || statusCode > 599));
+
+    BOOL shouldKeepLogs = isNetworkError || isTransientServerError || isOutsideHttpRange;
+
     if (shouldKeepLogs) {
-        // 保留日志（等待重试）
-        CLSLog(@"Sending failed (status code: %ld), log entry %lu, error: %@",
-              (long)statusCode,
-              (unsigned long)logIds.count,
-              result.message);
+        CLSLog(@"Sending failed (status code: %ld), keep log entry %lu, error: %@",
+              (long)statusCode, (unsigned long)logIds.count, result.message);
     } else {
-        // 无需保留的错误（如 400 客户端参数错误、404 地址不存在等，重试无意义）
         (void)[[ClsLogStorage sharedInstance] deleteSentLogsWithIds:logIds];
         CLSLog(@"Sending failed (status code: %ld), delete log entry %lu, error: %@",
-              (long)statusCode,
-              (unsigned long)logIds.count,
-              result.message);
+              (long)statusCode, (unsigned long)logIds.count, result.message);
     }
-    // 保持与原实现一致：非 200 均视为本批次失败，让上层中断当前轮次
     return NO;
 }
 
@@ -367,28 +353,26 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
     return logGroupList;
 }
 
-- (NSMutableDictionary *)buildHeadersWithCompressType:(NSInteger)compressType {
+- (NSMutableDictionary *)buildHeadersWithCompressType:(NSInteger)compressType config:(ClsLogSenderConfig *)cfg {
     NSMutableDictionary *headers = [NSMutableDictionary dictionary];
-    // 与 C 语言对照：必须包含以下头部，且 key 大小写需匹配（最终会转为小写）
-    headers[@"Host"] = _config.endpoint; // 对应 C: put(&httpHeader, "Host", endpoint)
-    headers[@"Content-Type"] = @"application/x-protobuf"; // 对应 C: put("Content-Type", ...)
-    headers[@"User-Agent"] = @"tencent-log-sdk-ios v3.2.0";
-    headers[@"x-cls-trace-id"] = [[NSUUID UUID] UUIDString]; // 对应 C: x-cls-trace-id
+    headers[@"Host"] = cfg.endpoint;
+    headers[@"Content-Type"] = @"application/x-protobuf";
+    headers[@"User-Agent"] = @"tencent-log-sdk-ios v3.3.0";
+    headers[@"x-cls-trace-id"] = [[NSUUID UUID] UUIDString];
     headers[@"x-cls-add-source"] = @"1";
-    
-    // 压缩头部（与 C 语言一致：仅当压缩时添加）
+
     if (compressType == 1) {
-        headers[@"x-cls-compress-type"] = @"lz4"; // 对应 C: put("x-cls-compress-type", "lz4")
+        headers[@"x-cls-compress-type"] = @"lz4";
     }
-    
+
     return headers;
 }
 
-- (NSString *)buildRequestUrlWithParams:(NSDictionary *)params {
+- (NSString *)buildRequestUrlWithParams:(NSDictionary *)params config:(ClsLogSenderConfig *)cfg {
     NSString *operation = @"/structuredlog";
     NSString *queryString = [self generateQueryStringWithParams:params];
     return [NSString stringWithFormat:@"https://%@%@%@",
-            _config.endpoint, operation, queryString.length ? [NSString stringWithFormat:@"?%@", queryString] : @""];
+            cfg.endpoint, operation, queryString.length ? [NSString stringWithFormat:@"?%@", queryString] : @""];
 }
 
 - (NSString *)generateQueryStringWithParams:(NSDictionary *)params {

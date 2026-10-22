@@ -349,6 +349,8 @@
 - (void)testDnsPreferIPv6Only {
     NSLog(@"🧪 开始执行用例DNS-009：prefer参数验证 - IPv6 Only");
     
+    XCTSkipUnless([self isPublicIPv6Reachable], @"当前网络 IPv6 公网出站不可达，跳过（#30/#31 相关测试需 IPv6 环境）");
+    
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS-prefer-IPv6Only"];
     __block BOOL fulfilled = NO;
     
@@ -967,6 +969,8 @@
 - (void)testDnsIPv6ServerGoogle {
     NSLog(@"🧪 开始执行用例DNS-017：IPv6 DNS服务器验证 - 谷歌DNS");
     
+    XCTSkipUnless([self isPublicIPv6Reachable], @"当前网络 IPv6 公网出站不可达，跳过（#30/#31 相关测试需 IPv6 环境）");
+    
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS-IPv6服务器-Google"];
     __block BOOL fulfilled = NO;
     
@@ -1011,6 +1015,8 @@
 - (void)testDnsIPv6ServerCloudflare {
     NSLog(@"🧪 开始执行用例DNS-018：IPv6 DNS服务器验证 - Cloudflare DNS");
     
+    XCTSkipUnless([self isPublicIPv6Reachable], @"当前网络 IPv6 公网出站不可达，跳过（#30/#31 相关测试需 IPv6 环境）");
+    
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS-IPv6服务器-Cloudflare"];
     __block BOOL fulfilled = NO;
     
@@ -1054,6 +1060,8 @@
 /// 【DNS-019】验证IPv6 DNS服务器 - 阿里云公共DNS
 - (void)testDnsIPv6ServerAliyun {
     NSLog(@"🧪 开始执行用例DNS-019：IPv6 DNS服务器验证 - 阿里云DNS");
+    
+    XCTSkipUnless([self isPublicIPv6Reachable], @"当前网络 IPv6 公网出站不可达，跳过（#30/#31 相关测试需 IPv6 环境）");
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS-IPv6服务器-Aliyun"];
     __block BOOL fulfilled = NO;
@@ -1142,6 +1150,8 @@
 /// 【DNS-021】验证IPv6 DNS服务器查询AAAA记录
 - (void)testDnsIPv6ServerQueryAAAA {
     NSLog(@"🧪 开始执行用例DNS-021：IPv6 DNS服务器查询AAAA记录");
+    
+    XCTSkipUnless([self isPublicIPv6Reachable], @"当前网络 IPv6 公网出站不可达，跳过（#30/#31 相关测试需 IPv6 环境）");
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS-IPv6服务器-AAAA"];
     __block BOOL fulfilled = NO;

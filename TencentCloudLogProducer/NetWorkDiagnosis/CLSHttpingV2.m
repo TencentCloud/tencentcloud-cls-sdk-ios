@@ -16,6 +16,7 @@
 #import <dlfcn.h>
 #if __has_include(<Security/SecProtocolOptions.h>)
 #import <Security/SecProtocolOptions.h>
+#import "ClsLogModel.h"
 #endif
 
 /// 根据 nw_connection_state_failed 的 nw_error 及是否为 HTTPS，生成可读的 NSError（便于上报和日志分析）
@@ -29,13 +30,24 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
         });
         if (get_code) {
             int code = get_code(nw_err);
-            // POSIX 无专门“证书校验失败”，TLS 失败在部分系统上会映射到 errSec 或特定 code；这里仅做提示
+            // POSIX 无专门"证书校验失败"，TLS 失败在部分系统上会映射到 errSec 或特定 code；这里仅做提示
             if (isHTTPS && (code != 0))
                 msg = [NSString stringWithFormat:@"Connection failed (TLS/certificate verify failed, code=%d)", code];
         }
     }
     if (!msg) msg = isHTTPS ? @"Connection failed (TLS/certificate verify failed?)" : @"Connection failed";
     return [NSError errorWithDomain:@"CLSHttpingErrorDomain" code:-1 userInfo:@{NSLocalizedDescriptionKey: msg}];
+}
+
+/// #18 修复：安全读取 nw_error 的真实 POSIX 错误码（符号在 iOS 12+，用 dlsym 兼容老系统）
+static int cls_nw_error_code(nw_error_t nw_err) {
+    if (!nw_err) return 0;
+    static int (*get_code)(nw_error_t) = NULL;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        get_code = (int (*)(nw_error_t))dlsym(RTLD_DEFAULT, "nw_error_get_error_code");
+    });
+    return get_code ? get_code(nw_err) : 0;
 }
 
 @interface CLSMultiInterfaceHttping ()
@@ -73,7 +85,6 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
     if (self) {
         _request = request;
         _timingMetrics = [NSMutableDictionary dictionary];
-        _responseData = [NSMutableData data];
         _interfaceInfo = @{};
         _networkResultStatusCode = -2;
         _firstByteArrivalTime = 0;
@@ -102,17 +113,17 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
         // Wi-Fi 接口（en0, en1...）
         sessionConfig.networkServiceType = NSURLNetworkServiceTypeVideo;
         sessionConfig.allowsCellularAccess = NO;  // 禁用蜂窝网络
-        NSLog(@"[HTTP] 配置 Wi-Fi 接口: %@", currentInterfaceName);
+        CLSLog(@"[HTTP] 配置 Wi-Fi 接口: %@", currentInterfaceName);
     } else if ([currentInterfaceName hasPrefix:@"pdp_ip"]) {
         // 蜂窝网络接口（pdp_ip0, pdp_ip1...）
         sessionConfig.networkServiceType = NSURLNetworkServiceTypeVoIP;
         sessionConfig.allowsCellularAccess = YES;  // 允许蜂窝网络
-        NSLog(@"[HTTP] 配置蜂窝接口: %@", currentInterfaceName);
+        CLSLog(@"[HTTP] 配置蜂窝接口: %@", currentInterfaceName);
     } else {
         // 其他接口（回环、VPN、桥接等）- 兜底配置
         sessionConfig.networkServiceType = NSURLNetworkServiceTypeDefault;
         sessionConfig.allowsCellularAccess = YES;  // ✅ 修复：允许所有网络类型
-        NSLog(@"[HTTP] 配置其他接口: %@ (使用默认配置)", currentInterfaceName);
+        CLSLog(@"[HTTP] 配置其他接口: %@ (使用默认配置)", currentInterfaceName);
     }
 
     if (@available(iOS 11.0, *)) {
@@ -154,7 +165,10 @@ static NSError *cls_connection_failed_error(nw_error_t nw_err, BOOL isHTTPS) {
         ([interfaceName hasPrefix:@"en"] || [interfaceName hasPrefix:@"pdp_ip"]));
 #endif
     if (useNetworkFramework && @available(iOS 12.0, *)) {
-        [self startHttpingWithNetworkFrameworkCompletion:completion];
+        [self startHttpingWithNetworkFrameworkCompletion:^(NSDictionary *finalReportDict, NSError *error) {
+            self.completionHandler = nil;
+            if (completion) completion(finalReportDict, error);
+        }];
         return;
     }
 #endif
@@ -464,12 +478,12 @@ API_AVAILABLE(ios(12.0)) {
                 dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, connQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 nw_connection_send(c_conn, sendData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t sendError) {
                     if (sendError) {
-                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
+                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + cls_nw_error_code(sendError) userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
                         return;
                     }
                     nw_connection_receive(c_conn, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t recvError) {
                         if (recvError) {
-                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}], NO);
+                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + cls_nw_error_code(recvError) userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}], NO);
                             return;
                         }
                         if (content && dispatch_data_get_size(content) > 0) {
@@ -485,7 +499,8 @@ API_AVAILABLE(ios(12.0)) {
                                 receivedBytes += size;
                                 if (statusCode == -2) {
                                     NSData *chunk = [NSData dataWithBytes:buf length:size];
-                                    NSString *firstLine = [[NSString alloc] initWithData:chunk encoding:NSUTF8StringEncoding];
+                                    // #33 修复：Latin-1 对任意字节都可解码；HTTP 状态行为 ASCII，Latin-1 下结果与 UTF-8 一致，但不会因 gzip/GBK body 或 UTF-8 中间截断而返回 nil
+                                    NSString *firstLine = [[NSString alloc] initWithData:chunk encoding:NSISOLatin1StringEncoding];
                                     NSArray *lines = [firstLine componentsSeparatedByString:@"\r\n"];
                                     if (lines.count) {
                                         NSArray *parts = [lines[0] componentsSeparatedByString:@" "];
@@ -663,12 +678,12 @@ API_AVAILABLE(ios(12.0)) {
                 dispatch_data_t sendData = dispatch_data_create(reqData.bytes, reqData.length, connQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 nw_connection_send(c_conn, sendData, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t sendError) {
                     if (sendError) {
-                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)sendError userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
+                        finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + cls_nw_error_code(sendError) userInfo:@{NSLocalizedDescriptionKey: @"Send failed"}], NO);
                         return;
                     }
                     nw_connection_receive(c_conn, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t recvError) {
                         if (recvError) {
-                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + (int)recvError userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}], NO);
+                            finish([NSError errorWithDomain:@"CLSHttpingErrorDomain" code:2000 + cls_nw_error_code(recvError) userInfo:@{NSLocalizedDescriptionKey: @"Receive failed"}], NO);
                             return;
                         }
                         if (content && dispatch_data_get_size(content) > 0) {
@@ -684,7 +699,8 @@ API_AVAILABLE(ios(12.0)) {
                                 receivedBytes += size;
                                 if (statusCode == -2) {
                                     NSData *chunk = [NSData dataWithBytes:buf length:size];
-                                    NSString *firstLine = [[NSString alloc] initWithData:chunk encoding:NSUTF8StringEncoding];
+                                    // #33 修复：Latin-1 对任意字节都可解码；HTTP 状态行为 ASCII，Latin-1 下结果与 UTF-8 一致，但不会因 gzip/GBK body 或 UTF-8 中间截断而返回 nil
+                                    NSString *firstLine = [[NSString alloc] initWithData:chunk encoding:NSISOLatin1StringEncoding];
                                     NSArray *lines = [firstLine componentsSeparatedByString:@"\r\n"];
                                     if (lines.count) {
                                         NSArray *parts = [lines[0] componentsSeparatedByString:@" "];
@@ -755,17 +771,17 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
 didCompleteWithError:(NSError *)error {
     // ✅ 增强错误日志：输出详细错误信息
     if (error) {
-        NSLog(@"[HTTP] 请求失败 - Domain: %@, Code: %ld, Description: %@",
+        CLSLog(@"[HTTP] 请求失败 - Domain: %@, Code: %ld, Description: %@",
               error.domain, (long)error.code, error.localizedDescription);
-        NSLog(@"[HTTP] 请求 URL: %@", task.originalRequest.URL.absoluteString);
-        NSLog(@"[HTTP] 网卡接口: %@", self.interfaceInfo[@"name"]);
+        CLSLog(@"[HTTP] 请求 URL: %@", task.originalRequest.URL.absoluteString);
+        CLSLog(@"[HTTP] 网卡接口: %@", self.interfaceInfo[@"name"]);
         
         // 特殊错误：unsupported URL
         if ([error.domain isEqualToString:NSURLErrorDomain] && error.code == NSURLErrorUnsupportedURL) {
-            NSLog(@"[HTTP] ⚠️ 检测到 unsupported URL 错误，可能原因：");
-            NSLog(@"  1. URL Scheme 不支持（应为 http:// 或 https://）");
-            NSLog(@"  2. Session 配置限制（allowsCellularAccess/networkServiceType）");
-            NSLog(@"  3. 系统网络策略限制");
+            CLSLog(@"[HTTP] ⚠️ 检测到 unsupported URL 错误，可能原因：");
+            CLSLog(@"  1. URL Scheme 不支持（应为 http:// 或 https://）");
+            CLSLog(@"  2. Session 配置限制（allowsCellularAccess/networkServiceType）");
+            CLSLog(@"  3. 系统网络策略限制");
         }
     }
 
@@ -790,7 +806,7 @@ didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics {
 
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
 didReceiveData:(NSData *)data {
-    [self.responseData appendData:data];
+    // #17 修复：HTTP 探测只计数不存储，避免大文件 50MB 全部驻留内存
     self.receivedBytes += data.length;
 }
 
@@ -897,10 +913,12 @@ didReceiveData:(NSData *)data {
 
     // 通用字段
     metrics[@"connectionReleased"] = [CLSStringUtils formatDateToMillisecondString:transaction.responseEndDate];
-    if (transaction.remoteAddress) metrics[@"remoteAddr"] = transaction.remoteAddress;
-    
-    NSUInteger sentBytes = transaction.countOfRequestHeaderBytesSent + transaction.countOfRequestBodyBytesSent;
-    if (sentBytes != 0) metrics[@"sendBytes"] = @(sentBytes);
+    if (@available(iOS 13.0, *)) {
+        if (transaction.remoteAddress) metrics[@"remoteAddr"] = transaction.remoteAddress;
+
+        NSUInteger sentBytes = transaction.countOfRequestHeaderBytesSent + transaction.countOfRequestBodyBytesSent;
+        if (sentBytes != 0) metrics[@"sendBytes"] = @(sentBytes);
+    }
 
     [self.timingMetrics addEntriesFromDictionary:metrics];
 }
@@ -1178,7 +1196,7 @@ didReceiveData:(NSData *)data {
     // 参数合法性校验
     NSError *validationError = nil;
     if (![CLSRequestValidator validateHttpRequest:self.request error:&validationError]) {
-        NSLog(@"❌ HTTP探测参数校验失败: %@", validationError.localizedDescription);
+        CLSLog(@"❌ HTTP探测参数校验失败: %@", validationError.localizedDescription);
         if (complate) {
             CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
                 @"error": @"INVALID_PARAMETER",
@@ -1191,11 +1209,11 @@ didReceiveData:(NSData *)data {
     }
     
     // ⚠️ HTTPing 不支持多次探测，单次探测后立即上报（无论成功失败）
-    NSLog(@"✅ HTTP探测参数: timeout=%dms, size=%d bytes", self.request.timeout, self.request.size);
+    CLSLog(@"✅ HTTP探测参数: timeout=%dms, size=%d bytes", self.request.timeout, self.request.size);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {
-        NSLog(@"HTTPing 无可用网卡接口（网卡可能被禁用）");
+        CLSLog(@"HTTPing 无可用网卡接口（网卡可能被禁用）");
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (complate) complate(emptyResult);
         return;
@@ -1210,7 +1228,7 @@ didReceiveData:(NSData *)data {
             for (NSDictionary *currentInterface in availableInterfaces) {
                 NSDictionary *capturedInterface = [currentInterface copy];  // 捕获接口信息
                 NSString *interfaceName = capturedInterface[@"name"] ?: @"未知";
-                NSLog(@"🚀 HTTPing 开始探测网卡：%@", interfaceName);
+                CLSLog(@"🚀 HTTPing 开始探测网卡：%@", interfaceName);
                 
                 // 创建信号量，等待异步探测完成
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -1239,9 +1257,9 @@ didReceiveData:(NSData *)data {
                     BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);
                     
                     if (!error && isHttpSuccess) {
-                        NSLog(@"✅ HTTP Ping 成功 - 网卡:%@ HTTP %ld", interfaceName, (long)httpCode);
+                        CLSLog(@"✅ HTTP Ping 成功 - 网卡:%@ HTTP %ld", interfaceName, (long)httpCode);
                     } else {
-                        NSLog(@"❌ HTTP Ping 失败 - 网卡:%@ HTTP %ld, Error: %@",
+                        CLSLog(@"❌ HTTP Ping 失败 - 网卡:%@ HTTP %ld, Error: %@",
                               interfaceName, (long)httpCode, error.localizedDescription ?: @"连接失败");
                     }
                     
@@ -1252,7 +1270,7 @@ didReceiveData:(NSData *)data {
                     CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
                     
                     // 回调返回结果（每个网卡完成都会回调一次，这是预期行为）
-                    NSLog(@"📤 HTTPing 网卡 %@ 探测完成，调用回调", interfaceName);
+                    CLSLog(@"📤 HTTPing 网卡 %@ 探测完成，调用回调", interfaceName);
                     if (complate) {
                         complate(completionResult);
                     }
@@ -1263,15 +1281,15 @@ didReceiveData:(NSData *)data {
                 
                 // ✅ 等待当前网卡探测完成（阻塞后台线程）
                 dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-                NSLog(@"✅ HTTPing 网卡 %@ 探测已完成，准备下一个", interfaceName);
+                CLSLog(@"✅ HTTPing 网卡 %@ 探测已完成，准备下一个", interfaceName);
             }
             
-            NSLog(@"✅ HTTPing 所有网卡探测完成");
+            CLSLog(@"✅ HTTPing 所有网卡探测完成");
         });
     } else {
         // 单网卡模式：直接在主线程执行（只探测第一个网卡）
         for (NSDictionary *currentInterface in availableInterfaces) {
-            NSLog(@"interface:%@", currentInterface);
+            CLSLog(@"interface:%@", currentInterface);
             
             // 执行单次探测
             CLSSpanBuilder *builder = [[CLSSpanBuilder builder] initWithName:@"network_diagnosis"
@@ -1286,7 +1304,7 @@ didReceiveData:(NSData *)data {
             CLSMultiInterfaceHttping *instanceToUse = self;
             
             NSString *interfaceName = currentInterface[@"name"] ?: @"未知";
-            NSLog(@"🚀 HTTPing 开始探测网卡：%@", interfaceName);
+            CLSLog(@"🚀 HTTPing 开始探测网卡：%@", interfaceName);
             
             [instanceToUse startHttpingWithCompletion:currentInterface completion:^(NSDictionary *finalReportDict, NSError *error) {
                 // 记录探测结果（无论成功失败）
@@ -1294,9 +1312,9 @@ didReceiveData:(NSData *)data {
                 BOOL isHttpSuccess = (httpCode >= 200 && httpCode < 400);
                 
                 if (!error && isHttpSuccess) {
-                    NSLog(@"✅ HTTP Ping 成功 - 网卡:%@ HTTP %ld", interfaceName, (long)httpCode);
+                    CLSLog(@"✅ HTTP Ping 成功 - 网卡:%@ HTTP %ld", interfaceName, (long)httpCode);
                 } else {
-                    NSLog(@"❌ HTTP Ping 失败 - 网卡:%@ HTTP %ld, Error: %@",
+                    CLSLog(@"❌ HTTP Ping 失败 - 网卡:%@ HTTP %ld, Error: %@",
                           interfaceName, (long)httpCode, error.localizedDescription ?: @"连接失败");
                 }
                 
@@ -1307,7 +1325,7 @@ didReceiveData:(NSData *)data {
                 CLSResponse *completionResult = [CLSResponse complateResultWithContent:d ?: @{}];
                 
                 // 回调返回结果（每个网卡完成都会回调一次，这是预期行为）
-                NSLog(@"📤 HTTPing 网卡 %@ 探测完成，调用回调", interfaceName);
+                CLSLog(@"📤 HTTPing 网卡 %@ 探测完成，调用回调", interfaceName);
                 if (complate) {
                     complate(completionResult);
                 }

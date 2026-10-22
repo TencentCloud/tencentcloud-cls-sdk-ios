@@ -20,6 +20,7 @@
 #import "CLSStringUtils.h"
 #import "CLSPrivocyUtils.h"
 #import "CLSUserInfo.h"
+#import "ClsLogModel.h"
 
 
 #pragma mark - CLSSpanProviderDelegate
@@ -37,7 +38,7 @@
 
 - (CLSResource *) createDefaultResource {
     BOOL privocy = [CLSPrivocyUtils isEnablePrivocy];
-    NSLog(@"🔒 [CLSCocoa] privocy = %d", privocy);
+    CLSLog(@"🔒 [CLSCocoa] privocy = %d", privocy);
     
     CLSResource *resource = [[CLSResource alloc] init];
     [resource add:@"sdk.language" value:@"Objective-C"];
@@ -105,7 +106,7 @@
     [resource add:@"app.name" value:(!appName ? @"-" : appName)];
     
     // ========== 网络类型检测（使用系统全局检测） ==========
-    NSLog(@"🌐 [CLSCocoa] Using system-based detection");
+    CLSLog(@"🌐 [CLSCocoa] Using system-based detection");
     NSString *networkType = [CLSDeviceUtils getNetworkTypeName];
     NSString *networkSubType = [CLSDeviceUtils getNetworkSubTypeName];
     NSString *carrier = [CLSDeviceUtils getCarrier];
@@ -121,11 +122,11 @@
         carrier = @"IOS";
     }
     
-    NSLog(@"🌐 [CLSCocoa] networkType = [%@], length=%lu", networkType, (unsigned long)networkType.length);
-    NSLog(@"🌐 [CLSCocoa] networkSubType = [%@], length=%lu", networkSubType, (unsigned long)networkSubType.length);
-    NSLog(@"📱 [CLSCocoa] carrier = [%@], length=%lu, isNil=%d", carrier, (unsigned long)carrier.length, carrier == nil);
-    NSLog(@"🔒 [CLSCocoa] privocy = %d", privocy);
-    NSLog(@"✅ [CLSCocoa] Final values: net.access=[%@], net.access_subtype=[%@], carrier=[%@]", 
+    CLSLog(@"🌐 [CLSCocoa] networkType = [%@], length=%lu", networkType, (unsigned long)networkType.length);
+    CLSLog(@"🌐 [CLSCocoa] networkSubType = [%@], length=%lu", networkSubType, (unsigned long)networkSubType.length);
+    CLSLog(@"📱 [CLSCocoa] carrier = [%@], length=%lu, isNil=%d", carrier, (unsigned long)carrier.length, carrier == nil);
+    CLSLog(@"🔒 [CLSCocoa] privocy = %d", privocy);
+    CLSLog(@"✅ [CLSCocoa] Final values: net.access=[%@], net.access_subtype=[%@], carrier=[%@]", 
           privocy ? networkType : @"",
           privocy ? networkSubType : @"",
           privocy ? carrier : @"");

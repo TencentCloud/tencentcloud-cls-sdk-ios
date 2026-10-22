@@ -14,3 +14,9 @@ scripts/
 # CodeBuddy 生成的分析报告（不提交到 Git）
 .codebuddy/reports/
 *.codebuddy.md
+
+# 设计文档/计划/本地笔记目录（不提交到 Git）
+docs/
+
+# 测试敏感凭据（真实 AK/SK/NetToken/TopicId 不进仓库，保留 .sample 模板）
+Xcode/TencentCloudLogDemo/TencentCloudLogDemoTests/CLSTestCredentials.h

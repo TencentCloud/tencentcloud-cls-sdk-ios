@@ -25,6 +25,7 @@
 #import <dlfcn.h>
 //#import "reachable/Rechable.h"
 #import "Reachability.h"
+#import "ClsLogModel.h"
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <mach/machine.h>
@@ -264,15 +265,24 @@
     return @"Unknown";
 #endif
     @try {
-        CTTelephonyNetworkInfo *info = [[CTTelephonyNetworkInfo alloc] init];
+        CTTelephonyNetworkInfo *info = [self sharedTelephonyNetworkInfo];
         CTCarrier *carrier = nil;
         if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.1) {
             if ([info respondsToSelector:@selector(serviceSubscriberCellularProviders)]) {
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wunguarded-availability-new"
-                carrier = info.serviceSubscriberCellularProviders[info.serviceSubscriberCellularProviders.allKeys.firstObject];
-                if (nil != carrier && nil != carrier.mobileNetworkCode) {
-                    carrier = info.serviceSubscriberCellularProviders[info.serviceSubscriberCellularProviders.allKeys.lastObject];
+                // #38 修复：主/副卡逻辑之前写反——原来是"firstObject 有 MNC 则改用 lastObject"，
+                // 修正为"遍历所有卡，优先选第一张 MNC 非空的作为主卡"
+                NSDictionary<NSString *, CTCarrier *> *providers = info.serviceSubscriberCellularProviders;
+                for (NSString *key in providers.allKeys) {
+                    CTCarrier *c = providers[key];
+                    if (c != nil && c.mobileNetworkCode.length > 0) {
+                        carrier = c;
+                        break;
+                    }
+                }
+                if (carrier == nil && providers.count > 0) {
+                    carrier = providers[providers.allKeys.firstObject];
                 }
     #pragma clang diagnostic pop
             }
@@ -319,9 +329,9 @@
 
 + (NSString *)getNetworkType {
 #if CLS_HAS_CORE_TELEPHONY
+    CTTelephonyNetworkInfo *sharedNetworkInfo = [self sharedTelephonyNetworkInfo];
     @try {
-        CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
-        NSString *currentStatus = networkInfo.currentRadioAccessTechnology;
+        NSString *currentStatus = sharedNetworkInfo.currentRadioAccessTechnology;
         return currentStatus;
     } @catch (NSException *exception) {
         return @"Unknown";
@@ -330,6 +340,18 @@
     return @"Unknown";
 #endif
 }
+
+#if CLS_HAS_CORE_TELEPHONY
+// #2/R-9 修复：全文件共享单一 CTTelephonyNetworkInfo，避免重复分配 + 内部通知注册
++ (CTTelephonyNetworkInfo *)sharedTelephonyNetworkInfo {
+    static CTTelephonyNetworkInfo *sharedInstance;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[CTTelephonyNetworkInfo alloc] init];
+    });
+    return sharedInstance;
+}
+#endif
 
 + (NSString *)getNetworkTypeName {
 #if CLS_HAS_CORE_TELEPHONY
@@ -500,28 +522,28 @@
 /// @param interfaceName 网络接口名称（如 "pdp_ip0", "en0"）
 /// @return 网络类型名称（"Wi-Fi", "4G", "5G", "3G", "2G", "Unknown"）
 + (NSString *)getNetworkTypeNameForInterface:(NSString *)interfaceName {
-    NSLog(@"🔍 [getNetworkTypeNameForInterface] interfaceName = [%@]", interfaceName);
+    CLSLog(@"🔍 [getNetworkTypeNameForInterface] interfaceName = [%@]", interfaceName);
     
     // 1. 如果未提供接口名称，降级到系统全局检测
     if (!interfaceName || interfaceName.length == 0) {
-        NSLog(@"⚠️ [getNetworkTypeNameForInterface] No interface name, fallback to system detection");
+        CLSLog(@"⚠️ [getNetworkTypeNameForInterface] No interface name, fallback to system detection");
         return [self getNetworkTypeName];
     }
     
     // 2. 判断接口类型
     if ([self isWiFiInterface:interfaceName]) {
         // Wi-Fi 接口
-        NSLog(@"✅ [getNetworkTypeNameForInterface] Wi-Fi interface detected: %@", interfaceName);
+        CLSLog(@"✅ [getNetworkTypeNameForInterface] Wi-Fi interface detected: %@", interfaceName);
         return @"Wi-Fi";
     }
     
     if ([self isCellularInterface:interfaceName]) {
         // 蜂窝网络接口 - 需要进一步检测具体类型（4G/5G/3G/2G）
-        NSLog(@"✅ [getNetworkTypeNameForInterface] Cellular interface detected: %@", interfaceName);
+        CLSLog(@"✅ [getNetworkTypeNameForInterface] Cellular interface detected: %@", interfaceName);
         
 #if CLS_HAS_CORE_TELEPHONY
         NSString *currentStatus = [self getNetworkType];
-        NSLog(@"📶 [getNetworkTypeNameForInterface] Radio technology: %@", currentStatus);
+        CLSLog(@"📶 [getNetworkTypeNameForInterface] Radio technology: %@", currentStatus);
         
         if ([currentStatus isEqualToString:CTRadioAccessTechnologyLTE]) {
             return @"4G";
@@ -551,7 +573,7 @@
         }
         
         // 无法识别的蜂窝网络类型
-        NSLog(@"⚠️ [getNetworkTypeNameForInterface] Unknown cellular type: %@", currentStatus);
+        CLSLog(@"⚠️ [getNetworkTypeNameForInterface] Unknown cellular type: %@", currentStatus);
         return @"Cellular";
 #else
         return @"Cellular";
@@ -559,7 +581,7 @@
     }
     
     // 3. 其他接口（回环、VPN、桥接等）
-    NSLog(@"⚠️ [getNetworkTypeNameForInterface] Other interface type: %@", interfaceName);
+    CLSLog(@"⚠️ [getNetworkTypeNameForInterface] Other interface type: %@", interfaceName);
     return @"Unknown";
 }
 
@@ -567,27 +589,27 @@
 /// @param interfaceName 网络接口名称（如 "pdp_ip0", "en0"）
 /// @return 网络子类型名称（"LTE", "NRNSA", "NR", "WCDMA", etc.）
 + (NSString *)getNetworkSubTypeNameForInterface:(NSString *)interfaceName {
-    NSLog(@"🔍 [getNetworkSubTypeNameForInterface] interfaceName = [%@]", interfaceName);
+    CLSLog(@"🔍 [getNetworkSubTypeNameForInterface] interfaceName = [%@]", interfaceName);
     
     // 1. 如果未提供接口名称，降级到系统全局检测
     if (!interfaceName || interfaceName.length == 0) {
-        NSLog(@"⚠️ [getNetworkSubTypeNameForInterface] No interface name, fallback to system detection");
+        CLSLog(@"⚠️ [getNetworkSubTypeNameForInterface] No interface name, fallback to system detection");
         return [self getNetworkSubTypeName];
     }
     
     // 2. Wi-Fi 接口 - 返回 Unknown（Wi-Fi 没有子类型）
     if ([self isWiFiInterface:interfaceName]) {
-        NSLog(@"✅ [getNetworkSubTypeNameForInterface] Wi-Fi interface, returning 'Unknown'");
+        CLSLog(@"✅ [getNetworkSubTypeNameForInterface] Wi-Fi interface, returning 'Unknown'");
         return @"Unknown";
     }
     
     // 3. 蜂窝网络接口 - 检测具体的无线技术
     if ([self isCellularInterface:interfaceName]) {
-        NSLog(@"✅ [getNetworkSubTypeNameForInterface] Cellular interface: %@", interfaceName);
+        CLSLog(@"✅ [getNetworkSubTypeNameForInterface] Cellular interface: %@", interfaceName);
         
 #if CLS_HAS_CORE_TELEPHONY
         NSString *currentStatus = [self getNetworkType];
-        NSLog(@"📶 [getNetworkSubTypeNameForInterface] Radio technology: %@", currentStatus);
+        CLSLog(@"📶 [getNetworkSubTypeNameForInterface] Radio technology: %@", currentStatus);
         
         if ([currentStatus isEqualToString:CTRadioAccessTechnologyGPRS]) {
             return @"GPRS";
@@ -642,7 +664,7 @@
         }
         
         // 无法识别的蜂窝网络子类型
-        NSLog(@"⚠️ [getNetworkSubTypeNameForInterface] Unknown cellular subtype: %@", currentStatus);
+        CLSLog(@"⚠️ [getNetworkSubTypeNameForInterface] Unknown cellular subtype: %@", currentStatus);
         return @"Unknown";
 #else
         return @"Unknown";
@@ -650,7 +672,7 @@
     }
     
     // 4. 其他接口
-    NSLog(@"⚠️ [getNetworkSubTypeNameForInterface] Other interface type: %@", interfaceName);
+    CLSLog(@"⚠️ [getNetworkSubTypeNameForInterface] Other interface type: %@", interfaceName);
     return @"Unknown";
 }
 

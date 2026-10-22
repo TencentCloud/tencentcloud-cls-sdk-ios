@@ -36,7 +36,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) CFAbsoluteTime taskStartTime;
 @property (nonatomic, assign) CFAbsoluteTime processStartTime;
 @property (nonatomic, assign) NSUInteger receivedBytes;
-@property (nonatomic, strong) NSMutableData *responseData;
 @property (nonatomic, copy) void (^completionHandler)(NSDictionary *resultDict, NSError *error);
 @property (nonatomic, strong) NSDictionary *interfaceInfo;
 @property (nonatomic, strong, readonly) CLSHttpRequest *request;

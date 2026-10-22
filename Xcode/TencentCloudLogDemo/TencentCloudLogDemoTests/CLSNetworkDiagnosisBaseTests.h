@@ -7,6 +7,7 @@
 
 @import XCTest;
 @import TencentCloudLogProducer;
+#import "CLSTestCredentials.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -18,6 +19,9 @@ static long long const kMinNanoTimestamp = 1000000000000LL;
 static NSString *const kTestAppKey = @"zhiyan_test_key_badnetwork";
 /// 测试目标域名
 static NSString *const kTestDomain = @"www.baidu.com";
+
+static NSString *const kLiveNetToken = kCLSTestNetToken;
+static NSString *const kLiveEndpoint = kCLSTestEndpoint;
 
 /**
  * 网络探测测试基类
@@ -123,6 +127,9 @@ static NSString *const kTestDomain = @"www.baidu.com";
 #pragma mark - IP地址校验
 - (BOOL)isIPv4Address:(NSString *)address;
 - (BOOL)isIPv6Address:(NSString *)address;
+
+#pragma mark - 环境可达性探测
+- (BOOL)isPublicIPv6Reachable;
 
 #pragma mark - 日志方法
 - (void)logKeyResult:(NSDictionary *)data withTitle:(NSString *)title;

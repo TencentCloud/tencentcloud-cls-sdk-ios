@@ -36,7 +36,7 @@
     CLSUserInfo *info = [[CLSUserInfo alloc] init];
     info.uid = [self.uid copy];
     info.channel = [self.channel copy];
-    info->_ext = [self.ext copy];
+    info->_ext = [self.ext mutableCopy];
     return info;
 }
 
