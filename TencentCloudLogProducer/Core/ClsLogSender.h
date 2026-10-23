@@ -34,6 +34,8 @@ FOUNDATION_EXPORT NSString * _Nonnull const kCLSErrorInvalidUin;
 
 + (BOOL)isUinValid:(nullable NSString *)uin;
 
++ (void)setLogEnabled:(BOOL)enabled;
+
 /**
  设置服务端配置（新增主题ID参数）
  */
@@ -51,6 +53,11 @@ FOUNDATION_EXPORT NSString * _Nonnull const kCLSErrorInvalidUin;
 
 /**
  启动/停止发送线程
+ 使用约束：
+ - start / stop 必须在同一线程串行调用（不要跨线程交错）；SDK 内部使用配置锁保护状态，
+   但在跨线程交错 start/stop 的中间态，可能出现"旧线程尚未完全退出而新线程已启动"的瞬时窗口；
+   #9 修复已消除两线程并发上传同一批日志的风险，但不保证 stop 后立即 start 一定抢到最新 config 快照。
+ - stop 立即返回；在途的单个请求继续执行完毕，不会被打断；外部不应依赖"stop 返回时所有发送已结束"。
  */
 - (void)start;
 - (void)stop;

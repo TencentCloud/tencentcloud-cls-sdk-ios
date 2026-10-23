@@ -164,16 +164,25 @@
             result.message = [NSString stringWithFormat:@"请求超时（最大等待 %.1fs）", maxTimeout];
             [task cancel]; // 超时后取消任务，释放资源
         } else if (error) {
-            // 系统层面错误（包括连接失败、传输错误等）
-            result.statusCode = error.code;
-            result.message = error.localizedDescription;
-            // 细分超时类型
-            if (error.code == NSURLErrorTimedOut) {
-                result.message = [NSString stringWithFormat:@"请求超时（连接: %.1fs / 传输: %.1fs）", connectTimeout, socketTimeout];
-            } else if (error.code == NSURLErrorCancelled) {
-                result.message = @"请求被取消";
-            } else if (error.code == NSURLErrorCannotConnectToHost) {
-                result.message = @"无法连接到服务器";
+            // #22 R-6：NSURLErrorDomain 透传负值；其他 domain 的正数 code 可能落在 HTTP 范围被误删，一律映射为 -1 命中保留分支。
+            if ([error.domain isEqualToString:NSURLErrorDomain]) {
+                result.statusCode = error.code;
+            } else {
+                result.statusCode = -1;
+            }
+            result.message = [NSString stringWithFormat:@"%@ [%@(%ld)]",
+                              error.localizedDescription ?: @"(no description)",
+                              error.domain ?: @"(no domain)",
+                              (long)error.code];
+            // 细分超时类型（仅 NSURLErrorDomain 下有意义）
+            if ([error.domain isEqualToString:NSURLErrorDomain]) {
+                if (error.code == NSURLErrorTimedOut) {
+                    result.message = [NSString stringWithFormat:@"请求超时（连接: %.1fs / 传输: %.1fs）", connectTimeout, socketTimeout];
+                } else if (error.code == NSURLErrorCancelled) {
+                    result.message = @"请求被取消";
+                } else if (error.code == NSURLErrorCannotConnectToHost) {
+                    result.message = @"无法连接到服务器";
+                }
             }
         } else if (!response) {
             // 无响应（极端情况，如网络中断）
@@ -315,7 +324,7 @@
 }
 
 + (uint64_t)sizeOfLogItem:(Log *)log {
-    return log.data.length;
+    return (uint64_t)[log serializedSize];
 }
 
 + (BOOL)isNetworkAvailable {

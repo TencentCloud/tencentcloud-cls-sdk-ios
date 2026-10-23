@@ -28,6 +28,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (NSArray<NSDictionary *> *)getAvailableInterfacesForType;
 
++ (NSString *)mapCellularInterfaceNameToType:(NSString * _Nullable)cellularInterfaceName;
+
++ (NSDictionary *)parseGeoResponseBody:(NSString * _Nullable)jsonBody usedNet:(NSString * _Nullable)usedNet;
+
 + (NSInteger)ping:(struct sockaddr_in *)addr seq:(uint16_t)seq
        identifier:(uint16_t)identifier
              sock:(int)sock

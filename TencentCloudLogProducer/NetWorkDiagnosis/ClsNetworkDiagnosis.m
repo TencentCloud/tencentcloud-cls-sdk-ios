@@ -12,6 +12,8 @@
 #import "CLSPingV2.h"
 #import "CLSDnsping.h"
 #import "CLSMtrping.h"
+#import "CLSResponse.h"
+#import "ClsLogModel.h"
 
 @implementation CLSRequest
 
@@ -110,6 +112,7 @@
 @interface ClsNetworkDiagnosis ()
 @property(nonatomic, assign) long index;
 @property(nonatomic, strong) NSLock *lock;
+@property(nonatomic, strong) NSOperationQueue *detectQueue;
 
 @property(nonatomic, strong) ClsLogSenderConfig *config;
 @property(nonatomic, strong) NSMutableArray *callbacks;
@@ -148,14 +151,16 @@
     // dispatch_once 保证全局仅初始化一次
     dispatch_once(&onceToken, ^{
         _sharedInstance = [[super allocWithZone:NULL] init];
-        // 初始化默认状态
         _sharedInstance.logSenderConfigured = NO;
         _sharedInstance.internalLogSender = nil;
         _sharedInstance.topicId = @"";
         _sharedInstance.netToken = @"";
         _sharedInstance.isNetTokenParsed = NO;
-        _sharedInstance.globalUserEx = @{};  // 默认空字典
-        
+        _sharedInstance.globalUserEx = @{};
+
+        _sharedInstance.detectQueue = [[NSOperationQueue alloc] init];
+        _sharedInstance.detectQueue.name = @"com.tencent.cls.diagnosis.detect";
+        _sharedInstance.detectQueue.maxConcurrentOperationCount = 3;
     });
     return _sharedInstance;
 }
@@ -170,7 +175,7 @@
 - (void)setUserEx:(NSDictionary<NSString*, NSString*> *)userEx {
     @synchronized (self) {
         _globalUserEx = userEx ?: @{};  // nil 安全处理
-        NSLog(@"[ClsNetworkDiagnosis] 全局 userEx 已更新: %@", _globalUserEx);
+        CLSLog(@"[ClsNetworkDiagnosis] 全局 userEx 已更新: %@", _globalUserEx);
     }
 }
 
@@ -189,7 +194,7 @@
 - (void)setupLogSenderWithConfig:(ClsLogSenderConfig *)config
                          topicId:(NSString * _Nullable)topicId{
     if (topicId.length == 0) {
-        NSLog(@"错误：topicId不能为空");
+        CLSLog(@"错误：topicId不能为空");
         return;
     }
     // 复用核心逻辑
@@ -199,7 +204,7 @@
 - (void)setupLogSenderWithConfig:(ClsLogSenderConfig *)config
                         netToken:(NSString * _Nullable)netToken{
     if (netToken.length == 0) {
-        NSLog(@"错误：netToken不能为空");
+        CLSLog(@"错误：netToken不能为空");
         return;
     }
     [self innerSetupLogSenderWithConfig:config topicId:nil netToken:netToken];
@@ -210,13 +215,13 @@
     // 加锁保证线程安全，且仅首次调用生效
     @synchronized (self) {
         if (self.isLogSenderConfigured) {
-            NSLog(@"LogSender已配置，无需重复初始化");
+            CLSLog(@"LogSender已配置，无需重复初始化");
             return;
         }
         
         // 校验二选一参数（至少传入一个）
         if (topicId.length == 0 && netToken.length == 0) {
-            NSLog(@"错误：topicId和netToken必须传入至少一个");
+            CLSLog(@"错误：topicId和netToken必须传入至少一个");
             return; // 或抛出异常，根据业务需求处理
         }
         
@@ -240,7 +245,7 @@
         
         // 4. 标记已配置，禁止重复初始化
         self.logSenderConfigured = YES;
-        NSLog(@"LogSender初始化完成（全局唯一），%@生效", topicId.length > 0 ? @"topicId" : @"netToken");
+        CLSLog(@"LogSender初始化完成（全局唯一），%@生效", topicId.length > 0 ? @"topicId" : @"netToken");
     }
 }
 
@@ -250,7 +255,7 @@
 /// @param netToken 网络令牌
 - (void)parseAndCacheNetToken:(NSString *)netToken {
     if (netToken.length == 0) {
-        NSLog(@"[ClsNetworkDiagnosis] netToken 为空，无法解析");
+        CLSLog(@"[ClsNetworkDiagnosis] netToken 为空，无法解析");
         _isNetTokenParsed = NO;
         return;
     }
@@ -259,7 +264,9 @@
     NSDictionary *tokenInfo = [CLSNetworkUtils parseNetToken:netToken];
     
     if (tokenInfo.count == 0) {
-        NSLog(@"[ClsNetworkDiagnosis] netToken 解析失败，token: %@", netToken);
+        // #7/#21-1 修复 R-2：不输出 token 原文，避免密钥信息泄漏到日志
+        CLSLog(@"[ClsNetworkDiagnosis] netToken 解析失败 (len=%lu)",
+               (unsigned long)netToken.length);
         _isNetTokenParsed = NO;
         return;
     }
@@ -272,8 +279,9 @@
     _cachedTopicId = tokenInfo[@"topic_id"] ?: @"";
     _isNetTokenParsed = YES;
     
-    NSLog(@"[ClsNetworkDiagnosis] netToken 解析成功并缓存，networkAppId=%@, topicId=%@", 
-          _cachedNetworkAppId, _cachedTopicId);
+    // #21-1 修复 R-3：敏感字段统一掩码
+    CLSLog(@"[ClsNetworkDiagnosis] netToken 解析成功并缓存，networkAppId=%@, topicId=%@",
+          CLSMask(_cachedNetworkAppId), CLSMask(_cachedTopicId));
 }
 
 /// 填充探测器的 token 信息（使用缓存的解析结果）
@@ -299,7 +307,7 @@
         detector.topicId = _cachedTopicId;
     } else {
         // 如果缓存无效，尝试重新解析（兜底逻辑）
-        NSLog(@"[ClsNetworkDiagnosis] 警告：netToken 未解析或解析失败，尝试重新解析");
+        CLSLog(@"[ClsNetworkDiagnosis] 警告：netToken 未解析或解析失败，尝试重新解析");
         [self parseAndCacheNetToken:_netToken];
         
         if (_isNetTokenParsed) {
@@ -309,7 +317,7 @@
             detector.region = _cachedRegion;
             detector.topicId = _cachedTopicId;
         } else {
-            NSLog(@"[ClsNetworkDiagnosis] 错误：netToken 解析失败，无法填充探测器信息");
+            CLSLog(@"[ClsNetworkDiagnosis] 错误：netToken 解析失败，无法填充探测器信息");
         }
     }
 }
@@ -328,86 +336,107 @@
     BOOL isSelfNetTokenEmpty = [self isStringEmpty:_netToken];
     BOOL isSelfEndpointEmpty = [self isStringEmpty:_config.endpoint];
     BOOL isReqDomainEmpty = [self isStringEmpty:domain];
-    
-    // 2.1 topicId和netToken同时为空
-    if (isSelfTopicIdEmpty && isSelfNetTokenEmpty) {
-        return NO;
-    }
-    
-    // 2.2 config.endpoint为空
-    if (isSelfEndpointEmpty) {
-        return NO;
-    }
-    
-    // 3.2 request.domain为空
-    if (isReqDomainEmpty) {
-        return NO;
-    }
+
+    if (isSelfTopicIdEmpty && isSelfNetTokenEmpty) return NO;
+    if (isSelfEndpointEmpty) return NO;
+    if (isReqDomainEmpty) return NO;
 
     return YES;
+}
+
+- (void)callbackParamError:(CompleteCallback)complate {
+    if (!complate) return;
+    CLSResponse *resp = [CLSResponse complateResultWithContent:@{
+        @"error": @"参数校验失败",
+        @"error_message": @"topicId/netToken、endpoint、domain 不能为空，请先调用 setupLogSenderWithConfig",
+        @"error_code": @(-1)
+    }];
+    dispatch_async(dispatch_get_main_queue(), ^{ complate(resp); });
+}
+
+/// #16 修复：将 completion 包装为主线程回调，统一所有探测的回调线程
+- (CompleteCallback)wrapMainThreadCallback:(CompleteCallback)complate {
+    if (!complate) return nil;
+    return ^(CLSResponse *resp) {
+        if ([NSThread isMainThread]) {
+            complate(resp);
+        } else {
+            dispatch_async(dispatch_get_main_queue(), ^{ complate(resp); });
+        }
+    };
 }
 
 /*****协议升级以下是v2接口****/
 - (void) httpingv2:(CLSHttpRequest *) request complate:(CompleteCallback)complate{
     if (![self validateParamsWithRequest:request.domain]) {
-        NSLog(@"param error");
+        [self callbackParamError:complate];
         return;
     }
-    
-    CLSMultiInterfaceHttping *httping = [[CLSMultiInterfaceHttping alloc] initWithRequest:request];
-    // 使用统一的填充方法（基于缓存的解析结果）
-    [self fillTokenInfoToDetector:httping];
-    httping.endPoint = _config.endpoint;
-    [httping start:complate];
+
+    CompleteCallback wrapped = [self wrapMainThreadCallback:complate];
+    [self.detectQueue addOperationWithBlock:^{
+        CLSMultiInterfaceHttping *httping = [[CLSMultiInterfaceHttping alloc] initWithRequest:request];
+        [self fillTokenInfoToDetector:httping];
+        httping.endPoint = self.config.endpoint;
+        [httping start:wrapped];
+    }];
 }
 
 - (void) tcpPingv2:(CLSTcpRequest *) request complate:(CompleteCallback)complate{
     if (![self validateParamsWithRequest:request.domain]) {
-        NSLog(@"param error");
+        [self callbackParamError:complate];
         return;
     }
-    
-    CLSMultiInterfaceTcping *tcpPing = [[CLSMultiInterfaceTcping alloc] initWithRequest:request];
-    // 使用统一的填充方法（基于缓存的解析结果）
-    [self fillTokenInfoToDetector:tcpPing];
-    tcpPing.endPoint = _config.endpoint;
-    [tcpPing start:complate];
+
+    CompleteCallback wrapped = [self wrapMainThreadCallback:complate];
+    [self.detectQueue addOperationWithBlock:^{
+        CLSMultiInterfaceTcping *tcpPing = [[CLSMultiInterfaceTcping alloc] initWithRequest:request];
+        [self fillTokenInfoToDetector:tcpPing];
+        tcpPing.endPoint = self.config.endpoint;
+        [tcpPing start:wrapped];
+    }];
 }
 - (void) pingv2:(CLSPingRequest *) request complate:(CompleteCallback)complate{
     if (![self validateParamsWithRequest:request.domain]) {
-        NSLog(@"param error");
+        [self callbackParamError:complate];
         return;
     }
-    
-    CLSMultiInterfacePing *ping = [[CLSMultiInterfacePing alloc] initWithRequest:request];
-    // 使用统一的填充方法（基于缓存的解析结果）
-    [self fillTokenInfoToDetector:ping];
-    ping.endPoint = _config.endpoint;
-    [ping start:complate];
+
+    CompleteCallback wrapped = [self wrapMainThreadCallback:complate];
+    [self.detectQueue addOperationWithBlock:^{
+        CLSMultiInterfacePing *ping = [[CLSMultiInterfacePing alloc] initWithRequest:request];
+        [self fillTokenInfoToDetector:ping];
+        ping.endPoint = self.config.endpoint;
+        [ping start:wrapped];
+    }];
 }
 
 - (void) dns:(CLSDnsRequest *) request complate:(CompleteCallback)complate{
     if (![self validateParamsWithRequest:request.domain]) {
-        NSLog(@"param error");
+        [self callbackParamError:complate];
         return;
     }
-    
-    CLSMultiInterfaceDns *dns = [[CLSMultiInterfaceDns alloc] initWithRequest:request];
-    // 使用统一的填充方法（基于缓存的解析结果）
-    [self fillTokenInfoToDetector:dns];
-    dns.endPoint = _config.endpoint;
-    [dns start:complate];
+
+    CompleteCallback wrapped = [self wrapMainThreadCallback:complate];
+    [self.detectQueue addOperationWithBlock:^{
+        CLSMultiInterfaceDns *dns = [[CLSMultiInterfaceDns alloc] initWithRequest:request];
+        [self fillTokenInfoToDetector:dns];
+        dns.endPoint = self.config.endpoint;
+        [dns start:wrapped];
+    }];
 }
 - (void) mtr:(CLSMtrRequest *) request complate:(CompleteCallback)complate{
     if (![self validateParamsWithRequest:request.domain]) {
-        NSLog(@"param error");
+        [self callbackParamError:complate];
         return;
     }
-    
-    CLSMultiInterfaceMtr *mtr = [[CLSMultiInterfaceMtr alloc] initWithRequest:request];
-    // 使用统一的填充方法（基于缓存的解析结果）
-    [self fillTokenInfoToDetector:mtr];
-    mtr.endPoint = _config.endpoint;
-    [mtr start:complate];
+
+    CompleteCallback wrapped = [self wrapMainThreadCallback:complate];
+    [self.detectQueue addOperationWithBlock:^{
+        CLSMultiInterfaceMtr *mtr = [[CLSMultiInterfaceMtr alloc] initWithRequest:request];
+        [self fillTokenInfoToDetector:mtr];
+        mtr.endPoint = self.config.endpoint;
+        [mtr start:wrapped];
+    }];
 }
 @end

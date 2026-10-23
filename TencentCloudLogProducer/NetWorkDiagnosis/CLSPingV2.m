@@ -17,6 +17,7 @@
 #import "CLSCocoa.h"
 #import "network_ios/cls_ping_detector.h"
 #import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
+#import "ClsLogModel.h"
 
 // 常量定义（统一维护，便于修改）
 static NSString *const kPINGLogPrefix = @"[PING检测]";
@@ -40,7 +41,7 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
 - (void)startPingWithInterface:(NSDictionary *)interfaceInfo completion:(CompleteCallback)completion {
     // 1. 空值校验：网卡信息为空直接回调空结果
     if (!interfaceInfo) {
-        NSLog(@"%@ 网卡信息为空，跳过检测", kPINGLogPrefix);
+        CLSLog(@"%@ 网卡信息为空，跳过检测", kPINGLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
@@ -48,14 +49,14 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     
     // 2. 核心参数校验：request/domain 为空直接返回
     if (!self.request) {
-        NSLog(@"%@ 检测请求为空，跳过检测", kPINGLogPrefix);
+        CLSLog(@"%@ 检测请求为空，跳过检测", kPINGLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
     }
     NSString *domainStr = self.request.domain ?: @"";
     if (domainStr.length == 0) {
-        NSLog(@"%@ 检测域名为空，跳过检测", kPINGLogPrefix);
+        CLSLog(@"%@ 检测域名为空，跳过检测", kPINGLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
@@ -90,7 +91,7 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     @try {
         code = cls_ping_detector_perform_ping(domain, &config, &result);
     } @catch (NSException *exception) {
-        NSLog(@"%@ 网卡%@（域名%@）：检测抛出异常：%@", kPINGLogPrefix, interfaceName, domainStr, exception);
+        CLSLog(@"%@ 网卡%@（域名%@）：检测抛出异常：%@", kPINGLogPrefix, interfaceName, domainStr, exception);
         code = cls_ping_detector_error_unknown_error;
     }
     
@@ -100,12 +101,12 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     
     // 7. 错误日志增强（补充上下文）
     if (code != cls_ping_detector_error_success) {
-        NSLog(@"%@ 网卡%@（域名%@）：检测失败，错误码：%d", kPINGLogPrefix, interfaceName, domainStr, code);
+        CLSLog(@"%@ 网卡%@（域名%@）：检测失败，错误码：%d", kPINGLogPrefix, interfaceName, domainStr, code);
     }
     
     // 8. 解析JSON并构建上报数据
     NSString *jsonString = [[NSString alloc] initWithCString:json_buffer encoding:NSUTF8StringEncoding];
-    NSLog(@"%@ 网卡%@（域名%@）：检测结果：%@", kPINGLogPrefix, interfaceName, domainStr, jsonString);
+    CLSLog(@"%@ 网卡%@（域名%@）：检测结果：%@", kPINGLogPrefix, interfaceName, domainStr, jsonString);
     NSDictionary *reportData = [self buildReportDataFromPingResult:jsonString];
     
     // 9. 上报链路数据（语义化日志，避免冗余构建）
@@ -129,14 +130,14 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
 - (NSDictionary *)buildReportDataFromPingResult:(NSString *)sectionResult {
     // 1. 空值校验
     if (!sectionResult || sectionResult.length == 0) {
-        NSLog(@"%@ 上报数据：JSON字符串为空", kPINGLogPrefix);
+        CLSLog(@"%@ 上报数据：JSON字符串为空", kPINGLogPrefix);
         return @{};
     }
     
     // 2. JSON字符串转NSData（UTF-8编码，空值兜底）
     NSData *jsonData = [sectionResult dataUsingEncoding:NSUTF8StringEncoding];
     if (!jsonData) {
-        NSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kPINGLogPrefix, sectionResult);
+        CLSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kPINGLogPrefix, sectionResult);
         return @{};
     }
     
@@ -148,13 +149,13 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     
     // 解析错误兜底
     if (parseError) {
-        NSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kPINGLogPrefix, parseError.localizedDescription, sectionResult);
+        CLSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kPINGLogPrefix, parseError.localizedDescription, sectionResult);
         return @{};
     }
     
     // 4. 校验解析结果类型（必须是字典）
     if (![jsonObject isKindOfClass:[NSDictionary class]]) {
-        NSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kPINGLogPrefix, [jsonObject class]);
+        CLSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kPINGLogPrefix, [jsonObject class]);
         return @{};
     }
     
@@ -183,7 +184,7 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
     // 参数合法性校验
     NSError *validationError = nil;
     if (![CLSRequestValidator validatePingRequest:self.request error:&validationError]) {
-        NSLog(@"❌ Ping探测参数校验失败: %@", validationError.localizedDescription);
+        CLSLog(@"❌ Ping探测参数校验失败: %@", validationError.localizedDescription);
         if (completion) {
             CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
                 @"error": @"参数校验失败",
@@ -195,15 +196,15 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
         return;
     }
     
-    NSLog(@"✅ Ping探测参数: maxTimes=%d, timeout=%dms, size=%d bytes, interval=%dms, prefer=%d", 
+    CLSLog(@"✅ Ping探测参数: maxTimes=%d, timeout=%dms, size=%d bytes, interval=%dms, prefer=%d", 
           self.request.maxTimes, self.request.timeout, self.request.size, self.request.interval, self.request.prefer);
     
     // 获取可用网卡列表（空值兜底）
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {
-        NSLog(@"%@ 无可用网卡接口", kPINGLogPrefix);
+        CLSLog(@"%@ 无可用网卡接口", kPINGLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
-        completion(emptyResult);
+        if (completion) completion(emptyResult);
         return;
     }
     
@@ -220,12 +221,12 @@ static const NSUInteger kPINGJsonBufferSize = 2048;
         probeInstance.endPoint = self.endPoint;
         
         NSString *interfaceName = capturedInterface[@"name"] ?: @"未知";
-        NSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kPINGLogPrefix, interfaceName);
+        CLSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kPINGLogPrefix, interfaceName);
         [probeInstance startPingWithInterface:capturedInterface completion:completion];
         
         // 非多端口检测时，仅检测第一个网卡后退出
         if (self.request && !self.request.enableMultiplePortsDetect) {
-            NSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kPINGLogPrefix);
+            CLSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kPINGLogPrefix);
             break;
         }
     }

@@ -6,6 +6,7 @@
 //
 
 #import "CLSStorage.h"
+#import "ClsLogModel.h"
 
 @interface CLSStorage ()
 + (NSString *) getFile;
@@ -14,7 +15,7 @@
 @implementation CLSStorage
 + (NSString *) getFile {
     NSString *libraryPath = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject;
-    NSLog(@"CLSStorage. libraryPath: %@", libraryPath);
+    CLSLog(@"CLSStorage. libraryPath: %@", libraryPath);
 
     NSString *clsRootDir = [libraryPath stringByAppendingPathComponent:@"cls-ios"];
     NSFileManager *fileManager = [NSFileManager defaultManager];

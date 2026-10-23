@@ -14,6 +14,7 @@
 #import "CLSPrivocyUtils.h"
 #import "TencentCloudLogProducer/ClsLogs.pbobjc.h"
 #import "TencentCloudLogProducer/ClsLogStorage.h"
+#import "ClsLogModel.h"
 
 @interface CLSSpanBuilder ()
 @property(nonatomic, strong) NSString *name;
@@ -179,9 +180,9 @@
                                      topicId:topicId // 可传入配置的topicId，或复用LogSender的配置
                                    completion:^(BOOL success, NSError *error) {
         if (success) {
-            NSLog(@"日志写入成功，包含 %ld 个字段", d.count);
+            CLSLog(@"日志写入成功，包含 %ld 个字段", d.count);
         } else {
-            NSLog(@"日志写入失败，error：%@", error);
+            CLSLog(@"日志写入失败，error：%@", error);
         }
     }];
     return d;

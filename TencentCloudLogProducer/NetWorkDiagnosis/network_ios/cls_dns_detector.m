@@ -417,6 +417,11 @@ static int parse_dns_name_internal(const uint8_t *buffer, size_t buf_len, size_t
                 new_visited[i] = visited_offsets[i];
                 new_visited_count++;
             }
+            // #30 压缩指针递归前先补 '.'，否则 "label1+label2+pointer->rest" 会拼成 "label1.label2rest"
+            if (out_pos > 0) {
+                if (out_pos + 1 >= name_len) return -1;
+                name[out_pos++] = '.';
+            }
             if (parse_dns_name_internal(buffer, buf_len, &new_offset, name + out_pos, name_len - out_pos, depth + 1, new_visited, &new_visited_count) != 0) return -1;
             *offset = pos;
             return 0;

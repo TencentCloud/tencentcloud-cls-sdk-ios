@@ -20,6 +20,7 @@
 #import "CLSCocoa.h"
 #import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
 #import "CLSStringUtils.h"
+#import "ClsLogModel.h"
 
 // 常量抽取（统一维护）
 static NSString *const kTcpPingMethod = @"tcpping";
@@ -98,24 +99,24 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         if (family == AF_INET6) {
 #if defined(IPV6_BOUND_IF)
             if (setsockopt(sock, IPPROTO_IPV6, IPV6_BOUND_IF, &interfaceIndex, sizeof(interfaceIndex)) < 0) {
-                NSLog(@"TCP bind to interface %@ (index %u) IPv6 failed: %s", interfaceName, interfaceIndex, strerror(errno));
+                CLSLog(@"TCP bind to interface %@ (index %u) IPv6 failed: %s", interfaceName, interfaceIndex, strerror(errno));
                 self.bindFailedCount++;
                 close(sock);
                 return -1;
             }
-            NSLog(@"Successfully bound to interface: %@ (index %u) IPv6", interfaceName ?: @"", interfaceIndex);
+            CLSLog(@"Successfully bound to interface: %@ (index %u) IPv6", interfaceName ?: @"", interfaceIndex);
 #else
             (void)interfaceName;
 #endif
         } else {
 #if defined(IP_BOUND_IF)
             if (setsockopt(sock, IPPROTO_IP, IP_BOUND_IF, &interfaceIndex, sizeof(interfaceIndex)) < 0) {
-                NSLog(@"TCP bind to interface %@ (index %u) failed: %s", interfaceName, interfaceIndex, strerror(errno));
+                CLSLog(@"TCP bind to interface %@ (index %u) failed: %s", interfaceName, interfaceIndex, strerror(errno));
                 self.bindFailedCount++;
                 close(sock);
                 return -1;
             }
-            NSLog(@"Successfully bound to interface: %@ (index %u)", interfaceName ?: @"", interfaceIndex);
+            CLSLog(@"Successfully bound to interface: %@ (index %u)", interfaceName ?: @"", interfaceIndex);
 #else
             // 兜底：无 IP_BOUND_IF 时使用 bind(IP)（仅 IPv4）
             NSString *interfaceIP = self.interface[@"ip"];
@@ -126,7 +127,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                 localAddr.sin_port = 0;
                 inet_pton(AF_INET, interfaceIP.UTF8String, &localAddr.sin_addr);
                 if (bind(sock, (struct sockaddr *)&localAddr, sizeof(localAddr)) == -1) {
-                    NSLog(@"Bind to interface %@ (IP: %@) failed: %s", interfaceName, interfaceIP, strerror(errno));
+                    CLSLog(@"Bind to interface %@ (IP: %@) failed: %s", interfaceName, interfaceIP, strerror(errno));
                     self.bindFailedCount++;
                     close(sock);
                     return -1;
@@ -164,7 +165,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         // 非阻塞connect正常应该返回-1且errno=EINPROGRESS
         if (errno != EINPROGRESS) {
             // 如果不是EINPROGRESS，说明连接立即失败（如网络不可达）
-            NSLog(@"TCP connect immediate failure, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
+            CLSLog(@"TCP connect immediate failure, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
             close(sock);
             return -1;
         }
@@ -182,19 +183,19 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         
         int n = select(sock + 1, NULL, &wset, &eset, &tv);
         if (n < 0) {
-            NSLog(@"TCP select failed, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
+            CLSLog(@"TCP select failed, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
             close(sock);
             return -1;
         }
         if (n == 0) {
-            NSLog(@"TCP select timeout, port: %d", self.request.port);
+            CLSLog(@"TCP select timeout, port: %d", self.request.port);
             close(sock);
             return -1;
         }
         
         // select返回>0，检查是writeable还是exception
         if (FD_ISSET(sock, &eset)) {
-            NSLog(@"TCP socket exception occurred, port: %d", self.request.port);
+            CLSLog(@"TCP socket exception occurred, port: %d", self.request.port);
             close(sock);
             return -1;
         }
@@ -204,21 +205,21 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         socklen_t len = sizeof(error);
         if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &len) == 0) {
             if (error != 0) { // error≠0 表示连接失败（如端口不存在、连接拒绝）
-                NSLog(@"TCP connect failed, error: %s (errno: %d, port: %d)", strerror(error), error, self.request.port);
+                CLSLog(@"TCP connect failed, error: %s (errno: %d, port: %d)", strerror(error), error, self.request.port);
                 close(sock);
                 return -1;
             }
         } else {
-            NSLog(@"getsockopt failed, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
+            CLSLog(@"getsockopt failed, errno: %d (%s), port: %d", errno, strerror(errno), self.request.port);
             close(sock);
             return -1;
         }
         
         // 连接成功
-        NSLog(@"TCP connect succeeded after select, port: %d", self.request.port);
+        CLSLog(@"TCP connect succeeded after select, port: %d", self.request.port);
     } else {
         // connectResult >= 0，立即连接成功（罕见情况，通常只发生在本地连接）
-        NSLog(@"TCP connect succeeded immediately (unusual), port: %d", self.request.port);
+        CLSLog(@"TCP connect succeeded immediately (unusual), port: %d", self.request.port);
     }
     
     // 恢复阻塞模式
@@ -248,7 +249,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     if (addr.sin_addr.s_addr == INADDR_NONE) {
         struct hostent *host = gethostbyname(hostaddr);
         if (host == NULL || host->h_addr == NULL) {
-            NSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d", hostaddr, self.request.port);
+            CLSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d", hostaddr, self.request.port);
             self.failureCount++;
             return;
         }
@@ -269,10 +270,10 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     if (result == 0) {
         [self.latencies addObject:@(latency)];
         self.successCount++;
-        NSLog(@"✅ TCP Ping SUCCESS: %s:%d, latency: %.2fms", ipStr, self.request.port, latency);
+        CLSLog(@"✅ TCP Ping SUCCESS: %s:%d, latency: %.2fms", ipStr, self.request.port, latency);
     } else {
         self.failureCount++;
-        NSLog(@"❌ TCP Ping FAILED: %s:%d, latency: %.2fms, result: %d", ipStr, self.request.port, latency, result);
+        CLSLog(@"❌ TCP Ping FAILED: %s:%d, latency: %.2fms, result: %d", ipStr, self.request.port, latency, result);
     }
 }
 
@@ -303,7 +304,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 - (void)handleTimeout {
-    NSLog(@"⏰ TCP Ping 超时触发: domain=%@, port=%d, timeout=%ds",
+    CLSLog(@"⏰ TCP Ping 超时触发: domain=%@, port=%d, timeout=%ds",
           self.request.domain, self.request.port, self.request.timeout);
     
     _isCompleted = YES;
@@ -317,14 +318,14 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 
 - (void)completePingWithError:(NSError *)error {
     if (_isCompleted) {
-        NSLog(@"⚠️ TCP Ping 已完成，忽略重复回调");
+        CLSLog(@"⚠️ TCP Ping 已完成，忽略重复回调");
         return;
     }
     _isCompleted = YES;
     
     [self cancelTimeoutTimer];
     
-    NSLog(@"📊 TCP Ping 结束: domain=%@, success=%lu, failure=%lu, bindFailed=%lu, error=%@",
+    CLSLog(@"📊 TCP Ping 结束: domain=%@, success=%lu, failure=%lu, bindFailed=%lu, error=%@",
           self.request.domain,
           (unsigned long)self.successCount,
           (unsigned long)self.failureCount,
@@ -337,11 +338,11 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
     // 切回主线程回调
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.completionHandler) {
-            NSLog(@"✅ TCP Ping 回调执行: domain=%@, port=%d", self.request.domain, self.request.port);
+            CLSLog(@"✅ TCP Ping 回调执行: domain=%@, port=%d", self.request.domain, self.request.port);
             self.completionHandler(reportData, error);
             self.completionHandler = nil;
         } else {
-            NSLog(@"⚠️ TCP Ping 回调为 nil，无法执行");
+            CLSLog(@"⚠️ TCP Ping 回调为 nil，无法执行");
         }
     });
 }
@@ -490,7 +491,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         struct addrinfo *res = NULL;
         int gai = getaddrinfo(host, [portStr UTF8String], &hints, &res);
         if (gai != 0 || res == NULL || res->ai_addr == NULL) {
-            NSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d (getaddrinfo: %s)", host, self.request.port, gai_strerror(gai));
+            CLSLog(@"⚠️ TCP Ping: DNS resolution failed for %s, port: %d (getaddrinfo: %s)", host, self.request.port, gai_strerror(gai));
             NSError *error = [NSError errorWithDomain:kTcpPingErrorDomain code:-2 userInfo:@{NSLocalizedDescriptionKey: @"DNS resolution failed"}];
             if (res) freeaddrinfo(res);
             dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, 0, error); });
@@ -593,7 +594,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         reportData[@"errMsg"] = [NSString stringWithFormat:@"All failed (0/%lu)", (unsigned long)count];
     }
     
-    NSLog(@"📊 TCP Ping 汇总上报: count=%lu, responseNum=%lu, lossRate=%@ (%.0f%%), avgLatency=%@ms, total=%@ms", 
+    CLSLog(@"📊 TCP Ping 汇总上报: count=%lu, responseNum=%lu, lossRate=%@ (%.0f%%), avgLatency=%@ms, total=%@ms", 
           (unsigned long)count, (unsigned long)responseNum, lossRateStr, lossRate * 100.0, avgLatencyStr, totalLatencyStr);
     
     return [reportData copy];
@@ -615,21 +616,35 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
 }
 
 - (void)start:(CompleteCallback)complete {
+    // #34 修复：入口添加参数校验，与其他四类探测一致
+    NSError *validationError = nil;
+    if (![CLSRequestValidator validateTcpRequest:self.request error:&validationError]) {
+        if (complete) {
+            CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
+                @"error": @"参数校验失败",
+                @"error_message": validationError.localizedDescription ?: @"",
+                @"error_code": @(validationError.code)
+            }];
+            complete(errorResponse);
+        }
+        return;
+    }
+
     // ⚠️ 重要：maxTimes 表示固定探测次数（无论成功失败都探测 N 次）
     int totalProbes = self.request.maxTimes;
-    NSLog(@"✅ TCP探测参数: port=%ld, totalProbes=%d（固定探测次数）, timeout=%dms（单次超时）", 
+    CLSLog(@"✅ TCP探测参数: port=%ld, totalProbes=%d（固定探测次数）, timeout=%dms（单次超时）", 
           (long)self.request.port, totalProbes, self.request.timeout);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {
-        NSLog(@"TCPing 无可用网卡接口（网卡可能被禁用）");
+        CLSLog(@"TCPing 无可用网卡接口（网卡可能被禁用）");
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (complete) complete(emptyResult);
         return;
     }
     
     for (NSDictionary *currentInterface in availableInterfaces) {
-        NSLog(@"availableInterfaces:%@", currentInterface);
+        CLSLog(@"availableInterfaces:%@", currentInterface);
         
         // ✅ 核心修复：为每个接口创建独立的探测对象，避免状态共享
         NSDictionary *capturedInterface = [currentInterface copy];
@@ -646,14 +661,14 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
         dispatch_queue_t probeQueue = dispatch_queue_create("com.tencent.cls.tcpping.probe", DISPATCH_QUEUE_SERIAL);
         
         dispatch_async(probeQueue, ^{
-            NSLog(@"🌐 开始探测接口: %@ (使用独立探测对象)", capturedInterface[@"name"] ?: @"unknown");
+            CLSLog(@"🌐 开始探测接口: %@ (使用独立探测对象)", capturedInterface[@"name"] ?: @"unknown");
             
             // ===== 执行 totalProbes 次探测（无论成功失败都继续）=====
             for (int i = 0; i < totalProbes; i++) {
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
                 
                 int probeIndex = i + 1;
-                NSLog(@"🔄 TCP Ping 探测 %d/%d (接口: %@)", probeIndex, totalProbes, capturedInterface[@"name"] ?: @"unknown");
+                CLSLog(@"🔄 TCP Ping 探测 %d/%d (接口: %@)", probeIndex, totalProbes, capturedInterface[@"name"] ?: @"unknown");
                 
                 // 执行单次探测（使用独立对象，每个接口的数据互不干扰）
                 [probeInstance performSingleProbeWithInterface:capturedInterface completion:^(BOOL success, NSTimeInterval latency, NSError *error) {
@@ -661,11 +676,11 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
                         // 成功：记录延迟（使用独立对象）
                         [probeInstance.latencies addObject:@(latency)];
                         probeInstance.successCount++;
-                        NSLog(@"✅ TCP Ping 成功（%d/%d）- 延迟 %.2fms", probeIndex, totalProbes, latency);
+                        CLSLog(@"✅ TCP Ping 成功（%d/%d）- 延迟 %.2fms", probeIndex, totalProbes, latency);
                     } else {
                         // 失败：仅计数（使用独立对象）
                         probeInstance.failureCount++;
-                        NSLog(@"❌ TCP Ping 失败（%d/%d）- Error: %@", probeIndex, totalProbes, error.localizedDescription ?: @"连接失败");
+                        CLSLog(@"❌ TCP Ping 失败（%d/%d）- Error: %@", probeIndex, totalProbes, error.localizedDescription ?: @"连接失败");
                     }
                     
                     // 释放信号量（继续下一次探测）
@@ -677,7 +692,7 @@ static NSString *const kTcpPingErrorDomain = @"CLSTcpingErrorDomain";
             }
             
             // ===== 所有探测完成，构建汇总结果并上报 =====
-            NSLog(@"📊 TCP Ping 汇总: 总次数=%d, 成功=%lu, 失败=%lu, bind失败=%lu", 
+            CLSLog(@"📊 TCP Ping 汇总: 总次数=%d, 成功=%lu, 失败=%lu, bind失败=%lu", 
                   totalProbes, (unsigned long)probeInstance.successCount, (unsigned long)probeInstance.failureCount, (unsigned long)probeInstance.bindFailedCount);
             
             NSDictionary *aggregatedResult = [probeInstance buildAggregatedReportDictForProbeCount:totalProbes];

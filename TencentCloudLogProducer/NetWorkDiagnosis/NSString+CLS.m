@@ -5,6 +5,7 @@
 //  Created by hao lv on 2025/10/10.
 //
 #import "NSString+CLS.h"
+#import "ClsLogModel.h"
 
 @implementation NSString (CLS)
 - (NSString *) base64Encode {
@@ -27,7 +28,7 @@
                                       error:&error
     ];
     if (error) {
-        NSLog(@"NSString to NSDictionary error. %@", error);
+        CLSLog(@"NSString to NSDictionary error. %@", error);
         return [NSDictionary dictionary];
     }
     

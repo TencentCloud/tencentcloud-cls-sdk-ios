@@ -70,6 +70,10 @@
 
 ## 🎉 最新更新
 
+### v3.3.0（当前）
+
+28 项稳定性与安全加固 + 42 条自动化回归测试。详见文末 [更新日志 → v3.3.0](#v330)。
+
 ### v3.2.0 (发布)
 
 #### 🆕 新增功能
@@ -152,7 +156,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/Core', '~> 3.2.0'
+  pod 'TencentCloudLogProducer/Core', '~> 3.3.0'
 end
 ```
 
@@ -166,7 +170,7 @@ platform :ios, '12.0'
 use_frameworks! # 可选，推荐
 
 target 'YourApp' do
-  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 3.2.0'
+  pod 'TencentCloudLogProducer/NetWorkDiagnosis', '~> 3.3.0'
 end
 ```
 
@@ -1651,6 +1655,41 @@ pingRequest.domain = @"api.example.com";
 ---
 
 ## 📝 更新日志
+
+### v3.3.0
+
+#### 🔧 稳定性与安全加固（28 项修复）
+
+**核心存储与发送**
+- 🐛 修复 `LogSender.stop → start` 紧连调用可能创建重复 worker 线程的竞态（#9 / R-1）
+- 🚀 存储淘汰改为按实际使用量（`page_count - freelist`）判定，批量 DELETE 到 90% 水位，去除 VACUUM 带来的 I/O 抖动（#12）
+- 🐛 修复 `writeLog` 占用全局并发队列的问题，改为 SDK 私有串行队列（#11）
+- ✅ 写入端提前拦截 >512KB 的单条日志，不再入库占空间（#14）
+- 🐛 查询时发现损坏行自动删除，不触发写入熔断（#15）
+- 🐛 发送失败重试策略优化：区分网络错误（<0）/ 临时服务端错误（5xx/429/408/403）/ 范围外自定义码（<100 或 >599），统一保留；仅永久失败（4xx 其余）删除（#22 / R-6）
+
+**网络诊断**
+- 🐛 修复 HTTPing 探测 50MB 大响应全量驻留内存，改为只计数不存储（#17）
+- 🐛 修复 MTR 探测 `result.paths` 堆内存泄漏（#19）
+- 🐛 修复 DNS 域名解析压缩指针递归时未补 `.`，导致 `label1.label2rest` 拼接错误（#30）
+- 🐛 修复 DNS 压缩指针后多跳 1 字节的解析越界（#31）
+- 🐛 修复双 SIM 卡主/副选择逻辑写反（#38）
+- 🚀 HTTP 状态行解析改用 Latin-1 编码，兼容 gzip/GBK body 和 UTF-8 中间截断场景（#33）
+- 🐛 修复 `gethostbyname` 非线程安全并发污染，改用 `getaddrinfo`（#16）
+- ✅ 统一 Diagnosis 回调线程为主线程（#16）
+- ✅ 新增 `SIGPIPE` 屏蔽，避免原生 socket 探测触发进程退出（#6）
+
+**日志脱敏与合规**
+- 🔒 日志打印统一掩码敏感字段（`netToken` 原文、`appKey`、`uin`、URL query），仅保留 `host` 便于排查（#21-1 / R-2/3/4）
+
+**兼容性**
+- ⚙️ `nw_error` 读取改用 `dlsym` 动态加载，兼容 iOS 12（#18）
+- 🧰 新增 `+[LogSender setLogEnabled:]` API 用于运行时控制 SDK 日志输出
+- 🚀 `User-Agent` 升到 `tencent-log-sdk-ios v3.3.0`
+
+#### 🧪 测试
+- 新增 42 条 XCTest 自动化用例（6 个测试文件），覆盖存储淘汰、发送分支、鉴权、脱敏等关键路径
+- 真机 iPhone 批量回归 83 pass + 1 skipped（iOS 版本门控），0 fail
 
 ### v3.2.0
 

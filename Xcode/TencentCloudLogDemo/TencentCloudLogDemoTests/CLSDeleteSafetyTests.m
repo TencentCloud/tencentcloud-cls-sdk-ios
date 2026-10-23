@@ -2,6 +2,7 @@
 #import <objc/runtime.h>
 #import <sqlite3.h>
 #import <TencentCloudLogProducer/ClsLogStorage.h>
+#import <TencentCloudLogProducer/ClsLogSender.h>
 #import <TencentCloudLogProducer/ClsLogs.pbobjc.h>
 #import <FMDB/FMDB.h>
 
@@ -23,6 +24,7 @@ static NSString *gInjectedSQLSubstring = nil;
     }
     if (hit && gInjectedFailuresRemaining > 0) {
         gInjectedFailuresRemaining--;
+        NSLog(@"[CLSInject] fail injected, remaining=%ld sql=%@", (long)gInjectedFailuresRemaining, sql);
         if (outErr) {
             *outErr = [NSError errorWithDomain:@"CLSInject" code:SQLITE_IOERR userInfo:@{NSLocalizedDescriptionKey:@"injected failure"}];
         }
@@ -57,7 +59,20 @@ static NSString *gInjectedSQLSubstring = nil;
     gInjectedFailuresRemaining = 0;
     gInjectedSQLSubstring = nil;
 
+    LogSender *sender = [LogSender sharedSender];
+    [sender stop];
+    NSThread *workThread = [sender valueForKey:@"workThread"];
+    NSTimeInterval deadline = [NSDate timeIntervalSinceReferenceDate] + 3.0;
+    while (workThread && !workThread.isFinished && [NSDate timeIntervalSinceReferenceDate] < deadline) {
+        [NSThread sleepForTimeInterval:0.02];
+    }
+
     ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    dispatch_queue_t writeQueue = [storage valueForKey:@"writeQueue"];
+    if (writeQueue) {
+        dispatch_sync(writeQueue, ^{ /* flush */ });
+    }
+
     FMDatabaseQueue *q = [storage valueForKey:@"dbQueue"];
     XCTAssertNotNil(q);
     [q inDatabase:^(FMDatabase *db) {
@@ -65,6 +80,13 @@ static NSString *gInjectedSQLSubstring = nil;
         [db executeUpdate:@"DELETE FROM sqlite_sequence WHERE name='cls_log_table'"];
     }];
     [storage setValue:@YES forKey:@"isDbWritable"];
+}
+
+- (void)tearDown {
+    gInjectedFailuresRemaining = 0;
+    gInjectedSQLSubstring = nil;
+    [[ClsLogStorage sharedInstance] setValue:@YES forKey:@"isDbWritable"];
+    [super tearDown];
 }
 
 #pragma mark - helpers

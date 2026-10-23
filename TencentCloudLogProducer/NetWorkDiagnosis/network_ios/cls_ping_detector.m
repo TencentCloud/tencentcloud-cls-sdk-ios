@@ -31,6 +31,7 @@
 #import <dlfcn.h>
 #import <stdarg.h>
 #import <stddef.h>
+#import "ClsLogModel.h"
 
 // ============================================================================
 // 常量定义
@@ -593,6 +594,7 @@ static int dns_query_on_interface(const char *hostname, int family, unsigned int
         for (uint16_t qi = 0; qi < qdcount; qi++) {
             int name_off = offset;
             int jumps = 0;
+            int ended_by_pointer = 0;
             while (name_off < rlen && answer[name_off] != 0) {
                 uint8_t labellen = answer[name_off];
                 // 压缩指针
@@ -602,13 +604,15 @@ static int dns_query_on_interface(const char *hostname, int family, unsigned int
                         break;
                     }
                     name_off += 2;
+                    ended_by_pointer = 1;
                     break;
                 } else {
                     name_off += 1 + labellen;
                 }
                 if (++jumps > 128) break;
             }
-            name_off += 1; // 跳过终止0
+            // #31 修复：压缩指针后不存在终止 0，不要多跳 1 字节
+            if (!ended_by_pointer) name_off += 1;
             name_off += 4; // 跳过QTYPE/QCLASS
             if (name_off > rlen) { offset = rlen; break; }
             offset = name_off;
@@ -622,6 +626,7 @@ static int dns_query_on_interface(const char *hostname, int family, unsigned int
             // 跳过NAME（处理压缩指针）
             int name_off = offset;
             int jumps = 0;
+            int ended_by_pointer = 0;
             while (name_off < rlen && answer[name_off] != 0) {
                 uint8_t labellen = answer[name_off];
                 if ((labellen & 0xC0) == 0xC0) {
@@ -630,13 +635,15 @@ static int dns_query_on_interface(const char *hostname, int family, unsigned int
                         break;
                     }
                     name_off += 2;
+                    ended_by_pointer = 1;
                     break;
                 } else {
                     name_off += 1 + labellen;
                 }
                 if (++jumps > 128) break;
             }
-            name_off += 1; // 终止0或已跳过指针
+            // #31 修复：压缩指针后不存在终止 0，不要多跳 1 字节
+            if (!ended_by_pointer) name_off += 1;
             if (name_off + 10 > rlen) {
                 offset = rlen;
                 break;
@@ -1916,7 +1923,7 @@ static void cleanup_ping_resources(PingResources *resources) {
             #ifdef DEBUG
             int err = errno;
             if (err != EBADF) { // EBADF是预期的（fd已关闭）
-                NSLog(@"Warning: close() failed: errno=%d (%s)", err, strerror(err));
+                CLSLog(@"Warning: close() failed: errno=%d (%s)", err, strerror(err));
             }
             #endif
         }

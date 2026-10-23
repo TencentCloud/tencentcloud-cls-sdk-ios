@@ -6,6 +6,7 @@
 //
 
 #import "CLSStringUtils.h"
+#import "ClsLogModel.h"
 
 @implementation CLSStringUtils
 #pragma mark - 安全数据类型处理
@@ -153,7 +154,7 @@
     
     // 2. 验证字典是否能被序列化为JSON
     if (![NSJSONSerialization isValidJSONObject:dictionary]) {
-        NSLog(@"⚠️ 字典包含非JSON兼容的数据类型");
+        CLSLog(@"⚠️ 字典包含非JSON兼容的数据类型");
         return @"{}";
     }
     
@@ -165,7 +166,7 @@
     
     // 4. 处理错误情况
     if (error || !jsonData) {
-        NSLog(@"JSON序列化失败: %@", error.localizedDescription);
+        CLSLog(@"JSON序列化失败: %@", error.localizedDescription);
         return @"{}";
     }
     
@@ -182,6 +183,6 @@
 }
 
 + (NSString *)getSdkVersion {
-    return @"3.2.0";
+    return @"3.3.0";
 }
 @end

@@ -26,6 +26,7 @@
 #import "CLSStringUtils.h"
 #import "network_ios/cls_dns_detector.h"
 #import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
+#import "ClsLogModel.h"
 
 // 常量定义
 static NSString *const kDNSLogPrefix = @"[DNS检测]";
@@ -68,7 +69,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     NSUInteger arrayCount = validServers.count + 1;
     const char **dnsServers = (const char **)malloc(sizeof(const char *) * arrayCount);
     if (!dnsServers) {
-        NSLog(@"%@ 分配DNS服务器数组内存失败", kDNSLogPrefix);
+        CLSLog(@"%@ 分配DNS服务器数组内存失败", kDNSLogPrefix);
         // 兜底返回空数组
         const char **emptyArray = (const char **)malloc(sizeof(const char *) * 1);
         emptyArray[0] = NULL;
@@ -84,7 +85,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
             strcpy(heapStr, cStr);
             dnsServers[i] = heapStr;
         } else {
-            NSLog(@"%@ 分配DNS地址字符串内存失败：%@", kDNSLogPrefix, serverStr);
+            CLSLog(@"%@ 分配DNS地址字符串内存失败：%@", kDNSLogPrefix, serverStr);
             dnsServers[i] = NULL;
         }
     }
@@ -109,7 +110,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
 - (void)startDnsWithInterface:(NSDictionary *)interfaceInfo completion:(CompleteCallback)completion {
     // 空值校验
     if (!interfaceInfo) {
-        NSLog(@"%@ 网卡信息为空，跳过检测", kDNSLogPrefix);
+        CLSLog(@"%@ 网卡信息为空，跳过检测", kDNSLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
@@ -121,7 +122,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     // 1. 准备检测参数
     const char *domain = self.request ? [self.request.domain UTF8String] : NULL;
     if (!domain) {
-        NSLog(@"%@ 网卡%@：检测域名为空", kDNSLogPrefix, interfaceName);
+        CLSLog(@"%@ 网卡%@：检测域名为空", kDNSLogPrefix, interfaceName);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
@@ -153,7 +154,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     @try {
         code = cls_dns_detector_perform_dns(domain, &config, &result);
     } @catch (NSException *exception) {
-        NSLog(@"%@ 网卡%@：DNS检测异常：%@", kDNSLogPrefix, interfaceName, exception);
+        CLSLog(@"%@ 网卡%@：DNS检测异常：%@", kDNSLogPrefix, interfaceName, exception);
     } @finally {
         // 无论是否异常，都释放DNS服务器数组
         [self freeDnsServersArray:dnsServers];
@@ -162,11 +163,11 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     // 4. 转换检测结果
     cls_dns_detector_result_to_json(&result, code, json_buffer, sizeof(json_buffer));
     if (code != cls_dns_detector_error_success) {
-        NSLog(@"%@ 网卡%@：检测失败，错误码：%d", kDNSLogPrefix, interfaceName, code);
+        CLSLog(@"%@ 网卡%@：检测失败，错误码：%d", kDNSLogPrefix, interfaceName, code);
     }
     
     NSString *jsonString = [[NSString alloc] initWithCString:json_buffer encoding:NSUTF8StringEncoding];
-    NSLog(@"%@ 网卡%@：检测结果：%@", kDNSLogPrefix, interfaceName, jsonString);
+    CLSLog(@"%@ 网卡%@：检测结果：%@", kDNSLogPrefix, interfaceName, jsonString);
     
     // 5. 构建上报数据
     NSDictionary *reportData = [self buildReportDataFromDnsResult:jsonString];
@@ -192,14 +193,14 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
 - (NSDictionary *)buildReportDataFromDnsResult:(NSString *)sectionResult {
     // 1. 空值校验
     if (!sectionResult || sectionResult.length == 0) {
-        NSLog(@"%@ 上报数据：JSON字符串为空", kDNSLogPrefix);
+        CLSLog(@"%@ 上报数据：JSON字符串为空", kDNSLogPrefix);
         return @{};
     }
     
     // 2. JSON转Data
     NSData *jsonData = [sectionResult dataUsingEncoding:NSUTF8StringEncoding];
     if (!jsonData) {
-        NSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kDNSLogPrefix, sectionResult);
+        CLSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kDNSLogPrefix, sectionResult);
         return @{};
     }
     
@@ -209,13 +210,13 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
                                                     options:NSJSONReadingMutableContainers
                                                       error:&parseError];
     if (parseError) {
-        NSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kDNSLogPrefix, parseError.localizedDescription, sectionResult);
+        CLSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kDNSLogPrefix, parseError.localizedDescription, sectionResult);
         return @{};
     }
     
     // 4. 校验解析结果类型
     if (![jsonObject isKindOfClass:[NSDictionary class]]) {
-        NSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kDNSLogPrefix, [jsonObject class]);
+        CLSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kDNSLogPrefix, [jsonObject class]);
         return @{};
     }
     
@@ -246,7 +247,7 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
     // 参数合法性校验
     NSError *validationError = nil;
     if (![CLSRequestValidator validateDnsRequest:self.request error:&validationError]) {
-        NSLog(@"❌ DNS探测参数校验失败: %@", validationError.localizedDescription);
+        CLSLog(@"❌ DNS探测参数校验失败: %@", validationError.localizedDescription);
         if (completion) {
             CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
                 @"error": @"参数校验失败",
@@ -258,12 +259,12 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
         return;
     }
     
-    NSLog(@"✅ DNS探测参数: maxTimes=%d, timeout=%dms, prefer=%d", 
+    CLSLog(@"✅ DNS探测参数: maxTimes=%d, timeout=%dms, prefer=%d", 
           self.request.maxTimes, self.request.timeout, self.request.prefer);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {
-        NSLog(@"%@ 无可用网卡接口", kDNSLogPrefix);
+        CLSLog(@"%@ 无可用网卡接口", kDNSLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
@@ -282,12 +283,12 @@ static NSString *const kDNSErrorDomain = @"CLSMultiInterfaceDns";
         probeInstance.endPoint = self.endPoint;
         
         NSString *interfaceName = capturedInterface[@"name"] ?: @"未知";
-        NSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kDNSLogPrefix, interfaceName);
+        CLSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kDNSLogPrefix, interfaceName);
         [probeInstance startDnsWithInterface:capturedInterface completion:completion];
         
         // 非多端口检测时，仅检测第一个网卡后退出
         if (self.request && !self.request.enableMultiplePortsDetect) {
-            NSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kDNSLogPrefix);
+            CLSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kDNSLogPrefix);
             break;
         }
     }

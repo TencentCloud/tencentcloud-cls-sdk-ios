@@ -6,6 +6,10 @@
 //
 
 #import "CLSNetworkDiagnosisBaseTests.h"
+#import <sys/socket.h>
+#import <netinet/in.h>
+#import <arpa/inet.h>
+#import <unistd.h>
 
 @implementation CLSNetworkDiagnosisBaseTests
 
@@ -15,12 +19,12 @@
     // ⚙️ 配置 CLS 日志上报
     
     // ⚙️ 配置网络探测实例
-    
-    ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:@"ap-guangzhou-open.cls.tencentcs.com"
+    //
+    ClsLogSenderConfig *config = [ClsLogSenderConfig configWithEndpoint:kLiveEndpoint
                                                        accessKeyId:@""
                                                          accessKey:@""];
     self.diagnosis = [ClsNetworkDiagnosis sharedInstance];
-    [[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config netToken:@""];
+    [[ClsNetworkDiagnosis sharedInstance] setupLogSenderWithConfig:config netToken:kLiveNetToken];
     [self.diagnosis setUserEx:@{@"cls_sdk_test": @"!@#$%^&*()_+-=[]{}|;:\'\",.<>/?", @"cls_sdk_test2": @"!@#$%^&*()_+-=[]{}|;:\'\",.<>/?",@"业务": @"日志服务"}];
 
 }
@@ -497,6 +501,21 @@
 - (BOOL)isIPv6Address:(NSString *)address {
     if (address.length == 0) return NO;
     return [address containsString:@":"] && ![self isIPv4Address:address];
+}
+
+#pragma mark - 环境可达性探测
+
+- (BOOL)isPublicIPv6Reachable {
+    int sock = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (sock < 0) return NO;
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin6_family = AF_INET6;
+    addr.sin6_port = htons(53);
+    inet_pton(AF_INET6, "2001:4860:4860::8888", &addr.sin6_addr);
+    int rc = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+    close(sock);
+    return rc == 0;
 }
 
 #pragma mark - 日志方法

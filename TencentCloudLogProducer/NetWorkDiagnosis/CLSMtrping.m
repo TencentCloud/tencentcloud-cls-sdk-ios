@@ -13,6 +13,7 @@
 #import "CLSCocoa.h"
 #import "network_ios/cls_mtr_detector.h"
 #import "ClsNetworkDiagnosis.h"  // 引入以获取全局 userEx
+#import "ClsLogModel.h"
 
 static NSString *const kMtrLogPrefix = @"[MTR检测]";
 static const NSUInteger kMTRJsonBufferSize = 65535;
@@ -38,7 +39,7 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
 - (void)startMtrWithCompletion:(NSDictionary *)interfaceInfo completion:(CompleteCallback)completion{
     // 1. 空值校验：网卡信息为空直接回调空结果
     if (!interfaceInfo) {
-        NSLog(@"%@ 网卡信息为空，跳过检测", kMtrLogPrefix);
+        CLSLog(@"%@ 网卡信息为空，跳过检测", kMtrLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
@@ -46,14 +47,14 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     
     // 2. 核心参数校验：request/domain 为空直接返回
     if (!self.request) {
-        NSLog(@"%@ 检测请求为空，跳过检测", kMtrLogPrefix);
+        CLSLog(@"%@ 检测请求为空，跳过检测", kMtrLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
     }
     NSString *domainStr = self.request.domain ?: @"";
     if (domainStr.length == 0) {
-        NSLog(@"%@ 检测域名为空，跳过检测", kMtrLogPrefix);
+        CLSLog(@"%@ 检测域名为空，跳过检测", kMtrLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
         if (completion) completion(emptyResult);
         return;
@@ -82,27 +83,29 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     config.interface_index = interfaceIndex;
     
     // 5. 执行PING检测（异常捕获，避免流程中断）
-    cls_mtr_detector_result result;
+    cls_mtr_detector_result result = {0};
     cls_mtr_detector_error_code code = cls_mtr_detector_error_unknown_error;
     @try {
         code = cls_mtr_detector_perform_mtr(domain, &config, &result);
     } @catch (NSException *exception) {
-        NSLog(@"%@ 网卡%@（域名%@）：检测抛出异常：%@", kMtrLogPrefix, interfaceName, domainStr, exception);
+        CLSLog(@"%@ 网卡%@（域名%@）：检测抛出异常：%@", kMtrLogPrefix, interfaceName, domainStr, exception);
         code = cls_mtr_detector_error_unknown_error;
     }
-    
+
     // 6. 转换检测结果为JSON字符串
     char json_buffer[kMTRJsonBufferSize] = {0};
     cls_mtr_detector_result_to_json(&result,json_buffer, sizeof(json_buffer));
+    // #19 修复：释放 result.paths / results 的堆分配，避免每次 MTR 泄漏
+    cls_mtr_detector_free_result(&result);
     
     // 7. 错误日志增强（补充上下文）
     if (code != cls_mtr_detector_error_success) {
-        NSLog(@"%@ 网卡%@（域名%@）：检测失败，错误码：%d", kMtrLogPrefix, interfaceName, domainStr, code);
+        CLSLog(@"%@ 网卡%@（域名%@）：检测失败，错误码：%d", kMtrLogPrefix, interfaceName, domainStr, code);
     }
     
     // 8. 解析JSON并构建上报数据
     NSString *jsonString = [[NSString alloc] initWithCString:json_buffer encoding:NSUTF8StringEncoding];
-    NSLog(@"%@ 网卡%@（域名%@）：检测结果：%@", kMtrLogPrefix, interfaceName, domainStr, jsonString);
+    CLSLog(@"%@ 网卡%@（域名%@）：检测结果：%@", kMtrLogPrefix, interfaceName, domainStr, jsonString);
     NSDictionary *reportData = [self buildReportDataFromMtrResult:jsonString];
     
     // 9. 上报链路数据（语义化日志，避免冗余构建）
@@ -126,14 +129,14 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
 - (NSDictionary *)buildReportDataFromMtrResult:(NSString *)sectionResult {
     // 1. 空值校验
     if (!sectionResult || sectionResult.length == 0) {
-        NSLog(@"%@ 上报数据：JSON字符串为空", kMtrLogPrefix);
+        CLSLog(@"%@ 上报数据：JSON字符串为空", kMtrLogPrefix);
         return @{};
     }
     
     // 2. JSON字符串转NSData（UTF-8编码，空值兜底）
     NSData *jsonData = [sectionResult dataUsingEncoding:NSUTF8StringEncoding];
     if (!jsonData) {
-        NSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kMtrLogPrefix, sectionResult);
+        CLSLog(@"%@ 上报数据：JSON转Data失败，字符串：%@", kMtrLogPrefix, sectionResult);
         return @{};
     }
     
@@ -145,13 +148,13 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     
     // 解析错误兜底
     if (parseError) {
-        NSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kMtrLogPrefix, parseError.localizedDescription, sectionResult);
+        CLSLog(@"%@ 上报数据：JSON解析失败：%@，原始字符串：%@", kMtrLogPrefix, parseError.localizedDescription, sectionResult);
         return @{};
     }
     
     // 4. 校验解析结果类型（必须是字典）
     if (![jsonObject isKindOfClass:[NSDictionary class]]) {
-        NSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kMtrLogPrefix, [jsonObject class]);
+        CLSLog(@"%@ 上报数据：JSON根节点非字典，实际类型：%@", kMtrLogPrefix, [jsonObject class]);
         return @{};
     }
     
@@ -172,7 +175,7 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
                                                                interfaceName:self.interfaceInfo[@"name"]];
     reportData[@"detectEx"] = self.request.detectEx ?: @{};
     reportData[@"userEx"] = [[ClsNetworkDiagnosis sharedInstance] getUserEx] ?: @{};  // 从全局获取
-    NSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kMtrLogPrefix, reportData);
+    CLSLog(@"%@ 上报数据：解析后的原始PING字典：%@", kMtrLogPrefix, reportData);
     return [reportData copy];
 }
 
@@ -180,7 +183,7 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
     // 参数合法性校验
     NSError *validationError = nil;
     if (![CLSRequestValidator validateMtrRequest:self.request error:&validationError]) {
-        NSLog(@"❌ MTR探测参数校验失败: %@", validationError.localizedDescription);
+        CLSLog(@"❌ MTR探测参数校验失败: %@", validationError.localizedDescription);
         if (complate) {
             CLSResponse *errorResponse = [CLSResponse complateResultWithContent:@{
                 @"error": @"参数校验失败",
@@ -192,14 +195,14 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
         return;
     }
     
-    NSLog(@"✅ MTR探测参数: maxTimes=%d, timeout=%dms, maxTTL=%d, protocol=%@, prefer=%d", 
+    CLSLog(@"✅ MTR探测参数: maxTimes=%d, timeout=%dms, maxTTL=%d, protocol=%@, prefer=%d", 
           self.request.maxTimes, self.request.timeout, self.request.maxTTL, self.request.protocol, self.request.prefer);
     
     NSArray<NSDictionary *> *availableInterfaces = [CLSNetworkUtils getAvailableInterfacesForType];
     if (availableInterfaces.count == 0) {
-        NSLog(@"%@ 无可用网卡接口", kMtrLogPrefix);
+        CLSLog(@"%@ 无可用网卡接口", kMtrLogPrefix);
         CLSResponse *emptyResult = [CLSResponse complateResultWithContent:@{}];
-        complate(emptyResult);
+        if (complate) complate(emptyResult);
         return;
     }
     
@@ -216,11 +219,11 @@ static const NSUInteger kMTRJsonBufferSize = 65535;
         probeInstance.endPoint = self.endPoint;
         
         NSString *interfaceName = capturedInterface[@"name"] ?: @"未知";
-        NSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kMtrLogPrefix, interfaceName);
+        CLSLog(@"%@ 开始检测网卡：%@ (使用独立探测对象)", kMtrLogPrefix, interfaceName);
         [probeInstance startMtrWithCompletion:capturedInterface completion:complate];
         // 非多端口检测时，仅检测第一个网卡后退出
         if (self.request && !self.request.enableMultiplePortsDetect) {
-            NSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kMtrLogPrefix);
+            CLSLog(@"%@ 非多端口检测模式，终止后续网卡检测", kMtrLogPrefix);
             break;
         }
     }

@@ -192,7 +192,7 @@ static NSDictionary *CLSMakeFakeLogEntry(NSString *topicId, NSNumber *logId) {
     XCTAssertNil(h[@"X-Cls-Token"]);
 
     XCTAssertEqualObjects(h[@"Content-Type"], @"application/x-protobuf");
-    XCTAssertEqualObjects(h[@"User-Agent"], @"tencent-log-sdk-ios v3.2.0");
+    XCTAssertEqualObjects(h[@"User-Agent"], @"tencent-log-sdk-ios v3.3.0");
     XCTAssertEqualObjects(h[@"x-cls-compress-type"], @"lz4");
 
     XCTAssertTrue([CLSTestRequestCapture.lastUrl
