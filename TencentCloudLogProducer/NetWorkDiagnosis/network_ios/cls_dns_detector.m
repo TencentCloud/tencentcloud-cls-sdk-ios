@@ -417,8 +417,7 @@ static int parse_dns_name_internal(const uint8_t *buffer, size_t buf_len, size_t
                 new_visited[i] = visited_offsets[i];
                 new_visited_count++;
             }
-            // #30 修复：遇到压缩指针递归前，先在已有标签后补 '.'
-            // 否则 "label1 + label2 + pointer->rest" 会被解析为 "label1.label2rest"
+            // #30 压缩指针递归前先补 '.'，否则 "label1+label2+pointer->rest" 会拼成 "label1.label2rest"
             if (out_pos > 0) {
                 if (out_pos + 1 >= name_len) return -1;
                 name[out_pos++] = '.';

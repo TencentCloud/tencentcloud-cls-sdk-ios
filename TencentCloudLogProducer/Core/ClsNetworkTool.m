@@ -164,12 +164,7 @@
             result.message = [NSString stringWithFormat:@"请求超时（最大等待 %.1fs）", maxTimeout];
             [task cancel]; // 超时后取消任务，释放资源
         } else if (error) {
-            // #22 修复 R-6：按设计原方案在 ClsNetworkTool 层做 domain 判定
-            //   - NSURLErrorDomain：错误码是 Apple 定义的负数，直接透传
-            //   - 其他 domain（NSPOSIXErrorDomain / kCFErrorDomainCFNetwork 等）的 code 为正数，
-            //     可能落在 100~599 HTTP 范围内，误被 Sender 当成"4xx 永久失败"删掉。
-            //     因此一律映射为 statusCode = -1，命中 Sender 的 "statusCode < 0 保留日志" 分支。
-            //   message 中追加 "domain(code)" 便于线上定位。
+            // #22 R-6：NSURLErrorDomain 透传负值；其他 domain 的正数 code 可能落在 HTTP 范围被误删，一律映射为 -1 命中保留分支。
             if ([error.domain isEqualToString:NSURLErrorDomain]) {
                 result.statusCode = error.code;
             } else {

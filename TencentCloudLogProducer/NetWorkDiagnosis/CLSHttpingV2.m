@@ -499,7 +499,7 @@ API_AVAILABLE(ios(12.0)) {
                                 receivedBytes += size;
                                 if (statusCode == -2) {
                                     NSData *chunk = [NSData dataWithBytes:buf length:size];
-                                    // #33 修复：Latin-1 对任意字节都可解码；HTTP 状态行为 ASCII，Latin-1 下结果与 UTF-8 一致，但不会因 gzip/GBK body 或 UTF-8 中间截断而返回 nil
+                                    // #33 Latin-1 可解任意字节，避免 gzip/GBK/截断导致状态行解析为 nil
                                     NSString *firstLine = [[NSString alloc] initWithData:chunk encoding:NSISOLatin1StringEncoding];
                                     NSArray *lines = [firstLine componentsSeparatedByString:@"\r\n"];
                                     if (lines.count) {
@@ -699,7 +699,7 @@ API_AVAILABLE(ios(12.0)) {
                                 receivedBytes += size;
                                 if (statusCode == -2) {
                                     NSData *chunk = [NSData dataWithBytes:buf length:size];
-                                    // #33 修复：Latin-1 对任意字节都可解码；HTTP 状态行为 ASCII，Latin-1 下结果与 UTF-8 一致，但不会因 gzip/GBK body 或 UTF-8 中间截断而返回 nil
+                                    // #33 Latin-1 可解任意字节，避免 gzip/GBK/截断导致状态行解析为 nil
                                     NSString *firstLine = [[NSString alloc] initWithData:chunk encoding:NSISOLatin1StringEncoding];
                                     NSArray *lines = [firstLine componentsSeparatedByString:@"\r\n"];
                                     if (lines.count) {

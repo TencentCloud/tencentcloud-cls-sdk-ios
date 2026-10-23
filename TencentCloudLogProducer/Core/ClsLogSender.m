@@ -148,10 +148,7 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
             [_condition unlock];
         }
     }
-    // #9 修复 R-1：不再在此写 `_isRunning = NO`。
-    // `_isRunning` 仅由 `start/stop` 在配置锁内修改；
-    // 若 workLoop 退出时又写一次，会与"stop → 紧接着 start"竞态，
-    // 导致 oldThread 退出覆盖了 start 刚置的 YES，start 判断失效后再调用会创建第二个 worker。
+    // #9 R-1：`_isRunning` 仅由 start/stop 写，workLoop 退出不写，避免 stop→start 紧连时 old worker 退出覆盖 start 的 YES。
 }
 
 - (void)sendAllPendingOnThread:(NSThread *)me {
@@ -199,7 +196,7 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
             continue;
         }
 
-        // #14 兜底：writeLog 已拦截超限日志，这里仅为升级前已入库的历史超大日志
+        // #14 兜底：清理升级前入库的历史超大日志
         if (singleLogSize > kCLSMaxSingleLogBytes) {
             CLSLog(@"log ID %@ exceed 512KB（%.2f KB），discard",
                   logId, singleLogSize / 1024.0);
@@ -308,14 +305,12 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
 
     NSInteger statusCode = result.statusCode;
 
-    // #22 修复：非 NSURLErrorDomain 的正数网络错误码（如 CFNetwork 自定义错误）也应视为"保留"
+    // #22 保留日志的三类错误：网络层(负值) / 服务端临时错误(5xx/429/408/403) / HTTP 范围外(正数自定义码)
     BOOL isNetworkError = (statusCode < 0);
-    // 服务端临时性错误
     BOOL isTransientServerError = (statusCode >= 500 && statusCode < 600)
                                 || statusCode == 429
                                 || statusCode == 408
                                 || statusCode == 403;
-    // 异常：非 HTTP 2xx/3xx/4xx 的奇怪值（例如 CFNetwork 的正数自定义码），一律保留
     BOOL isOutsideHttpRange = (statusCode > 0 && (statusCode < 100 || statusCode > 599));
 
     BOOL shouldKeepLogs = isNetworkError || isTransientServerError || isOutsideHttpRange;

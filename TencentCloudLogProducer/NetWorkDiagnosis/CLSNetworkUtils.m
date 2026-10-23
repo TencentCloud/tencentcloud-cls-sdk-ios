@@ -114,15 +114,12 @@ static NSString *CLSStringValue(id value, NSString *fallback) {
     NSString *urlStr = [endpoint stringByAppendingString:uri];
     NSURL *url = [NSURL URLWithString:[urlStr stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet]];
     if (!url) {
-        // #21-1 修复 R-4：urlStr 含 appKey/uin 明文 query，不输出
+        // #21-1 R-4：urlStr 含 appKey/uin 明文，仅打印长度
         CLSLog(@"[CLS] URL格式非法，无法初始化NSURL (len=%lu)", (unsigned long)urlStr.length);
         return @{};
     }
     
-    // #21-1 修复 R-4：原打印 url.absoluteString + appKey + uin 明文，等于三份敏感数据泄漏
-    //   - endpoint/host 可见（公开域名，排查需要）
-    //   - networkAppId/appKey 掩码
-    //   - uin 保留后 4 位（排查需要，但掩码前面部分）
+    // #21-1 R-4：敏感字段统一掩码，host 公开可见便于排查
     CLSLog(@"[CLS] 最终请求信息：endpoint=%@｜host=%@｜networkAppId=%@｜appKey=%@｜uin=%@",
            endpoint, url.host ?: @"(nil)",
            CLSMask(networkAppId), CLSMask(appKey), CLSMask(uin));
@@ -301,8 +298,7 @@ static NSString *CLSStringValue(id value, NSString *fallback) {
     return [self parseGeoResponseBody:jsonBody usedNet:usedNet];
 }
 
-/// #5 可测试性抽取：严格校验 GEO 响应 JSON 结构，构造统一 Geo 字典。
-/// 任何畸形响应（根非 dict / GeoInfo 非 dict / 空 dict / 字段 NSNull/NSNumber/数组）均不崩溃。
+/// #5 严格校验 GEO 响应 JSON 结构，构造统一 Geo 字典；任何畸形响应均不崩溃
 + (NSDictionary *)parseGeoResponseBody:(NSString *)jsonBody usedNet:(NSString *)usedNet {
     if (jsonBody.length == 0) return @{};
     NSData *jsonData = [jsonBody dataUsingEncoding:NSUTF8StringEncoding];

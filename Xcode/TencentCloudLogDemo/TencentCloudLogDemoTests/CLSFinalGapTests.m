@@ -350,4 +350,190 @@ static NSString *const kFGLTopic = kCLSTestTopicId;
                       @"#R-9 getCarrier 500 次应 <1s（共享 CTTelephonyNetworkInfo），实际=%.3fs", total);
 }
 
+#pragma mark - SQL 清理边界补强（SQL-1 / SQL-2 / SQL-3）
+
+/// SQL-1：#12 evict 应**严格 FIFO**（ORDER BY create_time ASC）——若有人改成 DESC 会误杀新日志
+///  做法：注入 200 条 big payload 日志（idx 自增 → create_time 单调），
+///       然后把 maxDatabaseSize 调到让 evict 删除大半 → 查剩余 pending 的 idx 必须全部 >= 某阈值
+- (void)test_SQL1_eviction_order_is_FIFO_oldest_first {
+    LogSender *sender = [LogSender sharedSender];
+    [sender stop];
+    [NSThread sleepForTimeInterval:0.3];
+    [self cleanDB];
+
+    ClsLogStorage *s = [ClsLogStorage sharedInstance];
+    [s setMaxDatabaseSize:32 * 1024 * 1024];  // 先给大，让 200 条都能先入库
+
+    // 写入 200 条带递增 idx 的 big 日志（每条 ~2.5KB，总 ~500KB）
+    //  item.time 递增确保 create_time 单调（evict ORDER BY create_time ASC）
+    long long baseTime = (long long)([[NSDate date] timeIntervalSince1970] * 1000);
+    for (int i = 0; i < 200; i++) {
+        NSMutableString *blob = [NSMutableString stringWithCapacity:2560];
+        for (int j = 0; j < 40; j++) {
+            [blob appendString:[[NSUUID UUID] UUIDString]];
+            [blob appendString:@"-"];
+        }
+        Log_Content *c = [Log_Content message];
+        c.key = @"message";
+        c.value = [NSString stringWithFormat:@"{\"idx\":%d,\"blob\":\"%@\"}", i, blob];
+        Log *item = [Log message];
+        [item.contentsArray addObject:c];
+        item.time = baseTime + i;  // 递增 ms，确保 create_time 严格递增
+        [s writeLog:item topicId:kFGLTopic completion:nil];
+    }
+    [NSThread sleepForTimeInterval:3.0];
+
+    NSUInteger before = [s queryPendingLogs:10000].count;
+    NSLog(@"[FGL SQL-1] 前置写入 pending=%lu", (unsigned long)before);
+    XCTAssertGreaterThan(before, 150ul,
+                         @"#SQL-1 前置：200 条应几乎全部入库，实际=%lu", (unsigned long)before);
+
+    // 砍 maxSize 到 100KB，必然触发大量 evict
+    [s setMaxDatabaseSize:100 * 1024];
+
+    // 再写一条新日志触发 evict
+    Log_Content *tc = [Log_Content message];
+    tc.key = @"message"; tc.value = @"{\"idx\":9999,\"trigger\":1}";
+    Log *trigger = [Log message];
+    [trigger.contentsArray addObject:tc];
+    trigger.time = baseTime + 100000;
+    [s writeLog:trigger topicId:kFGLTopic completion:nil];
+    [NSThread sleepForTimeInterval:3.0];
+
+    // 读剩余 pending，解析 idx，判定 FIFO
+    NSArray<NSDictionary *> *rows = [s queryPendingLogs:10000];
+    NSMutableArray<NSNumber *> *idxArr = [NSMutableArray array];
+    for (NSDictionary *r in rows) {
+        Log *lg = r[@"log_item"];
+        if (![lg isKindOfClass:[Log class]]) continue;
+        for (Log_Content *lc in lg.contentsArray) {
+            if (![lc.key isEqualToString:@"message"]) continue;
+            NSData *jd = [lc.value dataUsingEncoding:NSUTF8StringEncoding];
+            NSDictionary *jo = [NSJSONSerialization JSONObjectWithData:jd options:0 error:nil];
+            NSNumber *idx = jo[@"idx"];
+            if (idx) [idxArr addObject:idx];
+        }
+    }
+    NSNumber *idxMin = [idxArr valueForKeyPath:@"@min.self"];
+    NSNumber *idxMax = [idxArr valueForKeyPath:@"@max.self"];
+    NSLog(@"[FGL SQL-1] evict 后 pending=%lu idx_min=%@ idx_max=%@",
+          (unsigned long)idxArr.count, idxMin, idxMax);
+
+    XCTAssertLessThan(idxArr.count, before,
+                      @"#SQL-1 应已触发 evict 删除部分日志（before=%lu after=%lu）",
+                      (unsigned long)before, (unsigned long)idxArr.count);
+    XCTAssertGreaterThan(idxArr.count, 0ul, @"#SQL-1 不应全部删光");
+
+    // FIFO 核心验证：删掉的是最老（idx 小）的日志 → 剩余 idx_min 应**显著 >0**
+    // 若 evict 顺序被改成 DESC（删最新），则剩余 idx_min = 0（最老日志反而留下）
+    XCTAssertGreaterThan(idxMin.intValue, 10,
+                         @"#SQL-1 FIFO: evict 应删最老日志，剩余 idx_min 应 >10；"
+                         @"实际 idx_min=%d（若接近 0 则是 evict 顺序被改回 DESC 的回归 bug）",
+                         idxMin.intValue);
+
+    // 新加入的 trigger（idx=9999）必须还在 pending 中（证明不是全局 FIFO 删到最新）
+    XCTAssertTrue([idxArr containsObject:@9999],
+                  @"#SQL-1 FIFO: trigger log (idx=9999) 应保留在最新端");
+
+    [self cleanDB];
+    [s setMaxDatabaseSize:32 * 1024 * 1024];
+    [sender start];
+}
+
+/// SQL-2：#12 evict 内 while 循环必须有 `db.changes == 0` 保护，否则空表或删完后会死循环
+///  做法：空库下把 maxDatabaseSize 调为 1 字节，再写一条 → evict 一定会进入循环且必须立即退出
+///       整体 writeLog 应在合理时间（<2s）完成
+- (void)test_SQL2_eviction_while_loop_no_deadlock_on_empty_table {
+    LogSender *sender = [LogSender sharedSender];
+    [sender stop];
+    [NSThread sleepForTimeInterval:0.3];
+    [self cleanDB];
+
+    ClsLogStorage *s = [ClsLogStorage sharedInstance];
+    // 极限 maxSize = 1 字节：任何插入都触发 evict，但空库下无可删 → 必须靠 db.changes==0 退出
+    [s setMaxDatabaseSize:1];
+
+    CFAbsoluteTime t0 = CFAbsoluteTimeGetCurrent();
+    __block BOOL done = NO;
+    XCTestExpectation *exp = [self expectationWithDescription:@"w"];
+    Log_Content *c = [Log_Content message];
+    c.key = @"message"; c.value = @"{\"test\":\"sql2\"}";
+    Log *item = [Log message];
+    [item.contentsArray addObject:c];
+    item.time = (long long)([[NSDate date] timeIntervalSince1970] * 1000);
+    [s writeLog:item topicId:kFGLTopic completion:^(BOOL ok, NSError *e) {
+        done = YES;
+        [exp fulfill];
+    }];
+    [self waitForExpectations:@[exp] timeout:5.0];
+    NSTimeInterval elapsed = CFAbsoluteTimeGetCurrent() - t0;
+    NSLog(@"[FGL SQL-2] maxSize=1B 下 writeLog 耗时=%.3fs done=%d", elapsed, done);
+
+    XCTAssertTrue(done, @"#SQL-2 极限 maxSize 下 writeLog 应能在 5s 内返回（不死循环）");
+    XCTAssertLessThan(elapsed, 2.0,
+                      @"#SQL-2 空表 + maxSize=1 下 evict while 应立即退出（db.changes==0 保护）");
+
+    [self cleanDB];
+    [s setMaxDatabaseSize:32 * 1024 * 1024];
+    [sender start];
+}
+
+/// SQL-3：#12 evict 后 writeLog 必须能继续成功
+///  场景：写满 → evict → 下一次 writeLog 应入库（不是失败丢日志）
+- (void)test_SQL3_writeLog_succeeds_after_eviction {
+    LogSender *sender = [LogSender sharedSender];
+    [sender stop];
+    [NSThread sleepForTimeInterval:0.3];
+    [self cleanDB];
+
+    ClsLogStorage *s = [ClsLogStorage sharedInstance];
+    [s setMaxDatabaseSize:2 * 1024 * 1024];  // 2MB
+
+    // 先灌到超过水位
+    for (int i = 0; i < 1500; i++) {
+        [s writeLog:[self makeBigLog:i] topicId:kFGLTopic completion:nil];
+    }
+    [NSThread sleepForTimeInterval:3.0];
+
+    NSUInteger beforeExtra = [s queryPendingLogs:10000].count;
+    NSLog(@"[FGL SQL-3] 灌满后 pending=%lu", (unsigned long)beforeExtra);
+
+    // 后一条带 marker 的 writeLog
+    __block BOOL ok = NO;
+    XCTestExpectation *exp = [self expectationWithDescription:@"w"];
+    Log_Content *c = [Log_Content message];
+    c.key = @"message"; c.value = @"{\"sql3_marker\":\"POST_EVICT\"}";
+    Log *item = [Log message];
+    [item.contentsArray addObject:c];
+    item.time = (long long)([[NSDate date] timeIntervalSince1970] * 1000) + 999999;
+    [s writeLog:item topicId:kFGLTopic completion:^(BOOL o, NSError *e) {
+        ok = o;
+        [exp fulfill];
+    }];
+    [self waitForExpectations:@[exp] timeout:10.0];
+    [NSThread sleepForTimeInterval:1.0];
+
+    XCTAssertTrue(ok, @"#SQL-3 水位淘汰后，下一次 writeLog 应仍成功（evict 不应破坏写入通路）");
+
+    // 验证最新 marker 日志存在于 pending
+    NSArray<NSDictionary *> *rows = [s queryPendingLogs:10000];
+    BOOL foundMarker = NO;
+    for (NSDictionary *r in rows) {
+        Log *lg = r[@"log_item"];
+        if (![lg isKindOfClass:[Log class]]) continue;
+        for (Log_Content *lc in lg.contentsArray) {
+            if ([lc.value containsString:@"sql3_marker"]) {
+                foundMarker = YES; break;
+            }
+        }
+        if (foundMarker) break;
+    }
+    XCTAssertTrue(foundMarker,
+                  @"#SQL-3 evict 后插入的 marker 日志必须存在于 pending（证明新日志实际入库）");
+
+    [self cleanDB];
+    [s setMaxDatabaseSize:32 * 1024 * 1024];
+    [sender start];
+}
+
 @end

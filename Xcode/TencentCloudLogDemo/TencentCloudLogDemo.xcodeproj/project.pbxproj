@@ -19,6 +19,7 @@
 		EE55FF66AA11BB22CC33DD44 /* CLSPerformanceTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 55EE66FF11AA22BB33CC44DD /* CLSPerformanceTests.m */; };
 		FF66AA11BB22CC33DD44EE55 /* CLSEnvironmentalTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 66FF11AA22BB33CC44DD55EE /* CLSEnvironmentalTests.m */; };
 		11AA22BB33CC44DD55EE66F0 /* CLSFinalGapTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 22BB33CC44DD55EE66FF11A0 /* CLSFinalGapTests.m */; };
+		A1B2C3D4E5F60718293A4B5C /* CLSSenderStatusCodeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F506172839AB4B5C /* CLSSenderStatusCodeTests.m */; };
 		977447B6A27BC6E2990A3B3B /* CLSCellularTypeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 68834358B09D047313F63DE0 /* CLSCellularTypeTests.m */; };
 		97BC4450A688BE6B583B0D79 /* CLSSpanEndTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1813478CBB06A2C1584A4AE1 /* CLSSpanEndTests.m */; };
 		AB3B4D99911E11D58BCF4B90 /* CLSGeoResponseTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 10704008B5B5EF402C1DF3DD /* CLSGeoResponseTests.m */; };
@@ -80,6 +81,7 @@
 		77AA22BB33CC44DD55EE66FF /* CLSTestCredentials.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CLSTestCredentials.h; path = TencentCloudLogDemoTests/CLSTestCredentials.h; sourceTree = SOURCE_ROOT; };
 		88BB33CC44DD55EE66FF77AA /* CLSTestCredentials.sample.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CLSTestCredentials.sample.h; path = TencentCloudLogDemoTests/CLSTestCredentials.sample.h; sourceTree = SOURCE_ROOT; };
 		22BB33CC44DD55EE66FF11A0 /* CLSFinalGapTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CLSFinalGapTests.m; path = TencentCloudLogDemoTests/CLSFinalGapTests.m; sourceTree = SOURCE_ROOT; };
+		B1C2D3E4F506172839AB4B5C /* CLSSenderStatusCodeTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CLSSenderStatusCodeTests.m; path = TencentCloudLogDemoTests/CLSSenderStatusCodeTests.m; sourceTree = SOURCE_ROOT; };
 		68834358B09D047313F63DE0 /* CLSCellularTypeTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CLSCellularTypeTests.m; path = TencentCloudLogDemoTests/CLSCellularTypeTests.m; sourceTree = SOURCE_ROOT; };
 		802D771F1115D64CC374912A /* Pods-TencentCloudLogDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemo.debug.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemo/Pods-TencentCloudLogDemo.debug.xcconfig"; sourceTree = "<group>"; };
 		88EACAC4DE0B0CA20764BA86 /* Pods-TencentCloudLogDemoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TencentCloudLogDemoTests.release.xcconfig"; path = "Target Support Files/Pods-TencentCloudLogDemoTests/Pods-TencentCloudLogDemoTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -171,6 +173,7 @@
 				77AA22BB33CC44DD55EE66FF /* CLSTestCredentials.h */,
 				88BB33CC44DD55EE66FF77AA /* CLSTestCredentials.sample.h */,
 				22BB33CC44DD55EE66FF11A0 /* CLSFinalGapTests.m */,
+				B1C2D3E4F506172839AB4B5C /* CLSSenderStatusCodeTests.m */,
 			);
 			sourceTree = "<group>";
 		};
@@ -459,6 +462,7 @@
 				EE55FF66AA11BB22CC33DD44 /* CLSPerformanceTests.m in Sources */,
 				FF66AA11BB22CC33DD44EE55 /* CLSEnvironmentalTests.m in Sources */,
 				11AA22BB33CC44DD55EE66F0 /* CLSFinalGapTests.m in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* CLSSenderStatusCodeTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

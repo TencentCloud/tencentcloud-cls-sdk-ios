@@ -271,8 +271,7 @@
             if ([info respondsToSelector:@selector(serviceSubscriberCellularProviders)]) {
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wunguarded-availability-new"
-                // #38 修复：主/副卡逻辑之前写反——原来是"firstObject 有 MNC 则改用 lastObject"，
-                // 修正为"遍历所有卡，优先选第一张 MNC 非空的作为主卡"
+                // #38 双 SIM：遍历所有卡，优先选第一张 MNC 非空的作为主卡（原实现写反为 firstObject/lastObject 二选一）
                 NSDictionary<NSString *, CTCarrier *> *providers = info.serviceSubscriberCellularProviders;
                 for (NSString *key in providers.allKeys) {
                     CTCarrier *c = providers[key];
