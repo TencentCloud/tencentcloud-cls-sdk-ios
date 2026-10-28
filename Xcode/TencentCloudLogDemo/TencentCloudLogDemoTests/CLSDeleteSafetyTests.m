@@ -80,6 +80,7 @@ static NSString *gInjectedSQLSubstring = nil;
         [db executeUpdate:@"DELETE FROM sqlite_sequence WHERE name='cls_log_table'"];
     }];
     [storage setValue:@YES forKey:@"isDbWritable"];
+    [storage setValue:@0 forKey:@"consecutiveShortDeleteCount"];
 }
 
 - (void)tearDown {
@@ -218,6 +219,68 @@ static NSString *gInjectedSQLSubstring = nil;
     BOOL ok = [[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@10]];
     XCTAssertFalse(ok);
     XCTAssertEqual([self rowCount], 1u);
+}
+
+#pragma mark - 3.3.1 补丁：changes < expected 阈值化
+
+// Case10：持续 short delete（SQL 成功但行不存在，模拟 B 类 DB 异常）
+// 不依赖注入错误：直接对不存在的 _id 做 DELETE，changes 恒为 0。
+// 前 2 次视为"偶发 evict race" → 容忍返回 YES；第 3 次达到阈值 → 返回 NO 并熔断。
+- (void)testCase10_PersistentShortDelete_TripsFuseAtThreshold {
+    ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    NSArray *fakeIds = @[@99991, @99992, @99993];  // 这些 _id 在库里不存在
+    XCTAssertEqual([self rowCount], 0u);
+
+    // 1st short delete：计数 1，容忍
+    BOOL ok1 = [storage deleteSentLogsWithIds:fakeIds];
+    XCTAssertTrue(ok1, @"1st short delete should be tolerated");
+    XCTAssertTrue([storage isDbWritable]);
+    XCTAssertEqual([[storage valueForKey:@"consecutiveShortDeleteCount"] integerValue], 1);
+
+    // 2nd short delete：计数 2，容忍
+    BOOL ok2 = [storage deleteSentLogsWithIds:fakeIds];
+    XCTAssertTrue(ok2, @"2nd short delete should be tolerated");
+    XCTAssertTrue([storage isDbWritable]);
+    XCTAssertEqual([[storage valueForKey:@"consecutiveShortDeleteCount"] integerValue], 2);
+
+    // 3rd short delete：计数达阈值 3，熔断
+    BOOL ok3 = [storage deleteSentLogsWithIds:fakeIds];
+    XCTAssertFalse(ok3, @"3rd short delete should trip the fuse");
+    XCTAssertFalse([storage isDbWritable], @"isDbWritable should be NO after fuse");
+
+    // 熔断后 queryPendingLogs 必须返回空（防止 workLoop 重传风暴）
+    [self insertRawLogWithId:50001 topicId:@"t"];  // 走 writeLog 不受熔断影响
+    NSArray *pending = [storage queryPendingLogs:10];
+    XCTAssertEqual(pending.count, 0u, @"query must be blocked after fuse");
+}
+
+// Case11：偶发 short delete 被真·命中 reset，不触发熔断
+// 模拟真·evict race 场景：worker 偶尔遇到 1 次 short delete，后续一次正常 delete 把计数复位。
+- (void)testCase11_OccasionalShortDelete_ResetByFullHit {
+    ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    [self insertRawLogWithId:60001 topicId:@"t"];
+    [self insertRawLogWithId:60002 topicId:@"t"];
+
+    // 第 1 次 short delete：请求 (60001, 99999)，只命中 60001，changes=1 < expected=2
+    BOOL ok1 = [storage deleteSentLogsWithIds:@[@60001, @99999]];
+    XCTAssertTrue(ok1, @"short delete within threshold should return YES");
+    XCTAssertTrue([storage isDbWritable]);
+    XCTAssertEqual([[storage valueForKey:@"consecutiveShortDeleteCount"] integerValue], 1);
+    XCTAssertEqual([self rowCount], 1u);  // 60002 还在
+
+    // 第 2 次 full delete：请求 (60002)，完全命中 → 计数应复位为 0
+    BOOL ok2 = [storage deleteSentLogsWithIds:@[@60002]];
+    XCTAssertTrue(ok2);
+    XCTAssertTrue([storage isDbWritable]);
+    XCTAssertEqual([[storage valueForKey:@"consecutiveShortDeleteCount"] integerValue], 0,
+                   @"full hit must reset the consecutive counter");
+    XCTAssertEqual([self rowCount], 0u);
+
+    // 继续 2 次 short delete：由于前面已复位，计数从 1 开始，仍 < 阈值 → 不熔断
+    [storage deleteSentLogsWithIds:@[@77771]];
+    [storage deleteSentLogsWithIds:@[@77772]];
+    XCTAssertTrue([storage isDbWritable], @"should not trip because counter was reset mid-way");
+    XCTAssertEqual([[storage valueForKey:@"consecutiveShortDeleteCount"] integerValue], 2);
 }
 
 @end

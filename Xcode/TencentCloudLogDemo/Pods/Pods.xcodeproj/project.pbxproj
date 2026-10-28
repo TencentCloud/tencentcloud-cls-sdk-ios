@@ -12,7 +12,7 @@
 		037B74553C43333B8693ACA61DB05C78 /* OCMRealObjectForwarder.h in Headers */ = {isa = PBXBuildFile; fileRef = 8EE7AAD806EF54DC624A7EFF11AFB860 /* OCMRealObjectForwarder.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		03815ACD5E64B92672AE8AA3A5A2EE27 /* OCMArg.h in Headers */ = {isa = PBXBuildFile; fileRef = F1349A2AA02F11F22D8F6205CA9844E9 /* OCMArg.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		03A1468408B50A609EF3669C178B99D4 /* OCMInvocationExpectation.m in Sources */ = {isa = PBXBuildFile; fileRef = CBEA24C8C9517E49A09994535C271AFF /* OCMInvocationExpectation.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		03F2428C9FE1AF75B287A39D46F646FA /* FMDB-FMDB_Privacy in Resources */ = {isa = PBXBuildFile; fileRef = 148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB-FMDB_Privacy */; };
+		03F2428C9FE1AF75B287A39D46F646FA /* FMDB_Privacy.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB_Privacy.bundle */; };
 		052ACFE9C87A7A8738AC8CCB3D5D418C /* GPBUnknownField.m in Sources */ = {isa = PBXBuildFile; fileRef = CC18B002D017C85C3A85C2785A47A0FC /* GPBUnknownField.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		06BCDDE08C148024F75AC922D6EF1A58 /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6DB31F2CE3982830B7EAB9678DDD2C3A /* FMDatabaseAdditions.m */; };
 		081235E4B6172D2361F09576ED0C0044 /* ClsLogs.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = 0D64DDE66233D51760E69B101AB5742A /* ClsLogs.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -64,7 +64,7 @@
 		31C05D64D42CA917CEF5585183DD47B3 /* OCMInvocationExpectation.h in Headers */ = {isa = PBXBuildFile; fileRef = E698861DF521CD671F84A806C8DED165 /* OCMInvocationExpectation.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		32E094FEBDD6F78265AB1E36D2C79E8C /* cls_mtr_detector.h in Headers */ = {isa = PBXBuildFile; fileRef = 10ECB378DD37D5AD6197042341A5F532 /* cls_mtr_detector.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		34519026CD19276CF7FA8A6921FBD3A7 /* OCMFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = DC5392FF3B05C7921EE26AC4974D668B /* OCMFunctions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		347C9015B3B5A863502734167D3BBC10 /* TencentCloudLogProducer-TencentCloudLogProducer in Resources */ = {isa = PBXBuildFile; fileRef = 03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer-TencentCloudLogProducer */; };
+		347C9015B3B5A863502734167D3BBC10 /* TencentCloudLogProducer.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer.bundle */; };
 		34822E0799338A17A5AFCBF73081E4C9 /* GPBRuntimeTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = BCC2BF7F988EB60CDDCB1A40A38A4014 /* GPBRuntimeTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34C31624E93FB93E37E4C25D7E252A6A /* OCMVerifier.h in Headers */ = {isa = PBXBuildFile; fileRef = AACA67C2FD5FF12DB5CD96F3FCC177C8 /* OCMVerifier.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		364C99066181FD5AA6927FE80F0D66B5 /* Reachability.h in Headers */ = {isa = PBXBuildFile; fileRef = D8B55B95466A1876A5466DD5C572EF21 /* Reachability.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -82,7 +82,7 @@
 		3E983180E84D6AC282EF25CDC8368D41 /* OCMIndirectReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = 9CE8F3163FF7921E11A05FE1FB40B83F /* OCMIndirectReturnValueProvider.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		3FD29EFC54460641D12F964E24CC972F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
 		3FF12F392FFAD45A9D62C9E746937E26 /* FMDatabaseQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = DA5A0C4EA4B8F7F477A227BDCD1488C1 /* FMDatabaseQueue.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		40E84298D5B6281A8EE507A8DCB02B63 /* Protobuf-Protobuf_Privacy in Resources */ = {isa = PBXBuildFile; fileRef = F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf-Protobuf_Privacy */; };
+		40E84298D5B6281A8EE507A8DCB02B63 /* Protobuf_Privacy.bundle in Resources */ = {isa = PBXBuildFile; fileRef = F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf_Privacy.bundle */; };
 		425B05F2C11F6C414A7278F05E3FE46E /* CLSPingV2.h in Headers */ = {isa = PBXBuildFile; fileRef = A1163A7D8385D3AFDE5B5AB272F1C03D /* CLSPingV2.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		436764D67026FF2C796BC826CEC803DD /* OCMExceptionReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = 4D8E54537E7C77240D3F490B79B3C49A /* OCMExceptionReturnValueProvider.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		43DAECA9091DEEDE97251FC68F804E21 /* GPBDescriptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C0CDA6FCE6A9BF19AEDC5B01027ACA41 /* GPBDescriptor.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
@@ -222,7 +222,7 @@
 		C207E19083E52EF84726D10989A04CEC /* CLS4Unity.m in Sources */ = {isa = PBXBuildFile; fileRef = 0CC46C82F90047D132B251CB3051306D /* CLS4Unity.m */; };
 		C41F6F274F27353BD77194414C95204F /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 325155D8DF17CE01360696489CC4E11C /* Reachability.m */; };
 		C628EB8975B98BD99BE9D42903A71F77 /* GPBSourceContext.pbobjc.h in Headers */ = {isa = PBXBuildFile; fileRef = E7AB24876508DDF3F591B0DD77BF0186 /* GPBSourceContext.pbobjc.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C78F24992DF950290A486B4D8B9DEA6F /* Reachability-Reachability_Privacy in Resources */ = {isa = PBXBuildFile; fileRef = DFC89BE171DE7E648C53797695D8A220 /* Reachability-Reachability_Privacy */; };
+		C78F24992DF950290A486B4D8B9DEA6F /* Reachability_Privacy.bundle in Resources */ = {isa = PBXBuildFile; fileRef = DFC89BE171DE7E648C53797695D8A220 /* Reachability_Privacy.bundle */; };
 		C818AF917D59B6752EECC1B5C5C1B14F /* CLSResource.h in Headers */ = {isa = PBXBuildFile; fileRef = 5FDA338B88B0759EA984EB1F3428809A /* CLSResource.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C8B03CF70669A602C2DF100472EAB6B8 /* network_ios.h in Headers */ = {isa = PBXBuildFile; fileRef = D179EDB2BAA0B68449B2E75DF636EFEB /* network_ios.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		C9E5067115DD59497C3258119CFD2C07 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D92281B90027B6E79EA0E6D988EF3BA /* Foundation.framework */; };
@@ -386,7 +386,7 @@
 		012590B31959AF0DA8555B4FF1619547 /* FMDatabase.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = FMDatabase.m; path = src/fmdb/FMDatabase.m; sourceTree = "<group>"; };
 		01768F31297619DA11D07F8A4CCC435F /* GPBCodedOutputStream_PackagePrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBCodedOutputStream_PackagePrivate.h; path = objectivec/GPBCodedOutputStream_PackagePrivate.h; sourceTree = "<group>"; };
 		03727476E9FD56337A131475C2DFFDA0 /* GPBCodedInputStream.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBCodedInputStream.h; path = objectivec/GPBCodedInputStream.h; sourceTree = "<group>"; };
-		03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer-TencentCloudLogProducer */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "TencentCloudLogProducer-TencentCloudLogProducer"; path = TencentCloudLogProducer.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TencentCloudLogProducer.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		0448BA3C642EE56194207E43A7F2F26A /* OCMBlockArgCaller.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMBlockArgCaller.h; path = Source/OCMock/OCMBlockArgCaller.h; sourceTree = "<group>"; };
 		0597D1DBB7F33757D3462DCF1C4F589E /* GPBType.pbobjc.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBType.pbobjc.h; path = objectivec/GPBType.pbobjc.h; sourceTree = "<group>"; };
 		06CAEDA7386911ADD6272573BEA4CA7D /* OCMInvocationMatcher.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMInvocationMatcher.m; path = Source/OCMock/OCMInvocationMatcher.m; sourceTree = "<group>"; };
@@ -407,12 +407,12 @@
 		11FFABDBC18E1FA048447F17C2B6F9A3 /* cls_ping_detector.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = cls_ping_detector.m; sourceTree = "<group>"; };
 		121503FED64A97F89AF9EF398C188E48 /* GPBUnknownFields+Additions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = "GPBUnknownFields+Additions.swift"; path = "objectivec/GPBUnknownFields+Additions.swift"; sourceTree = "<group>"; };
 		12EA0C3AD0F6A28269258131844CDF75 /* OCMock-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "OCMock-dummy.m"; sourceTree = "<group>"; };
-		148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB-FMDB_Privacy */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "FMDB-FMDB_Privacy"; path = FMDB_Privacy.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB_Privacy.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FMDB_Privacy.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		149121978D161A7D896BBD66BD0816B5 /* GPBCodedInputStream_PackagePrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBCodedInputStream_PackagePrivate.h; path = objectivec/GPBCodedInputStream_PackagePrivate.h; sourceTree = "<group>"; };
 		14AA71014493BC3D1CFACD83D968B184 /* GPBFieldMask.pbobjc.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBFieldMask.pbobjc.m; path = objectivec/GPBFieldMask.pbobjc.m; sourceTree = "<group>"; };
 		1578D5AB1335F07DAAE9BA416D71603D /* CLSNetworkUtils.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSNetworkUtils.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSNetworkUtils.h; sourceTree = "<group>"; };
 		15922638F05B931A81D554DABE3162C6 /* CLSResource.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSResource.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSResource.m; sourceTree = "<group>"; };
-		16193564D868A898E90A85316FEA2C9E /* Pods-TencentCloudLogDemo */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = "Pods-TencentCloudLogDemo"; path = Pods_TencentCloudLogDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		16193564D868A898E90A85316FEA2C9E /* Pods_TencentCloudLogDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_TencentCloudLogDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		164B3DA1F722835828DC1CDF61961BB1 /* OCMObserverRecorder.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMObserverRecorder.m; path = Source/OCMock/OCMObserverRecorder.m; sourceTree = "<group>"; };
 		168A83246057575EE23A0FFD10F3E173 /* CLSDnsping.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSDnsping.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSDnsping.m; sourceTree = "<group>"; };
 		177E325116DCEF7BD543129CE8F3BADE /* OCMock.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = OCMock.debug.xcconfig; sourceTree = "<group>"; };
@@ -433,7 +433,7 @@
 		27C71B2F5E58ABE4D90C2611BCEC6F95 /* GPBAny.pbobjc.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBAny.pbobjc.h; path = objectivec/GPBAny.pbobjc.h; sourceTree = "<group>"; };
 		284CC0CCFB77785F74D6ABF0867716F7 /* OCMObjectReturnValueProvider.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMObjectReturnValueProvider.h; path = Source/OCMock/OCMObjectReturnValueProvider.h; sourceTree = "<group>"; };
 		286CADCD18B10EEDBDD15E08FCA91AEA /* FMResultSet.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = FMResultSet.m; path = src/fmdb/FMResultSet.m; sourceTree = "<group>"; };
-		28C935D0254E0FD442C28CAFC3E360C6 /* TencentCloudLogProducer.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = TencentCloudLogProducer.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		28C935D0254E0FD442C28CAFC3E360C6 /* TencentCloudLogProducer.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = TencentCloudLogProducer.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		29164D905E2B5D6BFAECFEED65CC2A73 /* CLS4Unity.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLS4Unity.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLS4Unity.h; sourceTree = "<group>"; };
 		2A788FFED43E93C957536C4B779EC70B /* CLSPrivocyUtils.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSPrivocyUtils.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSPrivocyUtils.h; sourceTree = "<group>"; };
 		2AD54E913B0D724BA4ECF81DECC86739 /* ClsLogSender.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = ClsLogSender.m; path = TencentCloudLogProducer/Core/ClsLogSender.m; sourceTree = "<group>"; };
@@ -460,18 +460,18 @@
 		3EF4D01D088A2CD3EA3F2C4F9C0F493A /* CLSUserInfo.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSUserInfo.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSUserInfo.m; sourceTree = "<group>"; };
 		3FA04E9F68E054FF2017A90956C88969 /* CLSNetworkUtils.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSNetworkUtils.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSNetworkUtils.m; sourceTree = "<group>"; };
 		3FF99B85BB168BB55843DE4D2DCAAB4A /* CLSUserInfo.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSUserInfo.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSUserInfo.h; sourceTree = "<group>"; };
-		400FF55D0451E7A8F33A3D0D3E11C1B9 /* Reachability */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = Reachability; path = Reachability.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		400FF55D0451E7A8F33A3D0D3E11C1B9 /* Reachability.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Reachability.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4084037B9FA96A053899A678F1B07B15 /* NSInvocation+OCMAdditions.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = "NSInvocation+OCMAdditions.m"; path = "Source/OCMock/NSInvocation+OCMAdditions.m"; sourceTree = "<group>"; };
 		40A73AA40FBFA9BC9DA57D0EED833567 /* OCMArgAction.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMArgAction.h; path = Source/OCMock/OCMArgAction.h; sourceTree = "<group>"; };
 		4329E7853EE307827CAD8E4111E7AAD1 /* OCMFunctions.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMFunctions.m; path = Source/OCMock/OCMFunctions.m; sourceTree = "<group>"; };
 		43555F3CC0D19D7C93316C535DEFBC05 /* Pods-TencentCloudLogDemoTests-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-TencentCloudLogDemoTests-acknowledgements.plist"; sourceTree = "<group>"; };
 		4386B0FDF9DC86FDADF8B156E239EE72 /* CLSKeyValue.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSKeyValue.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSKeyValue.m; sourceTree = "<group>"; };
-		4409B061B50398FEBE98136F5C099E61 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4409B061B50398FEBE98136F5C099E61 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		441DF177898689A80A312C2B531031AE /* Protobuf-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Protobuf-Info.plist"; sourceTree = "<group>"; };
 		44B3FE2B5A3383A1989F0F32D9ABE1F3 /* ClsLogs.pbobjc.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = ClsLogs.pbobjc.m; path = TencentCloudLogProducer/Core/ClsLogs.pbobjc.m; sourceTree = "<group>"; };
 		44BC77F4AC3BEE346E8B774F67E5A4E4 /* GPBDictionary.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBDictionary.m; path = objectivec/GPBDictionary.m; sourceTree = "<group>"; };
 		44DE320B114AEC3304FF3DF3529CB652 /* GPBExtensionInternals.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBExtensionInternals.h; path = objectivec/GPBExtensionInternals.h; sourceTree = "<group>"; };
-		4555D00C9447F80F88422A03EA5281EB /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = privacy/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4555D00C9447F80F88422A03EA5281EB /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = privacy/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		4593E1B370DCAB9F6AC7FF6650B8E72F /* GPBArray.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBArray.m; path = objectivec/GPBArray.m; sourceTree = "<group>"; };
 		45B53190B9AE331C3EFD40E97313FE2C /* ClsNetworkDiagnosis.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = ClsNetworkDiagnosis.h; path = TencentCloudLogProducer/NetWorkDiagnosis/ClsNetworkDiagnosis.h; sourceTree = "<group>"; };
 		45CC93CD0DE98C3B198163B1A00A3988 /* CLSLink.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSLink.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSLink.h; sourceTree = "<group>"; };
@@ -506,7 +506,7 @@
 		5F479FBBB147EBB3FA9BF0C61BCFF8E9 /* TencentCloudLogProducer.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = TencentCloudLogProducer.release.xcconfig; sourceTree = "<group>"; };
 		5FB6866D7A4FE5D5FDC065A041CA2166 /* OCMockObject.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMockObject.m; path = Source/OCMock/OCMockObject.m; sourceTree = "<group>"; };
 		5FDA338B88B0759EA984EB1F3428809A /* CLSResource.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSResource.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSResource.h; sourceTree = "<group>"; };
-		6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = TencentCloudLogProducer; path = TencentCloudLogProducer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TencentCloudLogProducer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		608C74AD8A34B08AAF46E46190917AEE /* OCMExpectationRecorder.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMExpectationRecorder.m; path = Source/OCMock/OCMExpectationRecorder.m; sourceTree = "<group>"; };
 		624FCF4732444FF5DDE63A3E4D3B8419 /* GPBDictionary.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBDictionary.h; path = objectivec/GPBDictionary.h; sourceTree = "<group>"; };
 		6251F542A7C3DD6971899C7504FE7281 /* GPBWellKnownTypes.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBWellKnownTypes.m; path = objectivec/GPBWellKnownTypes.m; sourceTree = "<group>"; };
@@ -537,7 +537,7 @@
 		72BF8B33729B50C5E3BBF501C13DEB69 /* GPBArray.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBArray.h; path = objectivec/GPBArray.h; sourceTree = "<group>"; };
 		737F29B16E3207C14F4B3744D9F2A031 /* FMResultSet.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = FMResultSet.h; path = src/fmdb/FMResultSet.h; sourceTree = "<group>"; };
 		748119B73F2C7B0B28A6EEC24224729A /* GPBUnknownFieldSet.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBUnknownFieldSet.m; path = objectivec/GPBUnknownFieldSet.m; sourceTree = "<group>"; };
-		754726FD6D365CD33DE7A5012FB35D94 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; path = README.md; sourceTree = "<group>"; };
+		754726FD6D365CD33DE7A5012FB35D94 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		7558F3319CE1973111FB7F03D034E7C7 /* OCMInvocationMatcher.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMInvocationMatcher.h; path = Source/OCMock/OCMInvocationMatcher.h; sourceTree = "<group>"; };
 		765C1442F9F634B1581986C0666ECC3B /* CLSIdGenerator.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSIdGenerator.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSIdGenerator.m; sourceTree = "<group>"; };
 		7776A9021AA617A1E578E9936E1767FD /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
@@ -587,15 +587,15 @@
 		9C549DAE952B611640D0CC23C0A338D9 /* GPBUtilities_PackagePrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBUtilities_PackagePrivate.h; path = objectivec/GPBUtilities_PackagePrivate.h; sourceTree = "<group>"; };
 		9CE8F3163FF7921E11A05FE1FB40B83F /* OCMIndirectReturnValueProvider.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMIndirectReturnValueProvider.h; path = Source/OCMock/OCMIndirectReturnValueProvider.h; sourceTree = "<group>"; };
 		9D7646936C58DAE3F18BFED230A540BD /* OCMConstraint.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMConstraint.m; path = Source/OCMock/OCMConstraint.m; sourceTree = "<group>"; };
-		9D940727FF8FB9C785EB98E56350EF41 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		9D940727FF8FB9C785EB98E56350EF41 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		9DFF8E7614C4598F48C8883C46F92C0F /* ResourceBundle-TencentCloudLogProducer-TencentCloudLogProducer-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "ResourceBundle-TencentCloudLogProducer-TencentCloudLogProducer-Info.plist"; sourceTree = "<group>"; };
 		9E626707538F8804BF5FDF127DF4B41C /* GPBUtilities.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBUtilities.m; path = objectivec/GPBUtilities.m; sourceTree = "<group>"; };
 		9E886E05ED2D6C1D4C784066A539F527 /* ClsStringUtils.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = ClsStringUtils.m; path = TencentCloudLogProducer/NetWorkDiagnosis/ClsStringUtils.m; sourceTree = "<group>"; };
-		9E8A9853C5D681893055B3814AEED782 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Framework/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		9E8A9853C5D681893055B3814AEED782 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; name = PrivacyInfo.xcprivacy; path = Framework/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		9F1E7271878C30D1427BFD0AF82D21A0 /* Protobuf-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "Protobuf-umbrella.h"; sourceTree = "<group>"; };
 		A1163A7D8385D3AFDE5B5AB272F1C03D /* CLSPingV2.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSPingV2.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSPingV2.h; sourceTree = "<group>"; };
 		A3080947605B5A3D55D71BA743934FDA /* NSNotificationCenter+OCMAdditions.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "NSNotificationCenter+OCMAdditions.h"; path = "Source/OCMock/NSNotificationCenter+OCMAdditions.h"; sourceTree = "<group>"; };
-		A3A80BA70CFB7F75C5391BEBBBA8C9DA /* FMDB */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = FMDB; path = FMDB.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3A80BA70CFB7F75C5391BEBBBA8C9DA /* FMDB.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FMDB.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A48ED9E147B5A4C637262C04E4D2E8A1 /* SourceContext.pbobjc.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = SourceContext.pbobjc.h; path = objectivec/google/protobuf/SourceContext.pbobjc.h; sourceTree = "<group>"; };
 		A4D28D3E595F564E040B0F706E7797CF /* OCMPassByRefSetter.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = OCMPassByRefSetter.m; path = Source/OCMock/OCMPassByRefSetter.m; sourceTree = "<group>"; };
 		A508F56D6B6E6B53D835BF3B376DD325 /* ResourceBundle-Reachability_Privacy-Reachability-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "ResourceBundle-Reachability_Privacy-Reachability-Info.plist"; sourceTree = "<group>"; };
@@ -632,14 +632,14 @@
 		C07F9CDE271B2C13F741324FA2DBB3AE /* cls_ping_detector.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = cls_ping_detector.h; sourceTree = "<group>"; };
 		C0CDA6FCE6A9BF19AEDC5B01027ACA41 /* GPBDescriptor.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBDescriptor.m; path = objectivec/GPBDescriptor.m; sourceTree = "<group>"; };
 		C19CA6A607FC550554E4CFC6E2C57919 /* GPBDuration.pbobjc.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBDuration.pbobjc.h; path = objectivec/GPBDuration.pbobjc.h; sourceTree = "<group>"; };
-		C2105C94812B6214B154F54DCEDB72AC /* Protobuf */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = Protobuf; path = Protobuf.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2105C94812B6214B154F54DCEDB72AC /* Protobuf.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Protobuf.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C23383F4A941F664A92FC7814BFDDCE4 /* GPBMessage.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBMessage.h; path = objectivec/GPBMessage.h; sourceTree = "<group>"; };
 		C3792A8D4B0A90128D89A7843A168C88 /* CLSIdGenerator.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSIdGenerator.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSIdGenerator.h; sourceTree = "<group>"; };
 		C58D5A920C2D1E2C62A0BDFA239F7744 /* Pods-TencentCloudLogDemo-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-TencentCloudLogDemo-dummy.m"; sourceTree = "<group>"; };
-		C6BEB81A58BF5B465951844BCDD24C16 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = TencentCloudLogProducer/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C6BEB81A58BF5B465951844BCDD24C16 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = TencentCloudLogProducer/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C76C5ADF938B90AB24372EB60976227D /* CLSDeviceUtils.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSDeviceUtils.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSDeviceUtils.h; sourceTree = "<group>"; };
 		C779B0BCF0878B49FE0E44B086F1F9D0 /* NSObject+OCMAdditions.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "NSObject+OCMAdditions.h"; path = "Source/OCMock/NSObject+OCMAdditions.h"; sourceTree = "<group>"; };
-		C8383DE6AD778220508AD48F51B05989 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; path = LICENSE; sourceTree = "<group>"; };
+		C8383DE6AD778220508AD48F51B05989 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		C93B3B5AEE7F76D215D8F861BC71F465 /* NSString+CLS.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = "NSString+CLS.m"; path = "TencentCloudLogProducer/NetWorkDiagnosis/NSString+CLS.m"; sourceTree = "<group>"; };
 		CA2609D45641D2E11388B2D8154BC07E /* GPBEmpty.pbobjc.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBEmpty.pbobjc.m; path = objectivec/GPBEmpty.pbobjc.m; sourceTree = "<group>"; };
 		CBE7D5FF807C2959943A14F4DAEA9A0E /* ClsNetworkTool.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = ClsNetworkTool.h; path = TencentCloudLogProducer/Core/ClsNetworkTool.h; sourceTree = "<group>"; };
@@ -668,7 +668,7 @@
 		DE9279BBAE1FBDCBD05FE386F770DC94 /* ResourceBundle-Protobuf_Privacy-Protobuf-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "ResourceBundle-Protobuf_Privacy-Protobuf-Info.plist"; sourceTree = "<group>"; };
 		DE97FC188CC22E77A789ACEAABB24614 /* OCMockObject.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMockObject.h; path = Source/OCMock/OCMockObject.h; sourceTree = "<group>"; };
 		DF0152A4D5385661548B5983B039F7A2 /* OCMLocation.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMLocation.h; path = Source/OCMock/OCMLocation.h; sourceTree = "<group>"; };
-		DFC89BE171DE7E648C53797695D8A220 /* Reachability-Reachability_Privacy */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "Reachability-Reachability_Privacy"; path = Reachability_Privacy.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		DFC89BE171DE7E648C53797695D8A220 /* Reachability_Privacy.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Reachability_Privacy.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		E05C839B3D96B3F9D7C703687C10D94A /* CLSLink.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSLink.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSLink.m; sourceTree = "<group>"; };
 		E0D1151C999481D12F389D527FE4E407 /* GPBType.pbobjc.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBType.pbobjc.m; path = objectivec/GPBType.pbobjc.m; sourceTree = "<group>"; };
 		E181263038307238EAACD09C1EC7BCF3 /* Protobuf-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Protobuf-dummy.m"; sourceTree = "<group>"; };
@@ -693,12 +693,12 @@
 		F1349A2AA02F11F22D8F6205CA9844E9 /* OCMArg.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMArg.h; path = Source/OCMock/OCMArg.h; sourceTree = "<group>"; };
 		F172B8BF0ED33B304E5DA37589BB10D9 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/SystemConfiguration.framework; sourceTree = DEVELOPER_DIR; };
 		F1CFFDC79781B0649B829802F62E6112 /* OCMBlockCaller.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCMBlockCaller.h; path = Source/OCMock/OCMBlockCaller.h; sourceTree = "<group>"; };
-		F30C125DB91902F63DC73AEF0B0E6111 /* OCMock */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = OCMock; path = OCMock.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		F30C125DB91902F63DC73AEF0B0E6111 /* OCMock.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OCMock.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F36D43E0D770E3228B801C4E2169A2D1 /* GPBUnknownFields.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = GPBUnknownFields.m; path = objectivec/GPBUnknownFields.m; sourceTree = "<group>"; };
 		F499BC290D7C8809D3DA2F212CD7FA55 /* CLSSPanBuilder.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = CLSSPanBuilder.m; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSSPanBuilder.m; sourceTree = "<group>"; };
 		F507592D018AB23917EBCC96E77E2E87 /* Reachability.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Reachability.debug.xcconfig; sourceTree = "<group>"; };
 		F5C0B46764E8AA8EF5D8A7A7D3411A71 /* OCClassMockObject.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = OCClassMockObject.h; path = Source/OCMock/OCClassMockObject.h; sourceTree = "<group>"; };
-		F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf-Protobuf_Privacy */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "Protobuf-Protobuf_Privacy"; path = Protobuf_Privacy.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf_Privacy.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Protobuf_Privacy.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FF53DB0B12974A4B7CF564E8F1AB70 /* GPBStruct.pbobjc.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBStruct.pbobjc.h; path = objectivec/GPBStruct.pbobjc.h; sourceTree = "<group>"; };
 		F858B8241C137F2B829B30F447AC3D95 /* GPBUnknownFieldSet_PackagePrivate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = GPBUnknownFieldSet_PackagePrivate.h; path = objectivec/GPBUnknownFieldSet_PackagePrivate.h; sourceTree = "<group>"; };
 		F85E573616481911FBD14ADA8A66AE0A /* CLSSpanProviderProtocol.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CLSSpanProviderProtocol.h; path = TencentCloudLogProducer/NetWorkDiagnosis/CLSSpanProviderProtocol.h; sourceTree = "<group>"; };
@@ -947,7 +947,6 @@
 				B5D05E456C00021EBFF7D38A773CE20E /* Resources */,
 				89EA9C7FEE26139C95A0CCF5BD0B7306 /* Support Files */,
 			);
-			name = Protobuf;
 			path = Protobuf;
 			sourceTree = "<group>";
 		};
@@ -1049,7 +1048,6 @@
 				2D437B1B22AE1FA0D624F4A6484F97FC /* OCProtocolMockObject.m */,
 				B1D644F4E07BDE8EFA2BD97627E523F0 /* Support Files */,
 			);
-			name = OCMock;
 			path = OCMock;
 			sourceTree = "<group>";
 		};
@@ -1102,7 +1100,6 @@
 				DCF0896852CC9A6A9DF79458F7334A7F /* Resources */,
 				1249E8998DF40D03CB8215275C61E10F /* Support Files */,
 			);
-			name = Reachability;
 			path = Reachability;
 			sourceTree = "<group>";
 		};
@@ -1141,17 +1138,17 @@
 		9D61178E2658A5186CCFBA7EEBD69D28 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A3A80BA70CFB7F75C5391BEBBBA8C9DA /* FMDB */,
-				148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB-FMDB_Privacy */,
-				F30C125DB91902F63DC73AEF0B0E6111 /* OCMock */,
-				16193564D868A898E90A85316FEA2C9E /* Pods-TencentCloudLogDemo */,
+				A3A80BA70CFB7F75C5391BEBBBA8C9DA /* FMDB.framework */,
+				148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB_Privacy.bundle */,
+				F30C125DB91902F63DC73AEF0B0E6111 /* OCMock.framework */,
+				16193564D868A898E90A85316FEA2C9E /* Pods_TencentCloudLogDemo.framework */,
 				ECEE327A5972E22C040606D109A8CEDE /* Pods-TencentCloudLogDemoTests */,
-				C2105C94812B6214B154F54DCEDB72AC /* Protobuf */,
-				F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf-Protobuf_Privacy */,
-				400FF55D0451E7A8F33A3D0D3E11C1B9 /* Reachability */,
-				DFC89BE171DE7E648C53797695D8A220 /* Reachability-Reachability_Privacy */,
-				6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer */,
-				03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer-TencentCloudLogProducer */,
+				C2105C94812B6214B154F54DCEDB72AC /* Protobuf.framework */,
+				F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf_Privacy.bundle */,
+				400FF55D0451E7A8F33A3D0D3E11C1B9 /* Reachability.framework */,
+				DFC89BE171DE7E648C53797695D8A220 /* Reachability_Privacy.bundle */,
+				6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer.framework */,
+				03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1248,7 +1245,6 @@
 				37E27DD39E5608AC59B4585C73F33140 /* Core */,
 				2BEF1B39D7A7EE94AA42359B4656A765 /* Support Files */,
 			);
-			name = FMDB;
 			path = FMDB;
 			sourceTree = "<group>";
 		};
@@ -1572,7 +1568,7 @@
 			);
 			name = "Protobuf-Protobuf_Privacy";
 			productName = Protobuf_Privacy;
-			productReference = F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf-Protobuf_Privacy */;
+			productReference = F777222FFBEEB0CE4650EE8A00938A60 /* Protobuf_Privacy.bundle */;
 			productType = "com.apple.product-type.bundle";
 		};
 		470FE31978DC918618A329D8B55C85FF /* Protobuf */ = {
@@ -1591,7 +1587,7 @@
 			);
 			name = Protobuf;
 			productName = Protobuf;
-			productReference = C2105C94812B6214B154F54DCEDB72AC /* Protobuf */;
+			productReference = C2105C94812B6214B154F54DCEDB72AC /* Protobuf.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		8592E0E389D40AC17881400ADC67ABC0 /* FMDB */ = {
@@ -1610,7 +1606,7 @@
 			);
 			name = FMDB;
 			productName = FMDB;
-			productReference = A3A80BA70CFB7F75C5391BEBBBA8C9DA /* FMDB */;
+			productReference = A3A80BA70CFB7F75C5391BEBBBA8C9DA /* FMDB.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		89B9E11BFFFDFD68227A95487680DE65 /* TencentCloudLogProducer */ = {
@@ -1632,7 +1628,7 @@
 			);
 			name = TencentCloudLogProducer;
 			productName = TencentCloudLogProducer;
-			productReference = 6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer */;
+			productReference = 6053FAFFFAB9523114699DDBF3E333A7 /* TencentCloudLogProducer.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		8E33B2BF1257C71A577488EEB8C80F8D /* Pods-TencentCloudLogDemo */ = {
@@ -1654,7 +1650,7 @@
 			);
 			name = "Pods-TencentCloudLogDemo";
 			productName = Pods_TencentCloudLogDemo;
-			productReference = 16193564D868A898E90A85316FEA2C9E /* Pods-TencentCloudLogDemo */;
+			productReference = 16193564D868A898E90A85316FEA2C9E /* Pods_TencentCloudLogDemo.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		973B9A51B49701F13767694DCAF5C37D /* FMDB-FMDB_Privacy */ = {
@@ -1671,7 +1667,7 @@
 			);
 			name = "FMDB-FMDB_Privacy";
 			productName = FMDB_Privacy;
-			productReference = 148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB-FMDB_Privacy */;
+			productReference = 148D9AC15C4A9777E5ACBB46C03FE218 /* FMDB_Privacy.bundle */;
 			productType = "com.apple.product-type.bundle";
 		};
 		C260B5A26D3CD54F215E5E39371483B6 /* OCMock */ = {
@@ -1689,7 +1685,7 @@
 			);
 			name = OCMock;
 			productName = OCMock;
-			productReference = F30C125DB91902F63DC73AEF0B0E6111 /* OCMock */;
+			productReference = F30C125DB91902F63DC73AEF0B0E6111 /* OCMock.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		C70993D12A1AD7397E6FE1EB22EE5F55 /* TencentCloudLogProducer-TencentCloudLogProducer */ = {
@@ -1706,7 +1702,7 @@
 			);
 			name = "TencentCloudLogProducer-TencentCloudLogProducer";
 			productName = TencentCloudLogProducer;
-			productReference = 03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer-TencentCloudLogProducer */;
+			productReference = 03D5070E89835B5CBA3D86FF511DB2D7 /* TencentCloudLogProducer.bundle */;
 			productType = "com.apple.product-type.bundle";
 		};
 		CAA047C0F5E4106F3904E8497FA17F97 /* Reachability */ = {
@@ -1725,7 +1721,7 @@
 			);
 			name = Reachability;
 			productName = Reachability;
-			productReference = 400FF55D0451E7A8F33A3D0D3E11C1B9 /* Reachability */;
+			productReference = 400FF55D0451E7A8F33A3D0D3E11C1B9 /* Reachability.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		D2787856C227A709315E3C9C4355A440 /* Reachability-Reachability_Privacy */ = {
@@ -1742,7 +1738,7 @@
 			);
 			name = "Reachability-Reachability_Privacy";
 			productName = Reachability_Privacy;
-			productReference = DFC89BE171DE7E648C53797695D8A220 /* Reachability-Reachability_Privacy */;
+			productReference = DFC89BE171DE7E648C53797695D8A220 /* Reachability_Privacy.bundle */;
 			productType = "com.apple.product-type.bundle";
 		};
 		DF3989C5048AC677CA77C96152061625 /* Pods-TencentCloudLogDemoTests */ = {
@@ -1783,8 +1779,6 @@
 				en,
 			);
 			mainGroup = CF1408CF629C7361332E53B88F7BD30C;
-			minimizedProjectReferenceProxies = 0;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 9D61178E2658A5186CCFBA7EEBD69D28 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1809,7 +1803,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				03F2428C9FE1AF75B287A39D46F646FA /* FMDB-FMDB_Privacy in Resources */,
+				03F2428C9FE1AF75B287A39D46F646FA /* FMDB_Privacy.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1840,7 +1834,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C78F24992DF950290A486B4D8B9DEA6F /* Reachability-Reachability_Privacy in Resources */,
+				C78F24992DF950290A486B4D8B9DEA6F /* Reachability_Privacy.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1848,7 +1842,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				40E84298D5B6281A8EE507A8DCB02B63 /* Protobuf-Protobuf_Privacy in Resources */,
+				40E84298D5B6281A8EE507A8DCB02B63 /* Protobuf_Privacy.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1864,7 +1858,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				347C9015B3B5A863502734167D3BBC10 /* TencentCloudLogProducer-TencentCloudLogProducer in Resources */,
+				347C9015B3B5A863502734167D3BBC10 /* TencentCloudLogProducer.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

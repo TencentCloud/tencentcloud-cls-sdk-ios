@@ -352,7 +352,7 @@ NSString * const kCLSErrorInvalidUin = @"InvalidUin";
     NSMutableDictionary *headers = [NSMutableDictionary dictionary];
     headers[@"Host"] = cfg.endpoint;
     headers[@"Content-Type"] = @"application/x-protobuf";
-    headers[@"User-Agent"] = @"tencent-log-sdk-ios v3.3.0";
+    headers[@"User-Agent"] = @"tencent-log-sdk-ios v3.3.1";
     headers[@"x-cls-trace-id"] = [[NSUUID UUID] UUIDString];
     headers[@"x-cls-add-source"] = @"1";
 
