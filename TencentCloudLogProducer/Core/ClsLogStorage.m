@@ -11,11 +11,17 @@ static const useconds_t kDeleteBackoffUs[kDeleteMaxRetries] = {
     50 * 1000, 150 * 1000, 400 * 1000
 };
 
+// 3.3.1 补丁：连续 N 次 DELETE 返回 changes < expected 即判为持续性 DB 异常，
+// 走失败重试链路最终触发熔断，避免 workLoop 内层 while(YES) 把单次失败放大成重传风暴。
+// 阈值 >= 2 兼容真·evict race（evict 和 workLoop 偶发竞态单发不触发）。
+static const NSInteger kShortDeleteFuseThreshold = 3;
+
 @interface ClsLogStorage ()
 @property (nonatomic, strong) FMDatabaseQueue *dbQueue;
 @property (nonatomic, strong) dispatch_queue_t writeQueue;
 @property (nonatomic, assign) uint64_t maxDatabaseSize;
 @property (atomic, assign, readwrite) BOOL isDbWritable;
+@property (atomic, assign) NSInteger consecutiveShortDeleteCount;
 @end
 
 @implementation ClsLogStorage
@@ -265,8 +271,22 @@ static const useconds_t kDeleteBackoffUs[kDeleteMaxRetries] = {
                 return;
             }
             if ((NSUInteger)db.changes < logIds.count) {
-                CLSLog(@"delete affected=%d expected=%lu (likely eviction race)",
-                       db.changes, (unsigned long)logIds.count);
+                // 3.3.1 补丁：changes < expected 不再无条件容忍
+                // 偶发 1~2 次：兼容真·evict race（writeLog 触发的容量淘汰可能先删了部分 _id）
+                // 连续 >= 阈值：判为持续性 DB 异常（READONLY/journal 失败/多实例可见性等），走熔断
+                NSInteger n = (self.consecutiveShortDeleteCount += 1);
+                CLSLog(@"delete affected=%d expected=%lu short#%ld (threshold=%ld)",
+                       db.changes, (unsigned long)logIds.count,
+                       (long)n, (long)kShortDeleteFuseThreshold);
+                if (n >= kShortDeleteFuseThreshold) {
+                    lastCode = -1;
+                    lastMsg = @"persistent short delete";
+                    *rollback = YES;
+                    return;  // ok 保持 NO → 走 attempt retry → 耗尽后熔断
+                }
+                // 阈值内：仍视为成功（兼容真·evict race）
+            } else {
+                self.consecutiveShortDeleteCount = 0;  // 任意一次完全命中即复位
             }
             ok = YES;
         }];
