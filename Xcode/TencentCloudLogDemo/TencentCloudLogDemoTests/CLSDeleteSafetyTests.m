@@ -5,9 +5,20 @@
 #import <TencentCloudLogProducer/ClsLogSender.h>
 #import <TencentCloudLogProducer/ClsLogs.pbobjc.h>
 #import <FMDB/FMDB.h>
+#import <OCMock/OCMock.h>
+#import <TencentCloudLogProducer/CLSNetworkTool.h>
+#import <string.h>
 
 static NSInteger gInjectedFailuresRemaining = 0;
 static NSString *gInjectedSQLSubstring = nil;
+
+@interface FMDatabase (CLSPrivateTestAccess)
+- (BOOL)executeUpdate:(NSString *)sql
+                 error:(NSError * _Nullable __autoreleasing *)outErr
+  withArgumentsInArray:(NSArray *)arrayArgs
+          orDictionary:(NSDictionary *)dictionaryArgs
+              orVAList:(va_list)args;
+@end
 
 @interface FMDatabase (CLSInject)
 @end
@@ -283,4 +294,515 @@ static NSString *gInjectedSQLSubstring = nil;
     XCTAssertEqual([[storage valueForKey:@"consecutiveShortDeleteCount"] integerValue], 2);
 }
 
+@end
+
+static sqlite3_vfs gCommitTestVFS;
+static sqlite3_vfs *gBaseVFS;
+static sqlite3_io_methods gWalMethods;
+static const sqlite3_io_methods *gBaseWalMethods;
+static NSInteger gWalFailuresRemaining;
+static int gWalFailureCode = SQLITE_FULL;
+static BOOL gDenyConfiguration;
+static NSUInteger gWalFailures;
+static sqlite3 *gCommitTestDB;
+static BOOL gDenyBegin;
+static BOOL gDenyCommit;
+static BOOL gDenyRollback;
+static NSUInteger gDeleteFullHits;
+static NSMutableArray<NSDictionary *> *gCommitResults;
+
+// Faults only the private test VFS's WAL writes; the host disk is never filled.
+static int CLSFailWalWrite(sqlite3_file *file, const void *buffer, int size, sqlite3_int64 offset) {
+    if (gWalFailuresRemaining > 0) {
+        gWalFailuresRemaining--;
+        gWalFailures++;
+        return gWalFailureCode;
+    }
+    return gBaseWalMethods->xWrite(file, buffer, size, offset);
+}
+
+static int CLSCommitTestOpen(sqlite3_vfs *vfs, const char *path, sqlite3_file *file, int flags, int *outFlags) {
+    int rc = gBaseVFS->xOpen(gBaseVFS, path, file, flags, outFlags);
+    if (rc == SQLITE_OK && (flags & SQLITE_OPEN_WAL)) {
+        gBaseWalMethods = file->pMethods;
+        gWalMethods = *gBaseWalMethods;
+        gWalMethods.xWrite = CLSFailWalWrite;
+        file->pMethods = &gWalMethods;
+    }
+    return rc;
+}
+
+static int CLSAuthorizeTransaction(void *context, int action, const char *operation,
+                                   const char *arg2, const char *database, const char *trigger) {
+    if (gDenyConfiguration && action == SQLITE_PRAGMA && operation &&
+        strcmp(operation, "synchronous") == 0) return SQLITE_DENY;
+    if (action == SQLITE_TRANSACTION && operation) {
+        if ((gDenyBegin && strcmp(operation, "BEGIN") == 0) ||
+            (gDenyCommit && strcmp(operation, "COMMIT") == 0) ||
+            (gDenyRollback && strcmp(operation, "ROLLBACK") == 0)) {
+            return SQLITE_DENY;
+        }
+    }
+    return SQLITE_OK;
+}
+
+@interface FMDatabase (CLSCommitObserve)
+@end
+@implementation FMDatabase (CLSCommitObserve)
+- (BOOL)clsCommit_executeUpdate:(NSString *)sql
+                         error:(NSError * _Nullable __autoreleasing *)outErr
+          withArgumentsInArray:(NSArray *)arrayArgs
+                  orDictionary:(NSDictionary *)dictionaryArgs
+                      orVAList:(va_list)args {
+    BOOL ok = [self clsCommit_executeUpdate:sql error:outErr withArgumentsInArray:arrayArgs
+                              orDictionary:dictionaryArgs orVAList:args];
+    if (self.sqliteHandle == gCommitTestDB) {
+        if ([sql hasPrefix:@"DELETE FROM cls_log_table WHERE"] && ok && self.changes == 1) {
+            gDeleteFullHits++;
+        }
+        if ([sql.lowercaseString hasPrefix:@"commit"]) {
+            NSDictionary *state = @{@"ok": @(ok), @"code": @(self.lastErrorCode),
+                                    @"autocommit": @(sqlite3_get_autocommit(self.sqliteHandle))};
+            [gCommitResults addObject:state];
+            NSLog(@"[CLSCommitProbe] %@ fullHits=%lu walFailures=%lu", state,
+                  (unsigned long)gDeleteFullHits, (unsigned long)gWalFailures);
+        }
+    }
+    return ok;
+}
+@end
+
+@interface ClsLogStorage (CLSCommitTestAccess)
+- (void)setupDatabase;
+@end
+@interface LogSender (CLSCommitTestAccess)
+- (void)sendAllPendingOnThread:(NSThread *)thread;
+- (BOOL)sendBatchLogs:(NSArray<NSDictionary *> *)logs config:(ClsLogSenderConfig *)config;
+@end
+
+@interface CLSBoundedCommitSender : LogSender
+@property (nonatomic) NSUInteger batches;
+@property (nonatomic, strong) NSMutableArray<NSArray *> *sentIds;
+@end
+@implementation CLSBoundedCommitSender
+- (BOOL)sendBatchLogs:(NSArray<NSDictionary *> *)logs config:(ClsLogSenderConfig *)config {
+    if (self.batches >= 6) return NO;
+    self.batches++;
+    [self.sentIds addObject:[logs valueForKey:@"id"]];
+    return [super sendBatchLogs:logs config:config];
+}
+@end
+
+@interface CLSCommitSafetyTests : XCTestCase
+@property (nonatomic, strong) FMDatabaseQueue *originalQueue;
+@property (nonatomic, strong) FMDatabaseQueue *queue;
+@property (nonatomic, copy) NSString *directory;
+@property (nonatomic, copy) NSString *path;
+@property (nonatomic, strong) id networkMock;
+@end
+
+@implementation CLSCommitSafetyTests
++ (void)setUp {
+    [super setUp];
+    gBaseVFS = sqlite3_vfs_find(NULL);
+    gCommitTestVFS = *gBaseVFS;
+    gCommitTestVFS.zName = "cls-commit-safety";
+    gCommitTestVFS.pNext = NULL;
+    gCommitTestVFS.xOpen = CLSCommitTestOpen;
+    NSAssert(sqlite3_vfs_register(&gCommitTestVFS, 0) == SQLITE_OK, @"test VFS registration failed");
+    method_exchangeImplementations(
+        class_getInstanceMethod(FMDatabase.class, @selector(executeUpdate:error:withArgumentsInArray:orDictionary:orVAList:)),
+        class_getInstanceMethod(FMDatabase.class, @selector(clsCommit_executeUpdate:error:withArgumentsInArray:orDictionary:orVAList:)));
+}
+
++ (void)tearDown {
+    method_exchangeImplementations(
+        class_getInstanceMethod(FMDatabase.class, @selector(executeUpdate:error:withArgumentsInArray:orDictionary:orVAList:)),
+        class_getInstanceMethod(FMDatabase.class, @selector(clsCommit_executeUpdate:error:withArgumentsInArray:orDictionary:orVAList:)));
+    sqlite3_vfs_unregister(&gCommitTestVFS);
+    [super tearDown];
+}
+
+- (void)setUp {
+    [super setUp];
+    gWalFailuresRemaining = 0;
+    gWalFailureCode = SQLITE_FULL;
+    gDenyConfiguration = NO;
+    gWalFailures = 0;
+    gDenyBegin = gDenyCommit = gDenyRollback = NO;
+    gDeleteFullHits = 0;
+    gCommitResults = [NSMutableArray array];
+    LogSender *sender = [LogSender sharedSender];
+    NSThread *worker = [sender valueForKey:@"workThread"];
+    [sender stop];
+    NSLock *sendLock = [sender valueForKey:@"sendLock"];
+    [sendLock lock];
+    [sendLock unlock];
+    XCTAssertTrue(!worker || worker.isCancelled);
+    ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    dispatch_sync([storage valueForKey:@"writeQueue"], ^{});
+    self.originalQueue = [storage valueForKey:@"dbQueue"];
+    self.directory = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
+    XCTAssertTrue([[NSFileManager defaultManager] createDirectoryAtPath:self.directory
+                                           withIntermediateDirectories:YES attributes:nil error:nil]);
+    self.path = [self.directory stringByAppendingPathComponent:@"commit.db"];
+    self.queue = [[FMDatabaseQueue alloc] initWithPath:self.path
+                                               flags:SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
+                                                 vfs:@"cls-commit-safety"];
+    XCTAssertNotNil(self.queue);
+    [storage setValue:self.queue forKey:@"dbQueue"];
+    [storage setValue:@YES forKey:@"isDbWritable"];
+    [storage setValue:@0 forKey:@"consecutiveShortDeleteCount"];
+    [storage setupDatabase];
+    [self.queue inDatabase:^(FMDatabase *db) {
+        gCommitTestDB = db.sqliteHandle;
+        XCTAssertEqualObjects([db stringForQuery:@"PRAGMA journal_mode"], @"wal");
+        XCTAssertEqual(sqlite3_set_authorizer(db.sqliteHandle, CLSAuthorizeTransaction, NULL), SQLITE_OK);
+        Log *log = [[Log alloc] init];
+        log.time = 1793692898293;
+        Log_Content *content = [[Log_Content alloc] init];
+        content.key = @"event";
+        content.value = @"storage-full";
+        [log.contentsArray addObject:content];
+        BOOL inserted = [db executeUpdate:@"INSERT INTO cls_log_table (_id, log_item_data, topic_id, create_time) VALUES (1, ?, 'test-topic', 1)",
+                         [[log data] base64EncodedStringWithOptions:0]];
+        XCTAssertTrue(inserted);
+    }];
+}
+
+- (void)tearDown {
+    [self.networkMock stopMocking];
+    self.networkMock = nil;
+    gWalFailuresRemaining = 0;
+    gDenyConfiguration = NO;
+    gDenyBegin = gDenyCommit = gDenyRollback = NO;
+    ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    dispatch_sync([storage valueForKey:@"writeQueue"], ^{});
+    [self.queue inDatabase:^(FMDatabase *db) {
+        sqlite3_set_authorizer(db.sqliteHandle, NULL, NULL);
+        if (!sqlite3_get_autocommit(db.sqliteHandle)) [db rollback];
+    }];
+    gCommitTestDB = NULL;
+    [self.queue close];
+    [storage setValue:self.originalQueue forKey:@"dbQueue"];
+    [storage setValue:@YES forKey:@"isDbWritable"];
+    [storage setValue:@0 forKey:@"consecutiveShortDeleteCount"];
+    [storage setValue:@NO forKey:@"needsConnectionConfiguration"];
+    XCTAssertTrue([[NSFileManager defaultManager] removeItemAtPath:self.directory error:nil]);
+    [super tearDown];
+}
+
+- (NSUInteger)committedRowCount {
+    FMDatabase *reader = [FMDatabase databaseWithPath:self.path];
+    XCTAssertTrue([reader open]);
+    FMResultSet *rows = [reader executeQuery:@"SELECT COUNT(*) AS row_count FROM cls_log_table"];
+    XCTAssertNotNil(rows);
+    BOOL hasRow = [rows next];
+    XCTAssertTrue(hasRow);
+    XCTAssertFalse(reader.hadError);
+    NSUInteger count = hasRow ? (NSUInteger)[rows longLongIntForColumn:@"row_count"] : NSNotFound;
+    [rows close];
+    [reader close];
+    return count;
+}
+
+- (void)assertNoActiveTransaction {
+    [self.queue inDatabase:^(FMDatabase *db) {
+        XCTAssertEqual(sqlite3_get_autocommit(db.sqliteHandle), 1);
+    }];
+}
+
+- (void)testWALFullAtCommitStopsSuccessfulHTTPReplay {
+    gWalFailuresRemaining = NSIntegerMax;
+    __block NSUInteger requests = 0;
+    CLSSendResult *response = [[CLSSendResult alloc] init];
+    response.statusCode = 200;
+    response.requestID = @"controlled-200";
+    self.networkMock = OCMClassMock(CLSNetworkTool.class);
+    OCMStub([self.networkMock isNetworkAvailable]).andReturn(YES);
+    OCMStub([self.networkMock sendPostRequestSyncWithUrl:[OCMArg any] headers:[OCMArg any]
+                                                  body:[OCMArg any] option:[OCMArg any]])
+        .andDo(^(NSInvocation *invocation) { requests++; }).andReturn(response);
+    CLSBoundedCommitSender *sender = [[CLSBoundedCommitSender alloc] init];
+    sender.sentIds = [NSMutableArray array];
+    [sender setConfig:[ClsLogSenderConfig configWithEndpoint:@"test.invalid"
+                                               accessKeyId:@"test-id" accessKey:@"test-key"]];
+    [sender sendAllPendingOnThread:NSThread.currentThread];
+    NSLog(@"[CLSCommitProbe] requests=%lu ids=%@ fullHits=%lu commits=%@", (unsigned long)requests,
+          sender.sentIds, (unsigned long)gDeleteFullHits, gCommitResults);
+    XCTAssertEqual(requests, 1u, @"SQL retries must not resend an HTTP-200 batch");
+    XCTAssertEqual(gDeleteFullHits, 4u);
+    XCTAssertEqual(gCommitResults.count, 4u);
+    XCTAssertGreaterThan(gWalFailures, 0u);
+    for (NSDictionary *state in gCommitResults) {
+        XCTAssertFalse([state[@"ok"] boolValue]);
+        XCTAssertEqual([state[@"code"] intValue] & 0xff, SQLITE_FULL);
+        XCTAssertEqual([state[@"autocommit"] intValue], 1);
+    }
+    XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+    XCTAssertEqual([[ClsLogStorage sharedInstance] queryPendingLogs:100].count, 0u);
+    XCTAssertEqual([self committedRowCount], 1u);
+    [self assertNoActiveTransaction];
+}
+
+- (void)testTransientWALFullRetriesBeforeReportingSuccess {
+    gWalFailuresRemaining = 1;
+    XCTAssertTrue([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+    XCTAssertEqual(gWalFailures, 1u);
+    XCTAssertEqual(gDeleteFullHits, 2u);
+    XCTAssertEqual(gCommitResults.count, 2u);
+    XCTAssertEqual([gCommitResults.firstObject[@"code"] intValue] & 0xff, SQLITE_FULL);
+    XCTAssertTrue([gCommitResults.lastObject[@"ok"] boolValue]);
+    XCTAssertEqual([self committedRowCount], 0u);
+    XCTAssertTrue([ClsLogStorage sharedInstance].isDbWritable);
+    [self assertNoActiveTransaction];
+}
+
+- (void)testDeniedCommitRollsBackBeforeLaterWrite {
+    gDenyCommit = YES;
+    XCTAssertFalse([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+    XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+    XCTAssertEqual(gCommitResults.count, 4u);
+    for (NSDictionary *state in gCommitResults) {
+        XCTAssertEqual([state[@"code"] intValue], SQLITE_AUTH);
+        XCTAssertEqual([state[@"autocommit"] intValue], 0);
+    }
+    [self assertNoActiveTransaction];
+    gDenyCommit = NO;
+    Log *log = [[Log alloc] init];
+    log.time = 2;
+    XCTestExpectation *written = [self expectationWithDescription:@"post-failure write persisted"];
+    [[ClsLogStorage sharedInstance] writeLog:log topicId:@"test-topic" completion:^(BOOL ok, NSError *error) {
+        XCTAssertTrue(ok);
+        XCTAssertNil(error);
+        [written fulfill];
+    }];
+    [self waitForExpectations:@[written] timeout:3];
+    XCTAssertEqual([self committedRowCount], 2u, @"write success must be visible on a separate connection");
+}
+
+- (void)testDeniedBeginDoesNotExecuteDelete {
+    gDenyBegin = YES;
+    XCTAssertFalse([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+    XCTAssertEqual(gDeleteFullHits, 0u);
+    XCTAssertEqual([self committedRowCount], 1u);
+    XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+    [self assertNoActiveTransaction];
+}
+
+- (void)testRollbackFailureDoesNotLeaveAnActiveTransaction {
+    gDenyCommit = YES;
+    gDenyRollback = YES;
+    XCTAssertFalse([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+    XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+    [self assertNoActiveTransaction];
+    XCTAssertEqual([self committedRowCount], 1u);
+    gDenyCommit = gDenyRollback = NO;
+    Log *log = [[Log alloc] init];
+    log.time = 3;
+    XCTestExpectation *written = [self expectationWithDescription:@"reopened database write"];
+    [[ClsLogStorage sharedInstance] writeLog:log topicId:@"test-topic" completion:^(BOOL ok, NSError *error) {
+        XCTAssertTrue(ok);
+        XCTAssertNil(error);
+        [written fulfill];
+    }];
+    [self waitForExpectations:@[written] timeout:3];
+    XCTAssertEqual([self committedRowCount], 2u);
+    [self.queue inDatabase:^(FMDatabase *db) {
+        XCTAssertEqual([db intForQuery:@"PRAGMA synchronous"], 1);
+        XCTAssertEqual([db longForQuery:@"PRAGMA journal_size_limit"], 4194304);
+        XCTAssertEqualObjects([db stringForQuery:@"PRAGMA journal_mode"], @"wal");
+    }];
+    XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+}
+
+- (void)testFailedCommitDoesNotResetShortDeleteCounter {
+    [[ClsLogStorage sharedInstance] setValue:@2 forKey:@"consecutiveShortDeleteCount"];
+    gWalFailuresRemaining = NSIntegerMax;
+    XCTAssertFalse([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+    XCTAssertEqual([[[ClsLogStorage sharedInstance] valueForKey:@"consecutiveShortDeleteCount"] integerValue], 2);
+    XCTAssertEqual([self committedRowCount], 1u);
+}
+
+- (NSArray<NSNumber *> *)seedRowsThrough:(NSUInteger)count {
+    NSMutableArray<NSNumber *> *ids = [NSMutableArray array];
+    [self.queue inDatabase:^(FMDatabase *db) {
+        NSString *payload = [db stringForQuery:@"SELECT log_item_data FROM cls_log_table WHERE _id=1"];
+        XCTAssertNotNil(payload);
+        XCTAssertTrue([db beginTransaction]);
+        for (NSUInteger i = 1; i <= count; i++) {
+            [ids addObject:@(i)];
+            if (i == 1) continue;
+            BOOL inserted = [db executeUpdate:@"INSERT INTO cls_log_table (_id, log_item_data, topic_id, create_time) VALUES (?, ?, 'test-topic', ?)"
+                        withArgumentsInArray:@[@(i), payload, @(i)]];
+            XCTAssertTrue(inserted);
+        }
+        XCTAssertTrue([db commit]);
+    }];
+    [gCommitResults removeAllObjects];
+    return ids;
+}
+
+- (void)testBatchDeletePersistsAndPreservesUnselectedRowsAfterReopen {
+    NSArray<NSNumber *> *ids = [self seedRowsThrough:250];
+    ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    XCTAssertTrue([storage deleteSentLogsWithIds:[ids subarrayWithRange:NSMakeRange(0, 100)]]);
+    XCTAssertEqual([self committedRowCount], 150u);
+    NSArray *remaining = [[storage queryPendingLogs:300] valueForKey:@"id"];
+    XCTAssertEqualObjects(remaining, [ids subarrayWithRange:NSMakeRange(100, 150)]);
+    [self.queue close];
+    XCTAssertEqual([self committedRowCount], 150u);
+    XCTAssertEqualObjects([[storage queryPendingLogs:300] valueForKey:@"id"], remaining);
+    XCTAssertTrue([storage deleteSentLogsWithIds:remaining]);
+    [self.queue close];
+    XCTAssertEqual([self committedRowCount], 0u);
+    XCTAssertEqual([storage queryPendingLogs:300].count, 0u);
+    XCTAssertTrue(storage.isDbWritable);
+    [self assertNoActiveTransaction];
+}
+
+- (void)testSuccessfulHTTPDrains250RowsWithoutDuplicates {
+    NSArray *ids = [self seedRowsThrough:250];
+    __block NSUInteger requests = 0;
+    CLSSendResult *response = [[CLSSendResult alloc] init];
+    response.statusCode = 200;
+    response.requestID = @"normal-200";
+    self.networkMock = OCMClassMock(CLSNetworkTool.class);
+    OCMStub([self.networkMock isNetworkAvailable]).andReturn(YES);
+    OCMStub([self.networkMock sendPostRequestSyncWithUrl:[OCMArg any] headers:[OCMArg any]
+                                                  body:[OCMArg any] option:[OCMArg any]])
+        .andDo(^(NSInvocation *invocation) { requests++; }).andReturn(response);
+    CLSBoundedCommitSender *sender = [[CLSBoundedCommitSender alloc] init];
+    sender.sentIds = [NSMutableArray array];
+    [sender setConfig:[ClsLogSenderConfig configWithEndpoint:@"test.invalid"
+                                               accessKeyId:@"test-id" accessKey:@"test-key"]];
+    [sender sendAllPendingOnThread:NSThread.currentThread];
+    XCTAssertEqual(requests, 3u);
+    NSMutableArray *sizes = [NSMutableArray array];
+    NSMutableArray *sent = [NSMutableArray array];
+    for (NSArray *batch in sender.sentIds) {
+        [sizes addObject:@(batch.count)];
+        [sent addObjectsFromArray:batch];
+    }
+    XCTAssertEqualObjects(sizes, (@[@100, @100, @50]));
+    XCTAssertEqualObjects(sent, ids);
+    XCTAssertEqual([NSSet setWithArray:sent].count, 250u);
+    XCTAssertEqual([self committedRowCount], 0u);
+    [self.queue close];
+    XCTAssertEqual([self committedRowCount], 0u);
+    [sender sendAllPendingOnThread:NSThread.currentThread];
+    XCTAssertEqual(requests, 3u);
+    XCTAssertTrue([ClsLogStorage sharedInstance].isDbWritable);
+}
+
+- (void)testInterleavedWritesAndDeletePreservesAllNewRows {
+    NSArray *ids = [self seedRowsThrough:100];
+    ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    XCTestExpectation *writes = [self expectationWithDescription:@"100 interleaved writes"];
+    writes.expectedFulfillmentCount = 100;
+    XCTestExpectation *deleted = [self expectationWithDescription:@"original batch deleted between writes"];
+    dispatch_queue_t writeQueue = [storage valueForKey:@"writeQueue"];
+    for (NSUInteger i = 0; i < 100; i++) {
+        if (i == 50) {
+            dispatch_async(writeQueue, ^{
+                XCTAssertEqual([self committedRowCount], 150u);
+                XCTAssertTrue([storage deleteSentLogsWithIds:ids]);
+                XCTAssertEqual([self committedRowCount], 50u);
+                [deleted fulfill];
+            });
+        }
+        Log *log = [[Log alloc] init];
+        log.time = (int64_t)i + 1000;
+        [storage writeLog:log topicId:@"new-topic" completion:^(BOOL ok, NSError *error) {
+            XCTAssertTrue(ok);
+            XCTAssertNil(error);
+            [writes fulfill];
+        }];
+    }
+    [self waitForExpectations:@[writes, deleted] timeout:10];
+    XCTAssertEqual([self committedRowCount], 100u);
+    NSArray *remaining = [storage queryPendingLogs:200];
+    XCTAssertEqual(remaining.count, 100u);
+    NSSet *originalIDs = [NSSet setWithArray:ids];
+    for (NSDictionary *row in remaining) XCTAssertFalse([originalIDs containsObject:row[@"id"]]);
+    XCTAssertTrue([storage deleteSentLogsWithIds:[remaining valueForKey:@"id"]]);
+    XCTAssertEqual([self committedRowCount], 0u);
+    [self assertNoActiveTransaction];
+}
+
+- (void)testExternalWriterLockFailsSafelyWithoutDeletingRows {
+    FMDatabase *writer = [FMDatabase databaseWithPath:self.path];
+    XCTAssertTrue([writer open]);
+    XCTAssertTrue([writer beginImmediateTransaction]);
+    [self.queue inDatabase:^(FMDatabase *db) { db.maxBusyRetryTimeInterval = 0; }];
+    @try {
+        XCTAssertFalse([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+        XCTAssertEqual(gDeleteFullHits, 0u);
+        XCTAssertEqual([self committedRowCount], 1u);
+        XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+        [self assertNoActiveTransaction];
+    } @finally {
+        [writer rollback];
+        [writer close];
+    }
+}
+
+- (void)testReadOnlyConnectionFailsSafelyWithoutDeletingRows {
+    [self.queue inDatabase:^(FMDatabase *db) { XCTAssertTrue([db executeUpdate:@"PRAGMA query_only=ON"]); }];
+    @try {
+        XCTAssertFalse([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+        XCTAssertEqual(gDeleteFullHits, 0u);
+        XCTAssertEqual([self committedRowCount], 1u);
+        XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+        [self assertNoActiveTransaction];
+    } @finally {
+        [self.queue inDatabase:^(FMDatabase *db) { [db executeUpdate:@"PRAGMA query_only=OFF"]; }];
+    }
+}
+
+- (void)testWALIOErrorPreservesRowsAndEndsTransaction {
+    gWalFailureCode = SQLITE_IOERR_WRITE;
+    gWalFailuresRemaining = NSIntegerMax;
+    XCTAssertFalse([[ClsLogStorage sharedInstance] deleteSentLogsWithIds:@[@1]]);
+    XCTAssertGreaterThan(gWalFailures, 0u);
+    XCTAssertGreaterThan(gCommitResults.count, 0u);
+    for (NSDictionary *state in gCommitResults) {
+        XCTAssertFalse([state[@"ok"] boolValue]);
+        XCTAssertEqual([state[@"code"] intValue] & 0xff, SQLITE_IOERR);
+    }
+    XCTAssertFalse([ClsLogStorage sharedInstance].isDbWritable);
+    XCTAssertEqual([self committedRowCount], 1u);
+    [self assertNoActiveTransaction];
+}
+
+- (void)testConnectionRecoveryFailureReportsWriteFailureAndCanRetry {
+    ClsLogStorage *storage = [ClsLogStorage sharedInstance];
+    [storage setValue:@YES forKey:@"needsConnectionConfiguration"];
+    [storage setValue:@NO forKey:@"isDbWritable"];
+    gDenyConfiguration = YES;
+    Log *log = [[Log alloc] init];
+    log.time = 4;
+    XCTestExpectation *failed = [self expectationWithDescription:@"configuration failure"];
+    [storage writeLog:log topicId:@"test-topic" completion:^(BOOL ok, NSError *error) {
+        XCTAssertFalse(ok);
+        XCTAssertEqualObjects(error.domain, @"LogDB");
+        XCTAssertEqual(error.code, -5);
+        [failed fulfill];
+    }];
+    [self waitForExpectations:@[failed] timeout:3];
+    XCTAssertEqual([self committedRowCount], 1u);
+    XCTAssertTrue([[storage valueForKey:@"needsConnectionConfiguration"] boolValue]);
+    gDenyConfiguration = NO;
+    XCTestExpectation *written = [self expectationWithDescription:@"configuration recovered"];
+    [storage writeLog:log topicId:@"test-topic" completion:^(BOOL ok, NSError *error) {
+        XCTAssertTrue(ok);
+        XCTAssertNil(error);
+        [written fulfill];
+    }];
+    [self waitForExpectations:@[written] timeout:3];
+    XCTAssertEqual([self committedRowCount], 2u);
+    XCTAssertFalse([[storage valueForKey:@"needsConnectionConfiguration"] boolValue]);
+    XCTAssertFalse(storage.isDbWritable);
+    [self assertNoActiveTransaction];
+}
 @end

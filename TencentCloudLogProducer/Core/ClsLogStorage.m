@@ -1,6 +1,7 @@
 #import "ClsLogStorage.h"
 #import "FMDB.h"
 #import "ClsLogModel.h"
+#import <sqlite3.h>
 
 static NSString *const kDBName = @"cls_log_cache.db";
 static NSString *const kLogTable = @"cls_log_table";
@@ -22,6 +23,7 @@ static const NSInteger kShortDeleteFuseThreshold = 3;
 @property (nonatomic, assign) uint64_t maxDatabaseSize;
 @property (atomic, assign, readwrite) BOOL isDbWritable;
 @property (atomic, assign) NSInteger consecutiveShortDeleteCount;
+@property (nonatomic, assign) BOOL needsConnectionConfiguration;
 @end
 
 @implementation ClsLogStorage
@@ -163,6 +165,17 @@ static const NSInteger kShortDeleteFuseThreshold = 3;
         __block NSError *dbError = nil;
 
         [self.dbQueue inDatabase:^(FMDatabase *db) {
+            if (self.needsConnectionConfiguration) {
+                if (!db.sqliteHandle || !sqlite3_get_autocommit(db.sqliteHandle) ||
+                    ![[db stringForQuery:@"PRAGMA journal_mode=WAL"].lowercaseString isEqualToString:@"wal"] ||
+                    ![db executeUpdate:@"PRAGMA synchronous=NORMAL"] ||
+                    ![[db stringForQuery:@"PRAGMA journal_size_limit=4194304"] isEqualToString:@"4194304"]) {
+                    dbError = [NSError errorWithDomain:@"LogDB" code:-5
+                                              userInfo:@{NSLocalizedDescriptionKey: @"database connection recovery failed"}];
+                    return;
+                }
+                self.needsConnectionConfiguration = NO;
+            }
             // #12 修复：按 freelist 判定、批量 DELETE 到 90% 水位，不再 VACUUM
             [self evictIfNeededInDatabase:db];
 
@@ -259,36 +272,63 @@ static const NSInteger kShortDeleteFuseThreshold = 3;
         __block int lastCode = 0;
         __block NSString *lastMsg = nil;
 
-        [_dbQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
-            NSString *idsStr = [logIds componentsJoinedByString:@","];
-            NSString *sql = [NSString stringWithFormat:
-                            @"DELETE FROM %@ WHERE _id IN (%@)", kLogTable, idsStr];
-
-            if (![db executeUpdate:sql]) {
-                lastCode = db.lastErrorCode;
-                lastMsg = db.lastErrorMessage;
-                *rollback = YES;
+        [_dbQueue inDatabase:^(FMDatabase *db) {
+            if (!self.isDbWritable) return;
+            if (!db.sqliteHandle) {
+                lastCode = SQLITE_CANTOPEN;
+                lastMsg = @"database is not open";
                 return;
             }
-            if ((NSUInteger)db.changes < logIds.count) {
-                // 3.3.1 补丁：changes < expected 不再无条件容忍
-                // 偶发 1~2 次：兼容真·evict race（writeLog 触发的容量淘汰可能先删了部分 _id）
-                // 连续 >= 阈值：判为持续性 DB 异常（READONLY/journal 失败/多实例可见性等），走熔断
-                NSInteger n = (self.consecutiveShortDeleteCount += 1);
-                CLSLog(@"delete affected=%d expected=%lu short#%ld (threshold=%ld)",
-                       db.changes, (unsigned long)logIds.count,
-                       (long)n, (long)kShortDeleteFuseThreshold);
-                if (n >= kShortDeleteFuseThreshold) {
-                    lastCode = -1;
-                    lastMsg = @"persistent short delete";
-                    *rollback = YES;
-                    return;  // ok 保持 NO → 走 attempt retry → 耗尽后熔断
+
+            BOOL fullHit = NO;
+            do {
+                if (![db beginTransaction]) {
+                    lastCode = db.lastErrorCode;
+                    lastMsg = db.lastErrorMessage;
+                    break;
                 }
-                // 阈值内：仍视为成功（兼容真·evict race）
-            } else {
-                self.consecutiveShortDeleteCount = 0;  // 任意一次完全命中即复位
+
+                NSString *idsStr = [logIds componentsJoinedByString:@","];
+                NSString *sql = [NSString stringWithFormat:
+                                @"DELETE FROM %@ WHERE _id IN (%@)", kLogTable, idsStr];
+                if (![db executeUpdate:sql]) {
+                    lastCode = db.lastErrorCode;
+                    lastMsg = db.lastErrorMessage;
+                    break;
+                }
+
+                fullHit = (NSUInteger)db.changes >= logIds.count;
+                if (!fullHit) {
+                    NSInteger n = (self.consecutiveShortDeleteCount += 1);
+                    CLSLog(@"delete affected=%d expected=%lu short#%ld (threshold=%ld)",
+                           db.changes, (unsigned long)logIds.count,
+                           (long)n, (long)kShortDeleteFuseThreshold);
+                    if (n >= kShortDeleteFuseThreshold) {
+                        lastCode = -1;
+                        lastMsg = @"persistent short delete";
+                        break;
+                    }
+                }
+
+                if (![db commit]) {
+                    lastCode = db.lastErrorCode;
+                    lastMsg = db.lastErrorMessage;
+                    break;
+                }
+                if (fullHit) self.consecutiveShortDeleteCount = 0;
+                ok = YES;
+            } while (NO);
+
+            if (!ok && !sqlite3_get_autocommit(db.sqliteHandle)) {
+                BOOL rolledBack = [db rollback];
+                if (!rolledBack || !sqlite3_get_autocommit(db.sqliteHandle)) {
+                    CLSLog(@"delete rollback failed: code=%d msg=%@; closing database and tripping switch",
+                           db.lastErrorCode, db.lastErrorMessage);
+                    [db close];
+                    self.needsConnectionConfiguration = YES;
+                    self.isDbWritable = NO;
+                }
             }
-            ok = YES;
         }];
 
         if (ok) {
@@ -300,6 +340,7 @@ static const NSInteger kShortDeleteFuseThreshold = 3;
 
         CLSLog(@"delete attempt %ld failed: code=%d msg=%@",
                (long)attempt, lastCode, lastMsg ?: @"");
+        if (!self.isDbWritable) return NO;
 
         if (attempt < kDeleteMaxRetries) {
             usleep(kDeleteBackoffUs[attempt]);
